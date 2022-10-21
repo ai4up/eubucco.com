@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% load static %}
+
+{#Update and include https://github.com/maplibre/martin#using-with-maplibre !!!#}
+
+{% block content %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.1/dist/leaflet.css"
+        integrity="sha256-sA+zWATbFveLLNqWO2gtiw3HL/lh1giY/Inf1BJ0z14="
+        crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.1/dist/leaflet.js"
+          integrity="sha256-NDI0K41gVbWqfkkaHj15IzU7PtMoelkzyKp8TOaFQ3s="
+          crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"
+          integrity="sha512-ha3Is9IgbEyIInSb+4S6IlEwpimz00N5J/dVLQFKhePkZ/HywIbxLeEu5w+hRjVBpbujTogNyT311tluwemy9w=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wicket/1.3.8/wicket.min.js"
+          integrity="sha512-aaiN+QIXD0N9Id865vSDEfttZJV9v8ZGh7jXMnYI2zbZhkSYOulS4IH0u4pC61/KXT20UedYzL5xi5siIg6mlw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="{% static 'js/leaflet-tilelayer-colorfilter.min.js' %}"></script>
+
+  <div class="h-80 lg:h-96" id="map">
+    {#    <div id="map"></div>#}
+    {#    {% leaflet_map "yourmap" callback="window.map_init_basic" %}#}
+  </div>
+
+
+
+  <div class="container mx-auto px-4 py-4 w-full">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <select id="countryDropdown" class="select select-primary w-full">
+        <option disabled selected>Select Country</option>
+      </select>
+
+      <select id="regionDropdown" class="select select-primary w-full">
+        <option disabled selected>Select Region</option>
+      </select>
+
+      <select id="cityDropdown" class="select select-primary w-full">
+        <option disabled selected>Select City</option>
+      </select>
+      <button id="buildingButton" class="btn btn-primary">Request CSV</button>
+    </div>
+
+    <progress class="progress progress-primary w-fill" value="10" max="100" hidden="hidden"></progress>
+    {#    ALERT#}
+    <div id="alertNotification" class="py-4">
+    </div>
+    {#    TABLE#}
+    <div class="overflow-x-auto py-4">
+      <table id="buildingTable" class="table table-compact w-full">
+      </table>
+    </div>
+  </div>
+
+
+  <script type="module">
+    let countries;
+    let regions;
+    let cities;
+    let buildings;
+    let numberOfBuildings;
+    let selectedCountry;
+    let selectedRegion;
+    let selectedCity;
+
+    let AMOUNT_OF_BUILDINGS_PER_PAGE = 50
+
+    let polygon = new Wkt.Wkt();
+    var polylines = [];
+    var polylineRenderer;
+
+    let mapFilter = [
+      'invert:100%',
+      'hue-rotate:180deg',
+      'brightness:95%',
+      'contrast:90%',
+    ];
+
+
+    var EPSG3857 = proj4.defs('EPSG:4326');
+    "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs";
+    var EPSG3035 = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs";
+
+
+    {#SETTING UP THE MAP#}
+    var map = L.map('map').setView([50, 6], 4);
+    {#choose a map from http://leaflet-extras.github.io/leaflet-providers/preview/#}
+    {#https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}#}
+    polylineRenderer = L.canvas({padding: 0.5});
+    L.tileLayer.colorFilter('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap',
+      filter: mapFilter,
+    }).addTo(map);
+
+
+    {#HELPER FUNCTIONS#}
+
+    function convertCoordinates(polygon) {
+      let convertedCoordinates = []
+      let polygon_geojson = polygon.toJson()
+      polygon_geojson.coordinates[0].forEach(function (item, index) {
+        convertedCoordinates.push(proj4(EPSG3035, EPSG3857, item).reverse())
+      });
+      return convertedCoordinates
+    }
+
+
+    function updateMapPolygons(wkt_polygon_list, zoom, reset = true) {
+      let latlang
+
+      if (reset) {
+        polylines.forEach(function (polyline, index) {
+          polyline.remove()
+        })
+        polylines = []
+      }
+      wkt_polygon_list.forEach(function (wkt_polygon, index) {
+        console.log(wkt_polygon, index);
+        polygon.read(wkt_polygon)
+        latlang = convertCoordinates(polygon)
+        polylines.push(L.polyline(latlang, {renderer: polylineRenderer}).addTo(map));
+      });
+      if (latlang) {
+        map.flyTo(latlang[0], zoom)
+      }
+    }
+
+    {#UPDATE VIA API FUNCTIONS#}
+    const updateCountries = async () => {
+      const APIResponse = await fetch('http://0.0.0.0:8000/api/v1/countries?limit=1000&offset=0');
+      const allCountries = await APIResponse.json();
+      countries = allCountries.items
+      countries.sort((a, b) => a.name.localeCompare(b.name))
+      countryDropdown.innerHTML = '<option disabled selected>Select Country</option>'
+      Object.entries(countries).forEach(
+              ([key, country]) => countryDropdown.innerHTML += `<option value=${country.id}> ${country.name}</option>`
+      );
+    };
+
+    const updateRegions = async () => {
+      const APIResponse = await fetch(`http://0.0.0.0:8000/api/v1/countries/${selectedCountry.id}/regions?limit=10000&offset=0`);
+      const allRegions = await APIResponse.json();
+      regions = allRegions.items
+      regions.sort((a, b) => a.name.localeCompare(b.name))
+      regionDropdown.innerHTML = '<option disabled selected>Select Region</option>'
+      Object.entries(regions).forEach(
+              ([key, region]) => regionDropdown.innerHTML += `<option value=${region.id}> ${region.name}</option>`
+      );
+      cityDropdown.innerHTML = '<option disabled selected>Select City</option>'
+    };
+
+    const updateCities = async () => {
+      const APIResponse = await fetch(`http://0.0.0.0:8000/api/v1/regions/${selectedRegion.id}/cities?limit=10000&offset=0`);
+      const allCities = await APIResponse.json();
+      cities = allCities.items
+      cities.sort((a, b) => a.name.localeCompare(b.name))
+      cityDropdown.innerHTML = '<option disabled selected>Select City</option>'
+      Object.entries(cities).forEach(
+              ([key, city]) => cityDropdown.innerHTML += `<option value=${city.id}> ${city.name}</option>`
+      );
+    };
+
+
+    const updateBuildings = async () => {
+      if (!selectedCity) {
+        displayAlert("Please select a City first!", "alert-error")
+        return
+      }
+      const APIResponse = await fetch(`http://0.0.0.0:8000/api/v1/cities/${selectedCity.id}/buildings?limit=${AMOUNT_OF_BUILDINGS_PER_PAGE}&offset=0`);
+      const allBuildings = await APIResponse.json();
+      buildings = allBuildings.items
+      buildingTable.innerHTML = ` <thead>
+                                  <tr>
+                                    <th>ID</th>
+                                    <th>Age</th>
+                                    <th>Type</th>
+                                    <th></th>
+                                  </tr>
+                                  </thead>
+                                  <tbody>`
+      Object.entries(buildings).forEach(
+              ([key, city]) => buildingTable.innerHTML += `<tr>
+                                                            <th>${city.id}</th>
+                                                            <td>${city.age}</td>
+                                                            <td>${city.type}</td>
+{#                                                            <td><button class="btn btn-ghost w-full">Show on Map</button></td>#}
+                                                          </tr>`
+      );
+      buildingTable.innerHTML += `</tbody>
+                                  <tfoot>
+                                    <tr>
+                                    <th>ID</th>
+                                    <th>Age</th>
+                                    <th>Type</th>
+                                    <th></th>
+                                  </tr>
+                                  </tfoot>`
+      displayAlert(`Below are only ${AMOUNT_OF_BUILDINGS_PER_PAGE} results of the total ${allBuildings.count} results in that Area. Use the API or Bulk .csv downloads to get them all! The map will slowly load them.`)
+    };
+
+
+    const onSelectCountry = async () => {
+      selectedCountry = countries.filter(country => country.id === parseInt(countryDropdown.options[countryDropdown.selectedIndex].value))[0]
+      updateMapPolygons([selectedCountry.geometry], 4)
+      await updateRegions()
+      resetState()
+    }
+
+    const onSelectRegion = async () => {
+      selectedRegion = regions.filter(region => region.id === parseInt(regionDropdown.options[regionDropdown.selectedIndex].value))[0]
+      updateMapPolygons([selectedRegion.geometry], 6)
+      await updateCities()
+      resetState()
+    }
+
+    const onSelectCity = async () => {
+      selectedCity = cities.filter(city => city.id === parseInt(cityDropdown.options[cityDropdown.selectedIndex].value))[0]
+      updateMapPolygons([selectedCity.geometry], 8)
+      resetState()
+    }
+
+    const onClickBuilding = async () => {
+      await updateBuildings()
+      updateMapPolygons(buildings.map(a => a.geometry), 12)
+    }
+
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('countryDropdown').addEventListener('change', onSelectCountry);
+      document.getElementById('regionDropdown').addEventListener('change', onSelectRegion);
+      document.getElementById('cityDropdown').addEventListener('change', onSelectCity);
+      document.getElementById('buildingButton').addEventListener('click', onClickBuilding);
+    });
+
+
+    {#HELPER FUNCTIONS#}
+
+    function resetState() {
+      buildingTable.innerHTML = ''
+      alertNotification.innerHTML = ''
+      numberOfBuildings = 0
+    }
+
+    function displayAlert(text, altertType = '') {
+      alertNotification.innerHTML = `  <div class="alert ${altertType} shadow-lg">
+                                        <div>
+                                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                               class="stroke-current flex-shrink-0 w-6 h-6">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                          </svg>
+                                          <span>${text}</span>
+                                        </div>
+                                      </div>`
+    }
+
+    updateCountries()
+  </script>
+{% endblock %}

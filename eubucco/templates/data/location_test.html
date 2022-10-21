@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Document</title>
+</head>
+<body>
+<div id="location"></div>
+<script>
+  navigator.geolocation.getCurrentPosition(result => {
+    // Open the map location using the lat and lng.
+    console.log(`?${result.coords.latitude},${result.coords.longitude}`)
+    {#window.open(`https://maps.google.com/?${result.coords.latitude},${result.coords.longitude}`)#}
+  }, error => {
+    console.log("Error", error)
+  })
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{% extends "account/base.html" %}
+
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block head_title %}{% translate "Signup" %}{% endblock %}
+
+{% block inner %}
+  <div class="hero min-h-screen bg-base-200">
+    <div class="hero-content flex-col lg:flex-row-reverse">
+      <div class="text-center lg:text-left">
+        <h1 class="text-5xl font-bold">{% translate "Sign Up" %}</h1>
+        <p class="py-6">With an account you are able to get custom bulk downloads via .csv.</p>
+          <p>{% blocktranslate %}Already have an account? Then please <a class="link" href="{{ login_url }}">sign in</a>.{% endblocktranslate %}</p>
+      </div>
+      <div class="card flex-shrink-0 w-full max-w-sm shadow-2xl bg-base-100">
+        <div class="card-body">
+          <form class="login" method="POST" action="{% url 'account_login' %}">
+            {% csrf_token %}
+            {{ form|crispy }}
+            {% if redirect_field_value %}
+              <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+            {% endif %}
+            <a class="button secondaryAction"
+               href="{% url 'account_reset_password' %}">{% translate "Forgot Password?" %}</a>
+            <div class="form-control mt-6">
+              <button class="btn btn-primary" type="submit">{% translate "Sign Up" %}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+{% endblock %}

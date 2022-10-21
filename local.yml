@@ -1,0 +1,122 @@
+version: '3'
+
+volumes:
+  eubucco_local_postgres_data: {}
+  eubucco_local_postgres_data_backups: {}
+  eubucco_local_data_dumps: {}
+
+services:
+  django: &django
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    image: eubucco_local_django
+    container_name: eubucco_local_django
+    platform: linux/x86_64
+    depends_on:
+      - postgres
+      - redis
+      - mailhog
+    volumes:
+      - .:/app:z
+      - eubucco_local_data_dumps:/dumps
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+    ports:
+      - "8000:8000"
+    command: /start
+
+  api:
+    build:
+      context: .
+      dockerfile: compose/local/fastapi/Dockerfile
+    container_name: eubucco_local_api
+    depends_on:
+      - postgres
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./.envs/.local/.django
+    volumes:
+      - ./csvs:/csvs
+
+
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: eubucco_production_postgres
+    container_name: eubucco_local_postgres
+    volumes:
+      - eubucco_local_postgres_data:/var/lib/postgresql/data:Z
+      - eubucco_local_postgres_data_backups:/backups:z
+      - eubucco_local_data_dumps:/dumps
+
+    ports:
+      - "5432:5432"
+    env_file:
+      - ./.envs/.local/.postgres
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    container_name: eubucco_local_pg_tileserv
+    env_file:
+      - ./.envs/.local/.django
+    depends_on:
+      - postgres
+    ports:
+      - "7800:7800"
+
+  docs:
+    image: squidfunk/mkdocs-material
+    container_name: eubucco_local_docs
+    env_file:
+      - ./.envs/.local/.django
+    volumes:
+      - .:/docs:z
+    ports:
+      - "9000:8000"
+
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.0
+    container_name: eubucco_local_mailhog
+    ports:
+      - "8025:8025"
+
+  redis:
+    image: redis:6
+    container_name: eubucco_local_redis
+    ports:
+    - "6379:6379"
+
+  celeryworker:
+    <<: *django
+    image: eubucco_local_celeryworker
+    container_name: eubucco_local_celeryworker
+    depends_on:
+      - redis
+      - postgres
+      - mailhog
+    ports: []
+    command: /start-celeryworker
+
+  celerybeat:
+    <<: *django
+    image: eubucco_local_celerybeat
+    container_name: eubucco_local_celerybeat
+    depends_on:
+      - redis
+      - postgres
+      - mailhog
+    ports: []
+    command: /start-celerybeat
+
+  flower:
+    <<: *django
+    image: eubucco_local_flower
+    container_name: eubucco_local_flower
+    ports:
+      - "5555:5555"
+    command: /start-flower

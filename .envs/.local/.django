@@ -1,0 +1,23 @@
+# General
+# ------------------------------------------------------------------------------
+USE_DOCKER=yes
+IPYTHONDIR=/app/.ipython
+# Redis
+# ------------------------------------------------------------------------------
+REDIS_URL=redis://redis:6379/0
+
+# Celery
+# ------------------------------------------------------------------------------
+
+# Flower
+CELERY_FLOWER_USER=rwFmUAdZUtTNOWNBgVNNwIwPvpxBHcfY
+CELERY_FLOWER_PASSWORD=H06vbFESinE2t7oPsp9weBbLU8FgsJK8DyInmx3M0NnjyxfV9k4kOiOrMMS9ORtA
+
+DATABASE_URL=postgres://NvWkXLveTsmzpuuhXdewHwavJFSsSoVa:vf8LaPN8IQvWDuvMKIGj2Paf1JqxkJziiNBWBUgQB6MHGuTrd9waXyPtVI1PIRRu@postgres:5432/eubucco
+CELERY_BROKER_URL=redis://redis:6379/0
+
+API_URL=http://0.0.0.0:8001/v0.1/
+DEVELOPMENT=True
+
+
+TILE_URL=http://0.0.0.0:7800/
