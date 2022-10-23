@@ -32,9 +32,9 @@
         <select id="countryDropdown" class="select select-primary w-full">
           <option disabled selected>Select Country</option>
         </select>
-        <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download CSV</a>
         <a id="downloadCountryLinkPKG" href="" class="btn btn-primary" disabled="disabled">Download PKG</a>
-
+        <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download attributes-only
+          CSV</a>
       </div>
     </div>
     <div class="container mx-auto px-4 py-4 w-full">
@@ -66,8 +66,8 @@
           <thead>
           <tr>
             <th>City</th>
-            <th>CSV</th>
             <th>GPKG</th>
+            <th>CSV</th>
           </tr>
           </thead>
           <tbody>
@@ -75,11 +75,11 @@
           {% for example in examples %}
             <tr>
               <td>{{ example.name | capfirst }}</td>
-              <td><a href="{{ example.csv_link }}" class="link">Download csv
+              <td><a href="{{ example.gpkg_link }}" class="link">Download full gpkg
+                ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)</a></td>
+              <td><a href="{{ example.csv_link }}" class="link">Download attributes-only csv
                 ({{ example.csv_size_in_mb |floatformat:1 }}
                 Mb)</a></td>
-              <td><a href="{{ example.gpkg_link }}" class="link">Download gpkg
-                ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)</a></td>
             </tr>
           {% endfor %}
           </tbody>
@@ -196,11 +196,11 @@
       updateMapPolygons([selectedCountry.geometry], 4)
       var download_link_csv = document.getElementById("downloadCountryLinkCSV");
       download_link_csv.setAttribute("href", selectedCountry.csv_link)
-      download_link_csv.innerHTML = `Download CSV (${Math.round(selectedCountry.csv_size_in_mb)} MB)`
+      download_link_csv.innerHTML = `Download attributes-only CSV (${Math.round(selectedCountry.csv_size_in_mb)} MB)`
       download_link_csv.removeAttribute('disabled');
       var download_link_pkg = document.getElementById("downloadCountryLinkPKG");
       download_link_pkg.setAttribute("href", selectedCountry.gpkg_link)
-      download_link_pkg.innerHTML = `Download GPKG (${Math.round(selectedCountry.gpkg_size_in_mb)} MB)`
+      download_link_pkg.innerHTML = `Download full GPKG (${Math.round(selectedCountry.gpkg_size_in_mb)} MB)`
       download_link_pkg.removeAttribute('disabled');
     }
 
