@@ -61,12 +61,25 @@
 
   <div id="map"></div>
 
+  <div id="toast" class="toast toast-center toast-bottom w-full flex ">
+    <div class="alert alert-info justify-center">
+      <div class="justify-center">
+        <p class="justify-center">Here you can explore the data. Depending on your Zoom level you will see the
+          Countries, Region, Cities or Buildings!</p>
+      </div>
+    </div>
+  </div>
+
   <script>
 
     var map;
     var mapcolor = "blue";
     let currentLayer = null;
 
+    {# hide toast after time#}
+    setTimeout(function () {
+      document.getElementById("toast").remove();
+    }, 10_000);
 
     $.getJSON("{{ tile_url }}public.data_building.json", function (layer) {
 
