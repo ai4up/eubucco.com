@@ -1,5 +1,18 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-<iframe class="w-full h-full" src="{% static 'docs/EUBUCCO-v01.pdf' %}" frameborder="0" allowfullscreen></iframe>
+  <object
+          data="{% static 'docs/EUBUCCO-v01.pdf' %}"
+          type="application/pdf"
+          aria-labelledby="PDF document"
+          class="w-full h-full"
+  >
+    <iframe class="w-full h-full" src="{% static 'docs/EUBUCCO-v01.pdf' %}" allowfullscreen>
+      <p>
+        Your browser does not support PDFs.
+        <a href="{% static 'docs/EUBUCCO-v01.pdf' %}">Download the PDF</a>
+      </p>
+    </iframe>
+  </object>
+
 {% endblock content %}
