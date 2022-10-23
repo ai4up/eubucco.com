@@ -8,7 +8,6 @@
   <head>
     <meta charset='utf-8'/>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
-    <title>pg_tileserv: public.buildings_building</title>
     <script src="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@2.1.9/dist/maplibre-gl.css" rel="stylesheet"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -66,10 +65,10 @@
 
     var map;
     var mapcolor = "blue";
+    let currentLayer = null;
+
 
     $.getJSON("{{ tile_url }}public.data_building.json", function (layer) {
-
-      console.log("public.data_building.json");
 
       var mapConfig = {
         'container': 'map',
@@ -238,8 +237,81 @@
           queryParam = "";
         }
         tileUrl = layer["tileurl"] + "?" + queryParam;
+
         addLayers(layer["id"], layer["geometrytype"], tileUrl);
+        onZoom(true)
+
+        $.getJSON("{{ tile_url }}public.data_city.json", function (cityLayer) {
+          cityTileUrl = cityLayer["tileurl"] + "?" + queryParam;
+          addLayers(cityLayer["id"], cityLayer["geometrytype"], cityTileUrl);
+          onZoom(true)
+        })
+
+        $.getJSON("{{ tile_url }}public.data_region.json", function (regionLayer) {
+          cityTileUrl = regionLayer["tileurl"] + "?" + queryParam;
+          addLayers(regionLayer["id"], regionLayer["geometrytype"], cityTileUrl);
+          onZoom(true)
+        })
+
+        $.getJSON("{{ tile_url }}public.data_country.json", function (countryLayer) {
+          cityTileUrl = countryLayer["tileurl"] + "?" + queryParam;
+          addLayers(countryLayer["id"], countryLayer["geometrytype"], cityTileUrl);
+          onZoom(true)
+        })
       });
+
+
+      function enableLayer(source) {
+        for (const layer of map.getStyle().layers) {
+          if (layer['id'].includes('public.data')) {
+            if (layer['source'] === source) {
+              map.setLayoutProperty(layer['id'], 'visibility', 'visible')
+            } else {
+              map.setLayoutProperty(layer['id'], 'visibility', 'none')
+            }
+          }
+        }
+      }
+
+      function onZoom(force = false) {
+        const currentZoom = map.getZoom();
+        if (force) {
+          currentLayer = null
+        }
+
+        if (currentZoom > 12) {
+          if (currentLayer !== "public.data_building") {
+            enableLayer('public.data_building')
+            currentLayer = "public.data_building"
+          }
+
+
+        } else if (currentZoom > 8) {
+          if (currentLayer !== "public.data_city") {
+            enableLayer('public.data_city')
+            currentLayer = "public.data_city"
+          }
+
+
+        } else if (currentZoom > 5) {
+          if (currentLayer !== "public.data_region") {
+            enableLayer('public.data_region')
+            currentLayer = "public.data_region"
+          }
+
+
+        } else {
+          if (currentLayer !== "public.data_country") {
+            enableLayer('public.data_country')
+            currentLayer = "public.data_country"
+          }
+        }
+      }
+
+
+      map.on('zoom', () => {
+        onZoom()
+      })
     });
 
   </script>
