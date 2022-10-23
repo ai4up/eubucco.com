@@ -25,8 +25,7 @@
 
 
 
-
-  <article class="prose-xl">
+  <article class="prose-2xl">
     <div class="container mx-auto px-4 py-4 w-full">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <select id="countryDropdown" class="select select-primary w-full">
@@ -38,30 +37,52 @@
       </div>
     </div>
     <div class="container mx-auto px-4 py-4 w-full">
+      <div class="divider"></div>
 
-      <p>Here, you can download the data from EUBUCCO v0.1.</p>
+      <div class="grid lg:grid-cols-2 gap-4">
+        <div><h1>Info</h1>
+          <p>Here, you can download the data from EUBUCCO v0.1.</p>
 
-      <p>You can select full country datasets using the dropdown menu. You can also get all countries and download links
-        in a json if you want to download multiple files programmatically <a href="{{ countries_api_link }}"
-                                                                             class="link">here</a>.</p>
+          <p>You can select full country datasets using the dropdown menu. You can also get all countries and download
+            links
+            in a json if you want to download multiple files programmatically <a href="{{ countries_api_link }}"
+                                                                                 class="link">here</a>.</p>
 
-      <p>You can select either to download the full data with attributes and building footprint geometries as a .gpkg,
-        or
-        the attributes only as a .csv.
+          <p>You can select either to download the full data with attributes and building footprint geometries as a
+            .gpkg,
+            or
+            the attributes only as a .csv.
 
-      <p>The coordinate reference system used for all geometries is EPSG:3035.</p>
+          <p>The coordinate reference system used for all geometries is EPSG:3035.</p>
 
-      <p>You find additional information about the License and some small example data below.</p>
+          <p>You find additional information about the License and some small example data below.</p>
 
-      <p>Current version: v0.1 (release date: XXX)
-        Zenodo concept DOI: XXX
-        Zenodo version-specific DOI: XXX“</p>
+          <p>Current version: v0.1 (release date: XXX)
+            Zenodo concept DOI: XXX
+            Zenodo version-specific DOI: XXX“</p></div>
+        <div><h1>License</h1>
+          <p>This database is composed of files under different licenses. The majority of the data (95+%) is licensed
+            under
+            Open
+            Data Commons Open Database License 1.0 (ODbL).
+            <p>Two datasets are available on this repository under different
+            licenses. Their license is added to their respective file names. One input dataset has a share-alike
+            requirement
+            but
+            which is not ODbL, namely Prague, licensed under CC-BY-SA. The file name is
+            v0_1-CZE_11-OTHER-LICENSE-CC-BY-SA.zip.</p>
+            <p>One input dataset had a non-commercial use requirement, namely Abruzzo, licensed under CC-BY-NC. The file
+            name
+            is
+            v0_1-ITA_1-OTHER-LICENSE-CC-BY-NC.zip.</p></div>
+      </div>
+
       <div class="divider"></div>
       <h2>Examples</h2>
     </div>
     <div class="container mx-auto px-4 py-4 w-full">
       <div class="overflow-x-auto">
-        <table class="table md:table-fixed table-zebra w-full">
+        <table class="table lg:table-fixed table-zebra w-full">
           <!-- head -->
           <thead>
           <tr>
@@ -87,19 +108,10 @@
       </div>
       <div class="divider"></div>
 
-      <h2>License</h2>
-      <p>This database is composed of files under different licenses. The majority of the data (95+%) is licensed under
-        Open
-        Data Commons Open Database License 1.0 (ODbL). Two datasets are available on this repository under different
-        licenses. Their license is added to their respective file names. One input dataset has a share-alike requirement
-        but
-        which is not ODbL, namely Prague, licensed under CC-BY-SA. The file name is
-        v0_1-CZE_11-OTHER-LICENSE-CC-BY-SA.zip.
-        One input dataset had a non-commercial use requirement, namely Abruzzo, licensed under CC-BY-NC. The file name
-        is
-        v0_1-ITA_1-OTHER-LICENSE-CC-BY-NC.zip.</p>
+
     </div>
   </article>
+
 
   {#  <div class="container mx-auto px-4 py-4 w-full">#}
   {#    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">#}
