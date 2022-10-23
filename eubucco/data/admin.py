@@ -8,7 +8,8 @@ from .models import Building, City, Country, Region
 
 
 @admin.register(Building)
-class ShopAdmin(OSMGeoAdmin):
+class BuildingAdmin(OSMGeoAdmin):
+    show_full_result_count = False
     list_display = (
         "id",
         "id_source",
