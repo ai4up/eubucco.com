@@ -176,16 +176,16 @@ def create_polygon_for_country(country_id: int):
 
 @celery_app.task(soft_time_limit=60 * 2, hard_time_limit=(60 * 2) + 1)
 def check_if_all_inserted():
-    pathlist = Path(CSV_PATH).rglob("*.csv.zip")
+    pathlist = Path(CSV_PATH).rglob("*.gpkg.zip")
     for path in pathlist:
         filename = path.name
         ingested_csv = IngestedCsv.objects.filter(name=filename).first()
         if not ingested_csv:
-            logging.info("Not all csvs have been imported. Sleeping before retrying.")
+            logging.info("Not all gpkgs have been imported. Sleeping before retrying.")
             sleep(60)
             check_if_all_inserted.delay()
             return
-    logging.info("All csvs have been inserted! Creating polygons.")
+    logging.info("All gpkgs have been inserted! Creating polygons.")
 
     for country in Country.objects.all():
         if not country.geometry:
