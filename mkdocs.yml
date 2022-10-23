@@ -3,14 +3,17 @@ repo_url: https://github.com/ai4up/eubucco
 repo_name: ai4up/eubucco
 
 nav:
+    - 'back to eubucco.com': 'https://eubucco.com/'
+
     - Introduction: 'index.md'
     - API: 'api.md'
     - Tile Server: 'tile_server.md'
-    - 'eubucco.com': 'https://eubucco.com/'
 
 theme:
   name: material
   language: en
+  features:
+    - navigation.tabs
   palette:
 
     # Palette toggle for light mode
