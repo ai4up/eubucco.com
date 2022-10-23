@@ -137,8 +137,8 @@ def ingest_csv(zipped_gpkg_path: str):
     )
     ingested_csv.save()
 
-    if country is not None and gpkg_path is not None:
-        country.gpkg_path = gpkg_path
+    if country is not None:
+        country.gpkg_path = zipped_gpkg_path
         country.gpkg_size_in_mb = get_file_size(str(zipped_gpkg_path))
         country.csv_path = str(zipped_gpkg_path).replace(".gpkg.", ".csv.")
         country.csv_size_in_mb = get_file_size(str(country.csv_path))
