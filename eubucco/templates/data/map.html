@@ -232,10 +232,10 @@
       map.addControl(new maplibregl.NavigationControl());
       map.on("load", function () {
 
-        queryParam = new URLSearchParams(window.location.search).toString();
-        if (queryParam.length <= 1) {
-          queryParam = "";
-        }
+        {#queryParam = new URLSearchParams(window.location.search).toString();#}
+        {#if (queryParam.length <= 1) {#}
+        {#  queryParam = "";}#}
+        queryParam = 'properties=name'
         tileUrl = layer["tileurl"] + "?" + queryParam;
 
         addLayers(layer["id"], layer["geometrytype"], tileUrl);
