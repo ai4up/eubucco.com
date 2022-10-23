@@ -162,27 +162,29 @@
               <li><a href="/">Home</a></li>
               <li><a href="{% url 'data:index' %}">Data</a></li>
               <li><a href="{% url 'data:map' %}">Map</a></li>
-{#              <li><a href="{% url 'blog:index' %}">Blog</a></li>#}
+              {#              <li><a href="{% url 'blog:index' %}">Blog</a></li>#}
               {#              <li><a href="http://0.0.0.0:7800/" target="_blank" rel="noopener noreferrer">Tile Server</a></li>#}
               {#              <li><a href="/api/v1/docs" target="_blank" rel="noopener noreferrer">API Docs</a></li>#}
               <li><a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer">
                 <div class="w-6 rounded"><img src="{% static 'images/white_github.png' %}"/></div>
               </a></li>
-{#              <li><a href="http://0.0.0.0:9000/" target="_blank" rel="noopener noreferrer">Docs</a></li>#}
-{##}
-{#              {% if request.user.is_authenticated %}#}
-{#                <li><a class="nav-link" href="{% url 'account_logout' %}">Sign Out</a></li>#}
-{#                <li><a href="{% url 'users:detail' request.user.username %}">{{ request.user.username }}</a></li>#}
-{#              {% else %}#}
-{#                <li><a href="{% url 'account_signup' %}">Register</a></li>#}
-{#                <li><a href="{% url 'account_login' %}">Login</a></li>#}
-{#              {% endif %}#}
+              <li><a href="{% url 'manuscript' %}">Manuscript</a></li>
+
+              {#              <li><a href="http://0.0.0.0:9000/" target="_blank" rel="noopener noreferrer">Docs</a></li>#}
+              {##}
+              {#              {% if request.user.is_authenticated %}#}
+              {#                <li><a class="nav-link" href="{% url 'account_logout' %}">Sign Out</a></li>#}
+              {#                <li><a href="{% url 'users:detail' request.user.username %}">{{ request.user.username }}</a></li>#}
+              {#              {% else %}#}
+              {#                <li><a href="{% url 'account_signup' %}">Register</a></li>#}
+              {#                <li><a href="{% url 'account_login' %}">Login</a></li>#}
+              {#              {% endif %}#}
             </ul>
           </div>
           {#                </div>#}
         </div>
       </header>
-      <div class="min-h-fit overflow-y-auto">
+      <div class="h-full overflow-y-auto ">
         {#    <!-- Page content here -->#}
         {% block content %}
         {% endblock content %}
@@ -196,20 +198,21 @@
       <li><a href="/">Home</a></li>
       <li><a href="{% url 'data:index' %}">Data</a></li>
       <li><a href="{% url 'data:map' %}">Map</a></li>
-{#      <li><a href="{% url 'blog:index' %}">Blog</a></li>#}
+      {#      <li><a href="{% url 'blog:index' %}">Blog</a></li>#}
       {#              <li><a href="http://0.0.0.0:7800/" target="_blank" rel="noopener noreferrer">Tile Server</a></li>#}
       {#              <li><a href="/api/v1/docs" target="_blank" rel="noopener noreferrer">API Docs</a></li>#}
       <li><a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer">
         <div class="w-6 rounded"><img src="{% static 'images/white_github.png' %}"/></div>
       </a></li>
-{#      <li><a href="http://0.0.0.0:9000/" target="_blank" rel="noopener noreferrer">Docs</a></li>#}
-{#      {% if request.user.is_authenticated %}#}
-{#        <li><a class="nav-link" href="{% url 'account_logout' %}">Sign Out</a></li>#}
-{#        <li><a href="{% url 'users:detail' request.user.username %}">{{ request.user.username }}</a></li>#}
-{#      {% else %}#}
-{#        <li><a href="{% url 'account_signup' %}">Register</a></li>#}
-{#        <li><a href="{% url 'account_login' %}">Login</a></li>#}
-{#      {% endif %}#}
+      <li><a href="{% url 'manuscript' %}">Manuscript</a></li>
+      {#      <li><a href="http://0.0.0.0:9000/" target="_blank" rel="noopener noreferrer">Docs</a></li>#}
+      {#      {% if request.user.is_authenticated %}#}
+      {#        <li><a class="nav-link" href="{% url 'account_logout' %}">Sign Out</a></li>#}
+      {#        <li><a href="{% url 'users:detail' request.user.username %}">{{ request.user.username }}</a></li>#}
+      {#      {% else %}#}
+      {#        <li><a href="{% url 'account_signup' %}">Register</a></li>#}
+      {#        <li><a href="{% url 'account_login' %}">Login</a></li>#}
+      {#      {% endif %}#}
     </ul>
   </div>
 
