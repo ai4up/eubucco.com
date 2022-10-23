@@ -249,7 +249,9 @@
         {#if (queryParam.length <= 1) {#}
         {#  queryParam = "";}#}
         queryParam = 'properties=name'
-        tileUrl = layer["tileurl"] + "?" + queryParam;
+        queryParamBuildings = 'properties=id,id_source,type,type_source,hight,age'
+
+        tileUrl = layer["tileurl"] + "?" + queryParamBuildings;
 
         addLayers(layer["id"], layer["geometrytype"], tileUrl);
         onZoom(true)
