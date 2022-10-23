@@ -1,14 +1,13 @@
 import os
 
 from django.shortcuts import render
+from django.views.decorators.cache import cache_page
 
 from eubucco.api.v0_1.examples import ExampleResponse
 from eubucco.examples.models import Example
 
-# from django.views.decorators.cache import cache_page
 
-
-# @cache_page(60 * 60)
+@cache_page(60 * 60)
 def index(request):
     examples = [
         ExampleResponse.from_orm(e) for e in Example.objects.all().order_by("name")
@@ -29,6 +28,6 @@ def index(request):
     return render(request, "data/simple_download.html", context)
 
 
-# @cache_page(60 * 60)
+@cache_page(60 * 60)
 def map(request):
     return render(request, "data/map.html", {"tile_url": os.environ["TILE_URL"]})

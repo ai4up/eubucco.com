@@ -4,12 +4,13 @@ from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
 from django.views import defaults as default_views
+from django.views.decorators.cache import cache_page
 from django.views.generic import TemplateView
 
 urlpatterns = [
     path(
         "",
-        TemplateView.as_view(template_name="pages/home.html"),
+        cache_page(60 * 60)(TemplateView.as_view(template_name="pages/home.html")),
         name="home",
     ),
     path(
@@ -17,7 +18,9 @@ urlpatterns = [
     ),
     path(
         "manuscript/",
-        TemplateView.as_view(template_name="pages/manuscript.html"),
+        cache_page(60 * 60)(
+            TemplateView.as_view(template_name="pages/manuscript.html")
+        ),
         name="manuscript",
     ),
     # Django Admin, use {% url 'admin:index' %}
