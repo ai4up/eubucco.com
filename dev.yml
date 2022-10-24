@@ -19,6 +19,7 @@ services:
     volumes:
       - ./csvs:/app/csvs
     networks:
+      - default
       - proxy
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
@@ -70,6 +71,7 @@ services:
       - ./csvs:/app/csvs
     networks:
       - proxy
+      - default
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -116,6 +118,7 @@ services:
       - postgres
     networks:
       - proxy
+      - default
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -162,6 +165,8 @@ services:
     volumes:
       - production_postgres_data:/var/lib/postgresql/data:Z
       - production_postgres_data_backups:/backups:z
+    networks:
+      - default
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -188,6 +193,8 @@ services:
 
   redis:
     image: redis:6
+    networks:
+      - default
 
 #  celeryworker:
 #    <<: *django
@@ -205,5 +212,6 @@ services:
 #    command: /start-flower
 
 networks:
+  default:
   proxy:
     external: true
