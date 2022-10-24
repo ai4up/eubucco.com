@@ -4,7 +4,7 @@
 
 gunicorn==20.1.0  # https://github.com/benoitc/gunicorn
 psycopg2==2.9.3  # https://github.com/psycopg/psycopg2
-sentry-sdk[fastapi]==1.9.8  # https://github.com/getsentry/sentry-python
+sentry-sdk[fastapi]==1.10.1  # https://github.com/getsentry/sentry-python
 
 # Django
 # ------------------------------------------------------------------------------
