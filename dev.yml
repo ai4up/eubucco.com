@@ -15,9 +15,6 @@ services:
     depends_on:
       - postgres
       - redis
-    env_file:
-      - ./.envs/.production/.django
-      - ./.envs/.production/.postgres
     command: /start
     volumes:
       - ./csvs:/app/csvs
@@ -44,8 +41,6 @@ services:
     container_name: eubucco_production_api
     depends_on:
       - postgres
-    env_file:
-      - ./.envs/.production/.django
     volumes:
       - ./csvs:/app/csvs
     labels:
@@ -67,8 +62,6 @@ services:
   pg_tileserv:
     image: pramsey/pg_tileserv:latest
     container_name: eubucco_local_pg_tileserv
-    env_file:
-      - ./.envs/.production/.django
     depends_on:
       - postgres
     labels:
@@ -94,8 +87,6 @@ services:
     volumes:
       - production_postgres_data:/var/lib/postgresql/data:Z
       - production_postgres_data_backups:/backups:z
-    env_file:
-      - ./.envs/.production/.postgres
 
 
   redis:
