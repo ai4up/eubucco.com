@@ -80,6 +80,7 @@ def ingest_csv(zipped_gpkg_path: str):
         10**4
     )  # small chunks to keep memory in check on multiple ingestion workers
     df_code_matches = pd.read_csv(ADMIN_CODE_MATCHES)
+    country_extra = " OTHER-LICENSE" if "OTHER-LICENSE" in zipped_gpkg_path else ""
     start_time = time()
 
     extracted_path = unpack_csv(zipped_gpkg_path)
@@ -97,7 +98,7 @@ def ingest_csv(zipped_gpkg_path: str):
                 df_to_ingest = df.loc[df.id_temp == temp_id]
                 row = df_to_ingest.iloc[0]
                 country, region, city = create_location(
-                    row.country, row.region, row.city
+                    f"{row.country}{country_extra}", row.region, row.city
                 )
                 logging.info(
                     f"Ingesting city: {city} in region: {region} in country: {country}"
