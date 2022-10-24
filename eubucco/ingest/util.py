@@ -1,3 +1,4 @@
+import logging
 from math import isnan
 from string import capwords
 from typing import Any, Optional
@@ -83,6 +84,10 @@ def match_type_source(type_source) -> str:
         return ""
     if isinstance(type_source, str):
         return type_source
-    if isnan(type_source):
-        return ""
+
+    if isinstance(type_source, float):
+        logging.warning(f"type_source {type_source} is a float!")
+        if isnan(type_source):
+            return ""
+        return str(type_source)
     raise ValueError(f"Type source '{type_source}' does not match!")
