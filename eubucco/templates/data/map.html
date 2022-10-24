@@ -301,6 +301,7 @@
         if (currentZoom > 12) {
           if (currentLayer !== "public.data_building") {
             enableLayer('public.data_building')
+            $('.mapboxgl-popup').remove();
             currentLayer = "public.data_building"
           }
 
@@ -308,13 +309,15 @@
         } else if (currentZoom > 8) {
           if (currentLayer !== "public.data_city") {
             enableLayer('public.data_city')
+            $('.mapboxgl-popup').remove();
             currentLayer = "public.data_city"
           }
 
 
-        } else if (currentZoom > 5) {
+        } else if (currentZoom > 6) {
           if (currentLayer !== "public.data_region") {
             enableLayer('public.data_region')
+            $('.mapboxgl-popup').remove();
             currentLayer = "public.data_region"
           }
 
@@ -322,6 +325,7 @@
         } else {
           if (currentLayer !== "public.data_country") {
             enableLayer('public.data_country')
+            $('.mapboxgl-popup').remove();
             currentLayer = "public.data_country"
           }
         }
