@@ -144,6 +144,8 @@ def ingest_csv(zipped_gpkg_path: str):
         country.csv_size_in_mb = get_file_size(str(country.csv_path))
         country.save()
 
+        create_polygon_for_country.delay(country.id)
+
     shutil.rmtree(extracted_path, ignore_errors=True)
 
 
@@ -174,24 +176,6 @@ def create_polygon_for_country(country_id: int):
         logging.info(f"Polygons for {country.name} are done!")
 
 
-@celery_app.task(soft_time_limit=60 * 2, hard_time_limit=(60 * 2) + 1)
-def check_if_all_inserted():
-    pathlist = Path(CSV_PATH).rglob("*.gpkg.zip")
-    for path in pathlist:
-        filename = path.name
-        ingested_csv = IngestedCsv.objects.filter(name=filename).first()
-        if not ingested_csv:
-            logging.info("Not all gpkgs have been imported. Sleeping before retrying.")
-            sleep(60)
-            check_if_all_inserted.delay()
-            return
-    logging.info("All gpkgs have been inserted! Creating polygons.")
-
-    for country in Country.objects.all():
-        if not country.geometry:
-            create_polygon_for_country.delay(country.id)
-
-
 @celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
 @synchronize(
     key="eubucco.ingest.tasks.main",
@@ -203,7 +187,6 @@ def check_if_all_inserted():
 def start_ingestion_tasks():
     sleep(10)
     ingest_new_csvs.delay()
-    check_if_all_inserted.delay()
 
 
 # @synchronize(key='eubucco.ingest.tasks.main', masters={r}, auto_release_time=20, blocking=True, timeout=1)
