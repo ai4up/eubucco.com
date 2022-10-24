@@ -1,0 +1,117 @@
+version: '3'
+
+volumes:
+  production_postgres_data: { }
+  production_postgres_data_backups: { }
+  production_traefik: { }
+
+services:
+  django: &django
+    build:
+      context: .
+      dockerfile: ./compose/production/django/Dockerfile
+    image: eubucco_production_django
+    platform: linux/x86_64
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - ./.envs/.production/.django
+      - ./.envs/.production/.postgres
+    command: /start
+    volumes:
+      - ./csvs:/app/csvs
+      -
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.django.entrypoints=http"
+      - "traefik.http.routers.django.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.middlewares.django-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.django.middlewares=django-https-redirect"
+      - "traefik.http.routers.django-secure.entrypoints=https"
+      - "traefik.http.routers.django-secure.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.routers.django-secure.tls=true"
+      - "traefik.http.routers.django-secure.tls.certresolver=http"
+      - "traefik.http.routers.django-secure.service=django"
+      - "traefik.http.services.django.loadbalancer.server.port=5000"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.django-secure.middlewares=secHeaders@file"
+
+  api:
+    build:
+      context: .
+      dockerfile: compose/local/fastapi/Dockerfile
+    container_name: eubucco_production_api
+    depends_on:
+      - postgres
+    env_file:
+      - ./.envs/.production/.django
+    volumes:
+      - ./csvs:/app/csvs
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.entrypoints=http"
+      - "traefik.http.routers.api.rule=Host(`dev-api.eubucco.com`)"
+      - "traefik.http.middlewares.api-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.api.middlewares=api-https-redirect"
+      - "traefik.http.routers.api-secure.entrypoints=https"
+      - "traefik.http.routers.api-secure.rule=Host(`dev-api.eubucco.com`)"
+      - "traefik.http.routers.api-secure.tls=true"
+      - "traefik.http.routers.api-secure.tls.certresolver=http"
+      - "traefik.http.routers.api-secure.service=api"
+      - "traefik.http.services.api.loadbalancer.server.port=5000"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.api-secure.middlewares=secHeaders@file"
+
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    container_name: eubucco_local_pg_tileserv
+    env_file:
+      - ./.envs/.production/.django
+    depends_on:
+      - postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tiles.entrypoints=http"
+      - "traefik.http.routers.tiles.rule=Host(`tiles.eubucco.com`)"
+      - "traefik.http.middlewares.tiles-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.tiles.middlewares=tiles-https-redirect"
+      - "traefik.http.routers.tiles-secure.entrypoints=https"
+      - "traefik.http.routers.tiles-secure.rule=Host(`tiles.eubucco.com`)"
+      - "traefik.http.routers.tiles-secure.tls=true"
+      - "traefik.http.routers.tiles-secure.tls.certresolver=http"
+      - "traefik.http.routers.tiles-secure.service=tiles"
+      - "traefik.http.services.tiles.loadbalancer.server.port=5000"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
+
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: eubucco_production_postgres
+    volumes:
+      - production_postgres_data:/var/lib/postgresql/data:Z
+      - production_postgres_data_backups:/backups:z
+    env_file:
+      - ./.envs/.production/.postgres
+
+
+  redis:
+    image: redis:6
+
+  celeryworker:
+    <<: *django
+    image: eubucco_production_celeryworker
+    command: /start-celeryworker
+
+  celerybeat:
+    <<: *django
+    image: eubucco_production_celerybeat
+    command: /start-celerybeat
+
+  flower:
+    <<: *django
+    image: eubucco_production_flower
+    command: /start-flower
