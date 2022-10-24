@@ -85,12 +85,6 @@ def ingest_csv(zipped_gpkg_path: str):
     extracted_path = unpack_csv(zipped_gpkg_path)
     pathlist = Path(extracted_path).rglob("*.gpkg")
 
-    # for i in range(0, 10**10, chunksize):
-    #     print(i)
-    #     break
-    #     df_raw = gpd.read_file('csvs/cache/v0_1-DNK/v0_1-DNK.gpkg', rows=slice(500_000_000, 500_000_100))
-    #
-    #     df_raw = gpd.read_file('csvs/cache/v0_1-DNK/v0_1-DNK.gpkg', rows=slice(i, i+chunksize))
     country, gpkg_path = None, None
     for gpkg_path in pathlist:
         for i in range(0, (10**10), chunksize):
@@ -98,8 +92,6 @@ def ingest_csv(zipped_gpkg_path: str):
             if len(df_raw) == 0:
                 break
 
-            # with pd.read_csv(str(gpkg_path), chunksize=chunksize, low_memory=True) as reader:
-            #     for df_raw in reader:
             df = match_gadm_info(df_raw, df_code_matches)
             for temp_id in df.id_temp.unique():
                 df_to_ingest = df.loc[df.id_temp == temp_id]
