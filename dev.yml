@@ -57,7 +57,7 @@ services:
       - "traefik.http.routers.django-secure.tls.certresolver=http"
       - "traefik.http.routers.django-secure.service=django"
       - "traefik.http.services.django.loadbalancer.server.port=5000"
-      - "traefik.docker.network=web"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.django-secure.middlewares=secHeaders@file"
 
   api:
@@ -107,7 +107,7 @@ services:
       - "traefik.http.routers.api-secure.tls.certresolver=http"
       - "traefik.http.routers.api-secure.service=api"
       - "traefik.http.services.api.loadbalancer.server.port=8001"
-      - "traefik.docker.network=web"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.api-secure.middlewares=secHeaders@file"
 
 
@@ -154,7 +154,7 @@ services:
       - "traefik.http.routers.tiles-secure.tls.certresolver=http"
       - "traefik.http.routers.tiles-secure.service=tiles"
       - "traefik.http.services.tiles.loadbalancer.server.port=5000"
-      - "traefik.docker.network=web"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
 
   postgres:
