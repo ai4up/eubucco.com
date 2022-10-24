@@ -47,8 +47,8 @@ class City(models.Model):
 
 
 class Building(models.Model):
-    id = models.CharField(max_length=30, primary_key=True)
-    id_source = models.CharField(max_length=60)
+    id = models.CharField(max_length=50, primary_key=True)
+    id_source = models.CharField(max_length=80)
     country = models.ForeignKey(
         Country, on_delete=models.CASCADE, db_index=True, null=True
     )
@@ -63,7 +63,7 @@ class Building(models.Model):
         choices=BuildingType.choices,
         default=BuildingType.UNKNOWN,
     )
-    type_source = models.CharField(max_length=50)
+    type_source = models.CharField(max_length=70)
     geometry = models.GeometryField(srid=3035)
 
     def __str__(self):
