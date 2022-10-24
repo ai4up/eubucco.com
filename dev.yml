@@ -21,7 +21,7 @@ services:
     command: /start
     volumes:
       - ./csvs:/app/csvs
-      -
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.django.entrypoints=http"
