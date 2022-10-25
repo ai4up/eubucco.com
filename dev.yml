@@ -196,20 +196,103 @@ services:
     networks:
       - default
 
-#  celeryworker:
-#    <<: *django
-#    image: eubucco_production_celeryworker
-#    command: /start-celeryworker
-#
-#  celerybeat:
-#    <<: *django
-#    image: eubucco_production_celerybeat
-#    command: /start-celerybeat
-#
-#  flower:
-#    <<: *django
-#    image: eubucco_production_flower
-#    command: /start-flower
+  celeryworker:
+    <<: *django
+    image: eubucco_production_celeryworker
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    command: /start-celeryworker
+
+  celerybeat:
+    <<: *django
+    image: eubucco_production_celerybeat
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    command: /start-celerybeat
+
+  flower:
+    <<: *django
+    image: eubucco_production_flower
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    command: /start-flower
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tiles.entrypoints=http"
+      - "traefik.http.routers.tiles.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.middlewares.tiles-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.tiles.middlewares=tiles-https-redirect"
+      - "traefik.http.routers.tiles-secure.entrypoints=https"
+      - "traefik.http.routers.tiles-secure.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.routers.tiles-secure.tls=true"
+      - "traefik.http.routers.tiles-secure.tls.certresolver=http"
+      - "traefik.http.routers.tiles-secure.service=tiles"
+      - "traefik.http.services.tiles.loadbalancer.server.port=5555"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
 
 networks:
   default:
