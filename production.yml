@@ -56,7 +56,7 @@ services:
   traefik:
     build:
       context: .
-      dockerfile: ./compose/production/traefik/Dockerfile
+      dockerfile: compose/_unused/traefik-old/Dockerfile
     image: eubucco_production_traefik
     depends_on:
       - django

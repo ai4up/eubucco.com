@@ -335,4 +335,4 @@ eubucco/_temp_dev
 *.csv
 *.zip
 *.gpkg
-compose/_unused/traefik/data/acme.json
+compose/production/traefik/data/acme.json
