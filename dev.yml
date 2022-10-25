@@ -145,11 +145,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tiles.entrypoints=http"
-      - "traefik.http.routers.tiles.rule=Host(`tiles.eubucco.com`)"
+      - "traefik.http.routers.tiles.rule=Host(`dev-tiles.eubucco.com`)"
       - "traefik.http.middlewares.tiles-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.tiles.middlewares=tiles-https-redirect"
       - "traefik.http.routers.tiles-secure.entrypoints=https"
-      - "traefik.http.routers.tiles-secure.rule=Host(`tiles.eubucco.com`)"
+      - "traefik.http.routers.tiles-secure.rule=Host(`dev-tiles.eubucco.com`)"
       - "traefik.http.routers.tiles-secure.tls=true"
       - "traefik.http.routers.tiles-secure.tls.certresolver=http"
       - "traefik.http.routers.tiles-secure.service=tiles"
