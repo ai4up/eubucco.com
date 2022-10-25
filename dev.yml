@@ -16,6 +16,7 @@ services:
       - postgres
       - redis
     command: /start
+    restart: unless-stopped
     volumes:
       - ./csvs:/app/csvs
     networks:
@@ -67,6 +68,7 @@ services:
     container_name: eubucco_production_api
     depends_on:
       - postgres
+    restart: unless-stopped
     volumes:
       - ./csvs:/app/csvs
     networks:
@@ -116,6 +118,7 @@ services:
     container_name: eubucco_local_pg_tileserv
     depends_on:
       - postgres
+    restart: unless-stopped
     networks:
       - proxy
       - default
@@ -162,6 +165,7 @@ services:
       context: .
       dockerfile: ./compose/production/postgres/Dockerfile
     image: eubucco_production_postgres
+    restart: unless-stopped
     volumes:
       - production_postgres_data:/var/lib/postgresql/data:Z
       - production_postgres_data_backups:/backups:z
@@ -193,12 +197,14 @@ services:
 
   redis:
     image: redis:6
+    restart: unless-stopped
     networks:
       - default
 
   celeryworker:
     <<: *django
     image: eubucco_production_celeryworker
+    restart: unless-stopped
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -255,6 +261,7 @@ services:
   flower:
     <<: *django
     image: eubucco_production_flower
+    restart: unless-stopped
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
