@@ -58,10 +58,9 @@ services:
       - "traefik.http.routers.django-secure.middlewares=secHeaders@file"
 
   api:
-    build:
-      context: .
-      dockerfile: compose/local/fastapi/Dockerfile
+    image: eubucco/eubucco.com:latest
     container_name: eubucco_production_api
+    command: /start-api
     depends_on:
       - postgres
     restart: unless-stopped
