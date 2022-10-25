@@ -49,11 +49,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.plausible.entrypoints=http"
-      - "traefik.http.routers.plausible.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.routers.plausible.rule=Host(`analytics.eubucco.com`)"
       - "traefik.http.middlewares.plausible-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.plausible.middlewares=plausible-https-redirect"
       - "traefik.http.routers.plausible-secure.entrypoints=https"
-      - "traefik.http.routers.plausible-secure.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.routers.plausible-secure.rule=Host(`analytics.eubucco.com`)"
       - "traefik.http.routers.plausible-secure.tls=true"
       - "traefik.http.routers.plausible-secure.tls.certresolver=http"
       - "traefik.http.routers.plausible-secure.service=plausible"
