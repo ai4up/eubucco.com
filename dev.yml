@@ -6,9 +6,8 @@ volumes:
   production_traefik: { }
 
 services:
-  django: &django
+  django:
     image: eubucco/eubucco.com:latest
-    platform: linux/x86_64
     depends_on:
       - postgres
       - redis
@@ -199,8 +198,7 @@ services:
       - default
 
   celeryworker:
-    <<: *django
-    image: eubucco_production_celeryworker
+    image: eubucco/eubucco.com:latest
     restart: unless-stopped
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
@@ -228,8 +226,7 @@ services:
     command: /start-celeryworker
 
   celerybeat:
-    <<: *django
-    image: eubucco_production_celerybeat
+    image: eubucco/eubucco.com:latest
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -256,8 +253,7 @@ services:
     command: /start-celerybeat
 
   flower:
-    <<: *django
-    image: eubucco_production_flower
+    image: eubucco/eubucco.com:latest
     restart: unless-stopped
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
