@@ -1,0 +1,304 @@
+version: '3.2'
+
+volumes:
+  production_postgres_data: { }
+  production_postgres_data_backups: { }
+  production_traefik: { }
+
+services:
+  django: &django
+    image: eubucco/eubucco.com:latest
+    platform: linux/x86_64
+    depends_on:
+      - postgres
+      - redis
+    command: /start
+    restart: unless-stopped
+    volumes:
+      - ./csvs:/app/csvs
+    networks:
+      - default
+      - proxy
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.django.entrypoints=http"
+      - "traefik.http.routers.django.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.middlewares.django-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.django.middlewares=django-https-redirect"
+      - "traefik.http.routers.django-secure.entrypoints=https"
+      - "traefik.http.routers.django-secure.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.routers.django-secure.tls=true"
+      - "traefik.http.routers.django-secure.tls.certresolver=http"
+      - "traefik.http.routers.django-secure.service=django"
+      - "traefik.http.services.django.loadbalancer.server.port=5000"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.django-secure.middlewares=secHeaders@file"
+
+  api:
+    build:
+      context: .
+      dockerfile: compose/local/fastapi/Dockerfile
+    container_name: eubucco_production_api
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    volumes:
+      - ./csvs:/app/csvs
+    networks:
+      - proxy
+      - default
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.entrypoints=http"
+      - "traefik.http.routers.api.rule=Host(`dev-api.eubucco.com`)"
+      - "traefik.http.middlewares.api-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.api.middlewares=api-https-redirect"
+      - "traefik.http.routers.api-secure.entrypoints=https"
+      - "traefik.http.routers.api-secure.rule=Host(`dev-api.eubucco.com`)"
+      - "traefik.http.routers.api-secure.tls=true"
+      - "traefik.http.routers.api-secure.tls.certresolver=http"
+      - "traefik.http.routers.api-secure.service=api"
+      - "traefik.http.services.api.loadbalancer.server.port=8001"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.api-secure.middlewares=secHeaders@file"
+
+
+  pg_tileserv:
+    image: pramsey/pg_tileserv:latest
+    container_name: eubucco_local_pg_tileserv
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - proxy
+      - default
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tiles.entrypoints=http"
+      - "traefik.http.routers.tiles.rule=Host(`dev-tiles.eubucco.com`)"
+      - "traefik.http.middlewares.tiles-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.tiles.middlewares=tiles-https-redirect"
+      - "traefik.http.routers.tiles-secure.entrypoints=https"
+      - "traefik.http.routers.tiles-secure.rule=Host(`dev-tiles.eubucco.com`)"
+      - "traefik.http.routers.tiles-secure.tls=true"
+      - "traefik.http.routers.tiles-secure.tls.certresolver=http"
+      - "traefik.http.routers.tiles-secure.service=tiles"
+      - "traefik.http.services.tiles.loadbalancer.server.port=5000"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
+
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/production/postgres/Dockerfile
+    image: eubucco_production_postgres
+    restart: unless-stopped
+    volumes:
+      - production_postgres_data:/var/lib/postgresql/data:Z
+      - production_postgres_data_backups:/backups:z
+    networks:
+      - default
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+
+  redis:
+    image: redis:6
+    restart: unless-stopped
+    networks:
+      - default
+
+  celeryworker:
+    <<: *django
+    image: eubucco_production_celeryworker
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    command: /start-celeryworker
+
+  celerybeat:
+    <<: *django
+    image: eubucco_production_celerybeat
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    command: /start-celerybeat
+
+  flower:
+    <<: *django
+    image: eubucco_production_flower
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    command: /start-flower
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tiles.entrypoints=http"
+      - "traefik.http.routers.tiles.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.middlewares.tiles-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.tiles.middlewares=tiles-https-redirect"
+      - "traefik.http.routers.tiles-secure.entrypoints=https"
+      - "traefik.http.routers.tiles-secure.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.routers.tiles-secure.tls=true"
+      - "traefik.http.routers.tiles-secure.tls.certresolver=http"
+      - "traefik.http.routers.tiles-secure.service=tiles"
+      - "traefik.http.services.tiles.loadbalancer.server.port=5555"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
+
+networks:
+  default:
+  proxy:
+    external: true
