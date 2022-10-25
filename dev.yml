@@ -7,10 +7,7 @@ volumes:
 
 services:
   django: &django
-    build:
-      context: .
-      dockerfile: ./compose/production/django/Dockerfile
-    image: eubucco_production_django
+    image: eubucco/eubucco.com:latest
     platform: linux/x86_64
     depends_on:
       - postgres
