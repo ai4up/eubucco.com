@@ -49,6 +49,8 @@ services:
       SECRET_KEY_BASE: $SECRET_KEY_BASE
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
       DATABASE_URL: $DATABASE_URL
+      DISABLE_REGISTRATION: $DISABLE_REGISTRATION
+
 
     labels:
       - "traefik.enable=true"
