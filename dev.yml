@@ -110,7 +110,6 @@ services:
 
   pg_tileserv:
     image: pramsey/pg_tileserv:latest
-    container_name: eubucco_local_pg_tileserv
     depends_on:
       - postgres
     restart: unless-stopped
@@ -151,7 +150,7 @@ services:
       - "traefik.http.routers.tiles-secure.tls=true"
       - "traefik.http.routers.tiles-secure.tls.certresolver=http"
       - "traefik.http.routers.tiles-secure.service=tiles"
-      - "traefik.http.services.tiles.loadbalancer.server.port=5000"
+      - "traefik.http.services.tiles.loadbalancer.server.port=7800"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
 
