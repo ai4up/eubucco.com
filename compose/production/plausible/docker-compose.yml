@@ -13,7 +13,7 @@ services:
     networks:
       - default
     environment:
-      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
 
   plausible_events_db:
     image: clickhouse/clickhouse-server:22.6-alpine
@@ -46,6 +46,8 @@ services:
       ADMIN_USER_PWD: $ADMIN_USER_PWD
       BASE_URL: $BASE_URL
       SECRET_KEY_BASE: $SECRET_KEY_BASE
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.plausible.entrypoints=http"
@@ -69,3 +71,8 @@ volumes:
     driver: local
   geoip:
     driver: local
+
+networks:
+  default:
+  proxy:
+    external: true
