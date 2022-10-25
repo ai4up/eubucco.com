@@ -103,7 +103,7 @@ services:
       - "traefik.http.routers.api-secure.tls=true"
       - "traefik.http.routers.api-secure.tls.certresolver=http"
       - "traefik.http.routers.api-secure.service=api"
-      - "traefik.http.services.api.loadbalancer.server.port=8001"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.api-secure.middlewares=secHeaders@file"
 
