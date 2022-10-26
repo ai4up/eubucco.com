@@ -77,7 +77,7 @@
         Zenodo concept DOI: XXX
         Zenodo version-specific DOI: XXX“</p>
 
-      <h2>Examples</h2>
+      <h1 class="pt-20">Examples</h1>
     </div>
     <div class="container mx-auto px-4 py-4 w-full">
       <div class="overflow-x-auto">
@@ -94,7 +94,7 @@
           <!-- rows -->
           {% for example in examples %}
             <tr>
-              <td>{{ example.name | capfirst }}</td>
+              <td>{{ example.city | capfirst }}</td>
               <td><a href="{{ example.gpkg_link }}" class="link">Download full gpkg
                 ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)</a></td>
               <td><a href="{{ example.csv_link }}" class="link">Download attributes-only csv
@@ -105,7 +105,28 @@
           </tbody>
         </table>
       </div>
-      <div class="divider"></div>
+      <div class="container mx-auto px-4 py-4 w-full">
+        <h1 class="pt-20">Additional Files</h1>
+      </div>
+      <table class="table lg:table-fixed table-zebra w-full">
+        <!-- head -->
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Download</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- rows -->
+        {% for file in additional_files %}
+          <tr>
+            <td>{{ file.name }}</td>
+            <td><a href="{{ file.download_link }}" class="link">Download file
+              ({{ file.size_in_mb |floatformat:1 }} Mb)</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
 
 
     </div>

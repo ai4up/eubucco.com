@@ -87,6 +87,7 @@ LOCAL_APPS = [
     "eubucco.data",
     "eubucco.dumps",
     "eubucco.ingest",
+    "eubucco.files",
     "eubucco.blog",
     "eubucco.examples",
     "theme",
