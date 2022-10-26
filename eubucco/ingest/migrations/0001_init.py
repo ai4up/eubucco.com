@@ -12,10 +12,10 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='IngestedCsv',
+            name='IngestedGPKG',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=30)),
+                ('name', models.CharField(max_length=100)),
                 ('ingested_on', models.DateTimeField(auto_now_add=True)),
                 ('size_in_mb', models.FloatField()),
                 ('ingestion_time_in_s', models.FloatField()),
