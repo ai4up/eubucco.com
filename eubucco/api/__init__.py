@@ -22,7 +22,7 @@ else:
     import sentry_sdk
 
     origins = ["https://eubucco.com"]
-    origins_regex = [r"https://.*\.eubucco\.com"]
+    origins_regex = r"https://.*\.eubucco\.com"
     api.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
