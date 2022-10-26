@@ -14,7 +14,7 @@ services:
     command: /start
     restart: unless-stopped
     volumes:
-      - ./csvs:/app/csvs
+      - /home/app/eubucco/csvs:/app/csvs
     networks:
       - default
       - proxy
@@ -65,7 +65,7 @@ services:
       - postgres
     restart: unless-stopped
     volumes:
-      - ./csvs:/app/csvs
+      - /home/app/eubucco/csvs:/app/csvs
     networks:
       - proxy
       - default
