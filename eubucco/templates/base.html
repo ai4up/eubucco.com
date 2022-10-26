@@ -1,15 +1,15 @@
-{% load static tailwind_tags %}
+{% load tailwind_tags %}
 <!DOCTYPE html>
 <html lang="en" data-theme="night">
 <head>
+  {% load static %}
   <title>EUBUCCO</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <script defer data-domain="eubucco.com" src="https://analytics.eubucco.com/js/plausible.js"></script>
-  {% tailwind_css %}
-  {% load static %}
-
+  <link rel="preload" href="/static/css/dist/styles.css" as="style">
+  <link rel="stylesheet" href="/static/css/dist/styles.css">
 </head>
 
 <body class="overflow-visible">
