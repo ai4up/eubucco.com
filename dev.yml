@@ -149,7 +149,7 @@ services:
       - "traefik.http.routers.tiles-secure.rule=Host(`dev-tiles.eubucco.com`)"
       - "traefik.http.routers.tiles-secure.tls=true"
       - "traefik.http.routers.tiles-secure.tls.certresolver=http"
-      - "traefik.http.routers.tiles-secure.service=tiles"
+      - "traefik.http.routers.tiles-secure.service=pg_tileserv"
       - "traefik.http.services.tiles.loadbalancer.server.port=7800"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
