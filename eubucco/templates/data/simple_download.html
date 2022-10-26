@@ -122,7 +122,7 @@
           <tr>
             <td>{{ file.name }}</td>
             <td><a href="{{ file.download_link }}" class="link">Download file
-              ({{ file.size_in_mb |floatformat:1 }} Mb)</a></td>
+              ({{ file.size_in_mb |floatformat:2 }} Mb)</a></td>
           </tr>
         {% endfor %}
         </tbody>

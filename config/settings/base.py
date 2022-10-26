@@ -89,7 +89,6 @@ LOCAL_APPS = [
     "eubucco.ingest",
     "eubucco.files",
     "eubucco.blog",
-    "eubucco.examples",
     "theme",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

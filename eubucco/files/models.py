@@ -10,9 +10,6 @@ class FileType(models.TextChoices):
     EXAMPLE = "EX", _("example")
     ADDITIONAL = "AD", _("additional")
 
-    def __str__(self):
-        return self.name
-
 
 class File(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
