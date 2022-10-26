@@ -141,18 +141,18 @@ services:
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tiles.entrypoints=http"
-      - "traefik.http.routers.tiles.rule=Host(`dev-tiles.eubucco.com`)"
-      - "traefik.http.middlewares.tiles-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.tiles.middlewares=pg_tileserv-https-redirect"
-      - "traefik.http.routers.tiles-secure.entrypoints=https"
-      - "traefik.http.routers.tiles-secure.rule=Host(`dev-tiles.eubucco.com`)"
-      - "traefik.http.routers.tiles-secure.tls=true"
-      - "traefik.http.routers.tiles-secure.tls.certresolver=http"
-      - "traefik.http.routers.tiles-secure.service=pg_tileserv"
-      - "traefik.http.services.tiles.loadbalancer.server.port=7800"
+      - "traefik.http.routers.pg_tileserv.entrypoints=http"
+      - "traefik.http.routers.pg_tileserv.rule=Host(`dev-tiles.eubucco.com`)"
+      - "traefik.http.middlewares.pg_tileserv-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.pg_tileserv.middlewares=pg_tileserv-https-redirect"
+      - "traefik.http.routers.pg_tileserv-secure.entrypoints=https"
+      - "traefik.http.routers.pg_tileserv-secure.rule=Host(`dev-tiles.eubucco.com`)"
+      - "traefik.http.routers.pg_tileserv-secure.tls=true"
+      - "traefik.http.routers.pg_tileserv-secure.tls.certresolver=http"
+      - "traefik.http.routers.pg_tileserv-secure.service=pg_tileserv"
+      - "traefik.http.services.pg_tileserv.loadbalancer.server.port=7800"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.pg_tileserv-secure.middlewares=secHeaders@file"
 
   postgres:
     build:
@@ -279,18 +279,18 @@ services:
     command: /start-flower
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tasks.entrypoints=http"
-      - "traefik.http.routers.tasks.rule=Host(`dev-tasks.eubucco.com`)"
-      - "traefik.http.middlewares.tasks-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.tasks.middlewares=flower-https-redirect"
-      - "traefik.http.routers.tasks-secure.entrypoints=https"
-      - "traefik.http.routers.tasks-secure.rule=Host(`dev-tasks.eubucco.com`)"
-      - "traefik.http.routers.tasks-secure.tls=true"
-      - "traefik.http.routers.tasks-secure.tls.certresolver=http"
-      - "traefik.http.routers.tasks-secure.service=flower"
-      - "traefik.http.services.tasks.loadbalancer.server.port=5555"
+      - "traefik.http.routers.flower.entrypoints=http"
+      - "traefik.http.routers.flower.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.middlewares.flower-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.flower.middlewares=flower-https-redirect"
+      - "traefik.http.routers.flower-secure.entrypoints=https"
+      - "traefik.http.routers.flower-secure.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.routers.flower-secure.tls=true"
+      - "traefik.http.routers.flower-secure.tls.certresolver=http"
+      - "traefik.http.routers.flower-secure.service=flower"
+      - "traefik.http.services.flower.loadbalancer.server.port=5555"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.tasks-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.flower-secure.middlewares=secHeaders@file"
 
 networks:
   default:
