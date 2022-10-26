@@ -198,6 +198,8 @@ services:
   celeryworker:
     image: eubucco/eubucco.com:latest
     restart: unless-stopped
+    volumes:
+      - /home/app/eubucco/csvs:/app/csvs
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
