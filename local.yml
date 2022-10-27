@@ -69,14 +69,12 @@ services:
       - "7800:7800"
 
   docs:
-    image: squidfunk/mkdocs-material
+    <<: *django
+    image: eubucco_local_docs
     container_name: eubucco_local_docs
-    env_file:
-      - ./.envs/.local/.django
-    volumes:
-      - .:/docs:z
     ports:
-      - "9000:8000"
+      - "9000:9000"
+    command: /start-docs
 
 
   mailhog:
