@@ -57,6 +57,7 @@ services:
       - "traefik.http.services.django.loadbalancer.server.port=5000"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.django-secure.middlewares=secHeaders@file"
+      - "com.centurylinklabs.watchtower.enable=true"
 
   api:
     image: eubucco/eubucco.com:latest
@@ -108,6 +109,7 @@ services:
       - "traefik.http.services.api.loadbalancer.server.port=8000"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.api-secure.middlewares=secHeaders@file"
+      - "com.centurylinklabs.watchtower.enable=true"
 
   docs:
     image: eubucco/eubucco.com:latest
@@ -155,6 +157,7 @@ services:
       - "traefik.http.services.docs.loadbalancer.server.port=8000"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.docs-secure.middlewares=secHeaders@file"
+      - "com.centurylinklabs.watchtower.enable=true"
 
 
   pg_tileserv:
@@ -279,6 +282,8 @@ services:
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     command: /start-celeryworker
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
 
   celerybeat:
     image: eubucco/eubucco.com:latest
@@ -310,6 +315,8 @@ services:
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     command: /start-celerybeat
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
 
   flower:
     image: eubucco/eubucco.com:latest
@@ -356,6 +363,7 @@ services:
       - "traefik.http.services.flower.loadbalancer.server.port=5555"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.flower-secure.middlewares=secHeaders@file"
+      - "com.centurylinklabs.watchtower.enable=true"
 
 networks:
   default:
