@@ -54,7 +54,16 @@ RUN apt-get update \
     && apt-get install -y binutils libproj-dev gdal-bin python3-gdal proj-bin
 
 # install zip
-RUN apt -y install zip
+RUN apt-get -y install zip
+
+# install npm for tailwind
+RUN apt-get update \
+  && apt-get install -y build-essential curl \
+  && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+  && apt-get install -y nodejs --no-install-recommends \
+  && rm -rf /var/lib/apt/lists/* /usr/share/doc /usr/share/man \
+  && apt-get clean
+
 
 # All absolute dir copies ignore workdir instruction. All relative dir copies are wrt to the workdir instruction
 # copy python dependency wheels from python-build-stage
@@ -72,6 +81,13 @@ COPY ./compose/local/django/start /start
 RUN sed -i 's/\r$//g' /start
 RUN chmod +x /start
 
+COPY ./compose/local/docs/start /start-docs
+RUN sed -i 's/\r$//g' /start-docs
+RUN chmod +x /start-docs
+
+COPY ./compose/local/tailwind/start /start-tailwind
+RUN sed -i 's/\r$//g' /start-tailwind
+RUN chmod +x /start-tailwind
 
 COPY ./compose/local/django/celery/worker/start /start-celeryworker
 RUN sed -i 's/\r$//g' /start-celeryworker

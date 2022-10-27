@@ -4,6 +4,8 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+# Create minified tailwindcss stylesheet
+#python /app/manage.py tailwind build
 
 python /app/manage.py collectstatic --noinput
 

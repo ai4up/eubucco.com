@@ -1,3 +1,5 @@
+import os
+
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -6,6 +8,12 @@ from django.urls import include, path
 from django.views import defaults as default_views
 from django.views.decorators.cache import cache_page
 from django.views.generic import TemplateView
+from django.views.generic.base import RedirectView
+
+
+class DocsRedirectView(RedirectView):
+    url = os.environ["DOCS_URL"]
+
 
 urlpatterns = [
     path(
@@ -13,15 +21,14 @@ urlpatterns = [
         cache_page(60 * 60)(TemplateView.as_view(template_name="pages/home.html")),
         name="home",
     ),
+    path("docs", cache_page(60 * 60)(DocsRedirectView.as_view()), name="docs"),
+    path("about", TemplateView.as_view(template_name="pages/about.html"), name="about"),
     path(
-        "about/", TemplateView.as_view(template_name="pages/about.html"), name="about"
-    ),
-    path(
-        "manuscript/",
+        "paper",
         cache_page(60 * 60)(
             TemplateView.as_view(template_name="pages/manuscript.html")
         ),
-        name="manuscript",
+        name="paper",
     ),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),

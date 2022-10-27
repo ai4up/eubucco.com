@@ -1,10 +1,10 @@
 from django.contrib import admin
 
-from .models import IngestedCsv
+from .models import IngestedGPKG
 
 
-class IngestedCsvAdmin(admin.ModelAdmin):
+class IngestedGPKGAdmin(admin.ModelAdmin):
     ...
 
 
-admin.site.register(IngestedCsv, IngestedCsvAdmin)
+admin.site.register(IngestedGPKG, IngestedGPKGAdmin)

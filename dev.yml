@@ -6,16 +6,15 @@ volumes:
   production_traefik: { }
 
 services:
-  django: &django
+  django:
     image: eubucco/eubucco.com:latest
-    platform: linux/x86_64
     depends_on:
       - postgres
       - redis
     command: /start
     restart: unless-stopped
     volumes:
-      - ./csvs:/app/csvs
+      - /home/app/eubucco/csvs:/app/csvs
     networks:
       - default
       - proxy
@@ -37,6 +36,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -57,17 +57,17 @@ services:
       - "traefik.http.services.django.loadbalancer.server.port=5000"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.django-secure.middlewares=secHeaders@file"
+      - "com.centurylinklabs.watchtower.enable=true"
 
   api:
-    build:
-      context: .
-      dockerfile: compose/local/fastapi/Dockerfile
+    image: eubucco/eubucco.com:latest
     container_name: eubucco_production_api
+    command: /start-api
     depends_on:
       - postgres
     restart: unless-stopped
     volumes:
-      - ./csvs:/app/csvs
+      - /home/app/eubucco/csvs:/app/csvs
     networks:
       - proxy
       - default
@@ -89,6 +89,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -105,14 +106,62 @@ services:
       - "traefik.http.routers.api-secure.tls=true"
       - "traefik.http.routers.api-secure.tls.certresolver=http"
       - "traefik.http.routers.api-secure.service=api"
-      - "traefik.http.services.api.loadbalancer.server.port=8001"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.api-secure.middlewares=secHeaders@file"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  docs:
+    image: eubucco/eubucco.com:latest
+    container_name: eubucco_production_docs
+    command: /start-docs
+    restart: unless-stopped
+    networks:
+      - proxy
+      - default
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docs.entrypoints=http"
+      - "traefik.http.routers.docs.rule=Host(`dev-docs.eubucco.com`)"
+      - "traefik.http.middlewares.docs-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.docs.middlewares=docs-https-redirect"
+      - "traefik.http.routers.docs-secure.entrypoints=https"
+      - "traefik.http.routers.docs-secure.rule=Host(`dev-docs.eubucco.com`)"
+      - "traefik.http.routers.docs-secure.tls=true"
+      - "traefik.http.routers.docs-secure.tls.certresolver=http"
+      - "traefik.http.routers.docs-secure.service=docs"
+      - "traefik.http.services.docs.loadbalancer.server.port=8000"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.docs-secure.middlewares=secHeaders@file"
+      - "com.centurylinklabs.watchtower.enable=true"
 
 
   pg_tileserv:
     image: pramsey/pg_tileserv:latest
-    container_name: eubucco_local_pg_tileserv
     depends_on:
       - postgres
     restart: unless-stopped
@@ -137,6 +186,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -144,18 +194,18 @@ services:
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tiles.entrypoints=http"
-      - "traefik.http.routers.tiles.rule=Host(`dev-tiles.eubucco.com`)"
-      - "traefik.http.middlewares.tiles-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.tiles.middlewares=tiles-https-redirect"
-      - "traefik.http.routers.tiles-secure.entrypoints=https"
-      - "traefik.http.routers.tiles-secure.rule=Host(`dev-tiles.eubucco.com`)"
-      - "traefik.http.routers.tiles-secure.tls=true"
-      - "traefik.http.routers.tiles-secure.tls.certresolver=http"
-      - "traefik.http.routers.tiles-secure.service=tiles"
-      - "traefik.http.services.tiles.loadbalancer.server.port=5000"
+      - "traefik.http.routers.pg_tileserv.entrypoints=http"
+      - "traefik.http.routers.pg_tileserv.rule=Host(`dev-tiles.eubucco.com`)"
+      - "traefik.http.middlewares.pg_tileserv-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.pg_tileserv.middlewares=pg_tileserv-https-redirect"
+      - "traefik.http.routers.pg_tileserv-secure.entrypoints=https"
+      - "traefik.http.routers.pg_tileserv-secure.rule=Host(`dev-tiles.eubucco.com`)"
+      - "traefik.http.routers.pg_tileserv-secure.tls=true"
+      - "traefik.http.routers.pg_tileserv-secure.tls.certresolver=http"
+      - "traefik.http.routers.pg_tileserv-secure.service=pg_tileserv"
+      - "traefik.http.services.pg_tileserv.loadbalancer.server.port=7800"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.pg_tileserv-secure.middlewares=secHeaders@file"
 
   postgres:
     build:
@@ -186,6 +236,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -199,9 +250,13 @@ services:
       - default
 
   celeryworker:
-    <<: *django
-    image: eubucco_production_celeryworker
+    image: eubucco/eubucco.com:latest
     restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - /home/app/eubucco/csvs:/app/csvs
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -220,16 +275,21 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     command: /start-celeryworker
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
 
   celerybeat:
-    <<: *django
-    image: eubucco_production_celerybeat
+    image: eubucco/eubucco.com:latest
+    depends_on:
+      - postgres
+      - redis
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -248,17 +308,22 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     command: /start-celerybeat
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
 
   flower:
-    <<: *django
-    image: eubucco_production_flower
+    image: eubucco/eubucco.com:latest
     restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -277,6 +342,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -285,18 +351,19 @@ services:
     command: /start-flower
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tiles.entrypoints=http"
-      - "traefik.http.routers.tiles.rule=Host(`dev-tasks.eubucco.com`)"
-      - "traefik.http.middlewares.tiles-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.tiles.middlewares=tiles-https-redirect"
-      - "traefik.http.routers.tiles-secure.entrypoints=https"
-      - "traefik.http.routers.tiles-secure.rule=Host(`dev-tasks.eubucco.com`)"
-      - "traefik.http.routers.tiles-secure.tls=true"
-      - "traefik.http.routers.tiles-secure.tls.certresolver=http"
-      - "traefik.http.routers.tiles-secure.service=tiles"
-      - "traefik.http.services.tiles.loadbalancer.server.port=5555"
+      - "traefik.http.routers.flower.entrypoints=http"
+      - "traefik.http.routers.flower.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.middlewares.flower-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.flower.middlewares=flower-https-redirect"
+      - "traefik.http.routers.flower-secure.entrypoints=https"
+      - "traefik.http.routers.flower-secure.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.routers.flower-secure.tls=true"
+      - "traefik.http.routers.flower-secure.tls.certresolver=http"
+      - "traefik.http.routers.flower-secure.service=flower"
+      - "traefik.http.services.flower.loadbalancer.server.port=5555"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.tiles-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.flower-secure.middlewares=secHeaders@file"
+      - "com.centurylinklabs.watchtower.enable=true"
 
 networks:
   default:

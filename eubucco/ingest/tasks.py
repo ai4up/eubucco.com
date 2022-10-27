@@ -15,7 +15,7 @@ from pottery import synchronize
 
 from config import celery_app
 from eubucco.data.models import Building, City, Country, Region
-from eubucco.ingest.models import IngestedCsv
+from eubucco.ingest.models import IngestedGPKG
 from eubucco.ingest.util import (
     create_location,
     match_building_type,
@@ -47,7 +47,7 @@ def ingest_new_csvs():
     pathlist = Path(CSV_PATH).rglob("*.gpkg.zip")
     for path in pathlist:
         filename = path.name
-        ingested_csv = IngestedCsv.objects.filter(name=filename).first()
+        ingested_csv = IngestedGPKG.objects.filter(name=filename).first()
         if ingested_csv:
             logging.debug(f"CSV {filename} is already ingested. Skipping!")
             continue
@@ -123,7 +123,7 @@ def ingest_csv(zipped_gpkg_path: str):
                 gc.collect()
                 django.db.reset_queries()
 
-    ingested_csv = IngestedCsv(
+    ingested_csv = IngestedGPKG(
         name=zipped_gpkg_path.split("/")[-1],
         size_in_mb=round(os.stat(zipped_gpkg_path).st_size / (1024 * 1024), 2),
         ingestion_time_in_s=time() - start_time,

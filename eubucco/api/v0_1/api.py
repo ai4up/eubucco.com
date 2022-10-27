@@ -2,10 +2,10 @@ from fastapi.responses import RedirectResponse
 
 from .. import api
 from .countries import router as countries_router
-from .examples import router as examples_router
+from .files import router as files_router
 
 api.include_router(countries_router, prefix="/v0.1/countries", tags=["countries"])
-api.include_router(examples_router, prefix="/v0.1/examples", tags=["examples"])
+api.include_router(files_router, prefix="/v0.1/files", tags=["files"])
 
 
 # api.include_router(regions_router, prefix="/regions", tags=["regions"])

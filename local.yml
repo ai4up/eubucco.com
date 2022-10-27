@@ -1,9 +1,9 @@
 version: '3'
 
 volumes:
-  eubucco_local_postgres_data: {}
-  eubucco_local_postgres_data_backups: {}
-  eubucco_local_data_dumps: {}
+  eubucco_local_postgres_data: { }
+  eubucco_local_postgres_data_backups: { }
+  eubucco_local_data_dumps: { }
 
 services:
   django: &django
@@ -69,14 +69,12 @@ services:
       - "7800:7800"
 
   docs:
-    image: squidfunk/mkdocs-material
+    <<: *django
+    image: eubucco_local_docs
     container_name: eubucco_local_docs
-    env_file:
-      - ./.envs/.local/.django
-    volumes:
-      - .:/docs:z
     ports:
-      - "9000:8000"
+      - "9000:9000"
+    command: /start-docs
 
 
   mailhog:
@@ -89,7 +87,7 @@ services:
     image: redis:6
     container_name: eubucco_local_redis
     ports:
-    - "6379:6379"
+      - "6379:6379"
 
   celeryworker:
     <<: *django
@@ -99,7 +97,7 @@ services:
       - redis
       - postgres
       - mailhog
-    ports: []
+    ports: [ ]
     command: /start-celeryworker
 
   celerybeat:
@@ -110,7 +108,7 @@ services:
       - redis
       - postgres
       - mailhog
-    ports: []
+    ports: [ ]
     command: /start-celerybeat
 
   flower:
@@ -120,3 +118,13 @@ services:
     ports:
       - "5555:5555"
     command: /start-flower
+
+  tailwind:
+    <<: *django
+    image: eubucco_local_tailwind
+    container_name: eubucco_local_tailwind
+    command: /start-tailwind
+    ports: [ ]
+    # Without tty, no stdin, and tailwind watcher aborts
+    # https://github.com/tailwindlabs/tailwindcss/issues/5324
+    tty: true

@@ -21,3 +21,5 @@ DEVELOPMENT=True
 
 
 TILE_URL=http://0.0.0.0:7800/
+DOCS_URL=http://0.0.0.0:9000/
+TAILWIND_CSS_PATH=theme/static_src/src/styles.css

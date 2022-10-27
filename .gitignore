@@ -336,3 +336,4 @@ eubucco/_temp_dev
 *.zip
 *.gpkg
 compose/production/traefik/data/acme.json
+*.xlsx
