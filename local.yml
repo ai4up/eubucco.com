@@ -119,12 +119,12 @@ services:
       - "5555:5555"
     command: /start-flower
 
-#  tailwind:
-#    <<: *django
-#    image: eubucco_local_tailwind
-#    container_name: eubucco_local_tailwind
-#    command: "python manage.py tailwind start"
-#    ports: [ ]
-#    # Without tty, no stdin, and tailwind watcher aborts
-#    # https://github.com/tailwindlabs/tailwindcss/issues/5324
-#    tty: true
+  tailwind:
+    <<: *django
+    image: eubucco_local_tailwind
+    container_name: eubucco_local_tailwind
+    command: /start-tailwind
+    ports: [ ]
+    # Without tty, no stdin, and tailwind watcher aborts
+    # https://github.com/tailwindlabs/tailwindcss/issues/5324
+    tty: true
