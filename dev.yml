@@ -198,6 +198,9 @@ services:
   celeryworker:
     image: eubucco/eubucco.com:latest
     restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
     volumes:
       - /home/app/eubucco/csvs:/app/csvs
     environment:
@@ -227,6 +230,9 @@ services:
 
   celerybeat:
     image: eubucco/eubucco.com:latest
+    depends_on:
+      - postgres
+      - redis
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -255,6 +261,9 @@ services:
   flower:
     image: eubucco/eubucco.com:latest
     restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
