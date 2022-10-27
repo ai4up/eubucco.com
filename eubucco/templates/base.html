@@ -151,19 +151,20 @@
         </svg>
       </label>
     </div>
-    <div class="flex-none hidden lg:block">
-      <ul class="menu menu-horizontal ">
+    <div class="flex-none">
+      <ul class="menu menu-horizontal">
         <!-- Navbar menu content here -->
-        <li><a href="/">Home</a></li>
+        {#        <li><a href="/">Home</a></li>#}
         <li><a href="{% url 'data:index' %}">Data</a></li>
+        <li><a href="{% url 'docs' %}">Docs</a></li>
         <li><a href="{% url 'data:map' %}#3.98/48.52/7.49">Map</a></li>
+        <li><a href="{% url 'paper' %}">Paper</a></li>
         {#              <li><a href="{% url 'blog:index' %}">Blog</a></li>#}
         {#              <li><a href="http://0.0.0.0:7800/" target="_blank" rel="noopener noreferrer">Tile Server</a></li>#}
         {#              <li><a href="/api/v1/docs" target="_blank" rel="noopener noreferrer">API Docs</a></li>#}
         <li><a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer">
           <div class="w-6 rounded"><img src="{% static 'images/white_github.png' %}"/></div>
         </a></li>
-        <li><a href="{% url 'manuscript' %}">Manuscript</a></li>
 
         {#              <li><a href="http://0.0.0.0:9000/" target="_blank" rel="noopener noreferrer">Docs</a></li>#}
         {##}
@@ -197,14 +198,15 @@
       <!-- Sidebar content here -->
       <li><a href="/">Home</a></li>
       <li><a href="{% url 'data:index' %}">Data</a></li>
+      <li><a href="{% url 'docs' %}">Docs</a></li>
       <li><a href="{% url 'data:map' %}">Map</a></li>
+      <li><a href="{% url 'paper' %}">Paper</a></li>
       <li><a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer">
         <div class="w-6 rounded"><img src="{% static 'images/white_github.png' %}"/></div>
       </a></li>
-      <li><a href="{% url 'manuscript' %}">Manuscript</a></li>
+
     </ul>
   </div>
-
 </div>
 {#<div class="container mx-auto px-4 w-full">#}
 {#  <article class="prose-xl">#}

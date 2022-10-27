@@ -27,108 +27,141 @@
 
   <article class="prose-2xl text-center lg:text-left">
     <div class="container mx-auto px-4 py-4 w-full">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <select id="countryDropdown" class="select select-primary w-full">
-          <option disabled selected>Select Country</option>
-        </select>
-        <a id="downloadCountryLinkPKG" href="" class="btn btn-primary" disabled="disabled">Download PKG</a>
-        <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download attributes-only
-          CSV</a>
-      </div>
-    </div>
-    <div class="container mx-auto px-4 py-4 w-full">
-      <div class="grid lg:grid-cols-2 gap-8">
-        <div><h1>Info</h1>
-          <p>Here, you can download the data from EUBUCCO v0.1.</p>
-
-          <p>You can select full country datasets using the dropdown menu. You can also get all countries and download
-            links
-            in a json if you want to download multiple files programmatically <a href="{{ countries_api_link }}"
-                                                                                 class="link">here</a>.</p>
-
-          <p>You can select either to download the full data with attributes and building footprint geometries as a
-            .gpkg,
-            or
-            the attributes only as a .csv.
-
-          <p>The coordinate reference system used for all geometries is EPSG:3035.</p>
-
-          <p>You find additional information about the License and some small example data below.</p>
-
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="grid grid-rows-2 grid-flow-col">
+          <div class="flex gap-4"><select class="select select-primary flex-none w-24">
+            <option>v0.1</option>
+          </select>
+            <select id="countryDropdown" class="select select-primary flex-auto min-w-fit">
+              <option disabled selected>Select Country</option>
+            </select></div>
+          <div class="text-sm text-center">Download the building data from EUBUCCO v0.1 as</div>
         </div>
-        <div><h1>License</h1>
-          <p>This database is composed of files under different licenses. The majority of the data (95+%) is licensed
-            under
-            Open
-            Data Commons Open Database License 1.0 (ODbL).
-          <p>Two datasets are available on this repository under different
-            licenses. Their license is added to their respective file names. One input dataset has a share-alike
-            requirement
-            but
-            which is not ODbL, namely Prague, licensed under CC-BY-SA. The file name is
-            v0_1-CZE_11-OTHER-LICENSE-CC-BY-SA.zip.</p>
-          <p>One input dataset had a non-commercial use requirement, namely Abruzzo, licensed under CC-BY-NC. The file
-            name
-            is
-            v0_1-ITA_1-OTHER-LICENSE-CC-BY-NC.zip.</p></div>
-      </div>
-      <div class="lg:hidden"><h1>Version</h1></div>
-      <p>Current version: v0.1 (release date: XXX)
-        Zenodo concept DOI: XXX
-        Zenodo version-specific DOI: XXX“</p>
 
-      <h1 class="pt-20">Examples</h1>
+        <div class="grid grid-rows-2 grid-flow-col">
+          <a id="downloadCountryLinkPKG" href="" class="btn btn-primary" disabled="disabled">Download GPKG</a>
+          <div class="text-sm text-center">Geopackage - footprint geometries + building attributes</div>
+        </div>
+
+        <div class="grid grid-rows-2 grid-flow-col">
+          <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download attributes-only
+            CSV</a>
+          <div class="text-sm text-center">CSV - building attributes only (height, type, and age)</div>
+        </div>
+        {#        <h1>For more info</h1>#}
+
+        {#        <a id="downloadCountryLinkPKG" href="" class="btn btn-primary" disabled="disabled">Download GPKG</a>#}
+        {#        <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download attributes-only#}
+        {#          CSV</a>#}
+      </div>
+              <p class="text-center">For scientific citation please refer to <a class="link" href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>;
+        for details on API, License and additional Files refer to our <a class="link" href="{% url 'docs' %}">Docs</a>.</p>
+      {#      <div class="max-w-5xl">#}
+      {#        <p>Download the building data from EUBUCCO v0.1 as:</p>#}
+      {#        <ul class="list-disc">#}
+      {#          <li>Geopackage - footprint geometries + building attributes</li>#}
+      {#          <li>CSV - building attributes only (height, type, and age)</li>#}
+      {#        </ul>#}
+      {#        <a href="https://doi.org/10.5281/zenodo.6524780"><img#}
+      {#                src="https://zenodo.org/badge/DOI/10.5281/zenodo.6524780.svg" alt="DOI"></a>#}
+      {#      </div>#}
     </div>
     <div class="container mx-auto px-4 py-4 w-full">
-      <div class="overflow-x-auto">
-        <table class="table lg:table-fixed table-zebra w-full">
-          <!-- head -->
-          <thead>
-          <tr>
-            <th>City</th>
-            <th>GPKG</th>
-            <th>CSV</th>
-          </tr>
-          </thead>
-          <tbody>
-          <!-- rows -->
-          {% for example in examples %}
-            <tr>
-              <td>{{ example.city | capfirst }}</td>
-              <td><a href="{{ example.gpkg_link }}" class="link">Download full gpkg
-                ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)</a></td>
-              <td><a href="{{ example.csv_link }}" class="link">Download attributes-only csv
-                ({{ example.csv_size_in_mb |floatformat:1 }}
-                Mb)</a></td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="container mx-auto px-4 py-4 w-full">
-        <h1 class="pt-20">Additional Files</h1>
-      </div>
-      <div class="overflow-x-auto">
 
-        <table class="table lg:table-fixed table-zebra w-full ">
-          <!-- head -->
-          <thead>
-          <tr>
-            <th>Name</th>
-            <th>Download</th>
-          </tr>
-          </thead>
-          <tbody>
-          <!-- rows -->
-          {% for file in additional_files %}
+      {#      <div class="grid lg:grid-cols-2 gap-8">#}
+      {#        <div><h1>Info</h1>#}
+      {#          <p>Here, you can download the data from EUBUCCO v0.1.</p>#}
+      {##}
+      {#          <p>You can select full country datasets using the dropdown menu. You can also get all countries and download#}
+      {#            links#}
+      {#            in a json if you want to download multiple files programmatically <a href="{{ countries_api_link }}"#}
+      {#                                                                                 class="link">here</a>.</p>#}
+      {##}
+      {#          <p>You can select either to download the full data with attributes and building footprint geometries as a#}
+      {#            .gpkg,#}
+      {#            or#}
+      {#            the attributes only as a .csv.#}
+      {##}
+      {#          <p>The coordinate reference system used for all geometries is EPSG:3035.</p>#}
+      {##}
+      {#          <p>You find additional information about the License and some small example data below.</p>#}
+      {##}
+      {#        </div>#}
+      {#        <div><h1>License</h1>#}
+      {#          <p>This database is composed of files under different licenses. The majority of the data (95+%) is licensed#}
+      {#            under#}
+      {#            Open#}
+      {#            Data Commons Open Database License 1.0 (ODbL).#}
+      {#          <p>Two datasets are available on this repository under different#}
+      {#            licenses. Their license is added to their respective file names. One input dataset has a share-alike#}
+      {#            requirement#}
+      {#            but#}
+      {#            which is not ODbL, namely Prague, licensed under CC-BY-SA. The file name is#}
+      {#            v0_1-CZE_11-OTHER-LICENSE-CC-BY-SA.zip.</p>#}
+      {#          <p>One input dataset had a non-commercial use requirement, namely Abruzzo, licensed under CC-BY-NC. The file#}
+      {#            name#}
+      {#            is#}
+      {#            v0_1-ITA_1-OTHER-LICENSE-CC-BY-NC.zip.</p></div>#}
+      {#      </div>#}
+      {#      <div class="lg:hidden"><h1>Version</h1></div>#}
+      {#      <p>Current version: v0.1 (release date: XXX)#}
+      {#        Zenodo concept DOI: XXX#}
+      {#        Zenodo version-specific DOI: XXX“</p>#}
+
+      {#      </div>#}
+      <h1 class="">Examples</h1>
+
+      <div class="container mx-auto px-4 py-4 w-full">
+        <div class="overflow-x-auto">
+          <table class="table lg:table-fixed table-zebra w-full">
+            <!-- head -->
+            <thead>
             <tr>
-              <td>{{ file.name }}</td>
-              <td><a href="{{ file.download_link }}" class="link">Download file
-                ({{ file.size_in_mb |floatformat:2 }} Mb)</a></td>
+              <th>City</th>
+              <th>GPKG</th>
+              <th>CSV</th>
             </tr>
-          {% endfor %}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+            <!-- rows -->
+            {% for example in examples %}
+              <tr>
+                <td>{{ example.city | capfirst }}</td>
+                <td><a href="{{ example.gpkg_link }}" class="link">Download full gpkg
+                  ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)</a></td>
+                <td><a href="{{ example.csv_link }}" class="link">Download attributes-only csv
+                  ({{ example.csv_size_in_mb |floatformat:1 }}
+                  Mb)</a></td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="container mx-auto px-4 py-4 w-full">
+          <h1 class="pt-20">Additional Files</h1>
+        </div>
+        <div class="overflow-x-auto">
+
+          <table class="table lg:table-fixed table-zebra w-full ">
+            <!-- head -->
+            <thead>
+            <tr>
+              <th>Name</th>
+              <th>Download</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- rows -->
+            {% for file in additional_files %}
+              <tr>
+                <td>{{ file.name }}</td>
+                <td><a href="{{ file.download_link }}" class="link">Download file
+                  ({{ file.size_in_mb |floatformat:2 }} Mb)</a></td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </article>
