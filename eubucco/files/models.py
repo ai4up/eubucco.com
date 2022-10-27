@@ -18,6 +18,7 @@ class File(models.Model):
     size_in_mb = models.FloatField()
     path = models.FilePathField(max_length=200, unique=True)
     type = models.CharField(max_length=2, choices=FileType.choices, db_index=True)
+    info = models.CharField(max_length=200, null=False, blank=True)
 
     def __str__(self):
         return self.name

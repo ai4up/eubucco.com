@@ -6,7 +6,7 @@ from asgiref.sync import sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, root_validator, validator
 
 from eubucco.files.models import File
 
@@ -19,6 +19,11 @@ class FileInfoResponse(BaseModel):
     size_in_mb: float
     type: str
     download_link: Optional[str]
+    info: Optional[str]
+
+    @validator("info", pre=True)
+    def empty_string(cls, value):
+        return "" if value is None else value
 
     @root_validator()
     def create_download_link(cls, values):
