@@ -36,6 +36,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -87,6 +88,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -106,6 +108,53 @@ services:
       - "traefik.http.services.api.loadbalancer.server.port=8000"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.api-secure.middlewares=secHeaders@file"
+
+  docs:
+    image: eubucco/eubucco.com:latest
+    container_name: eubucco_production_docs
+    command: /start-docs
+    restart: unless-stopped
+    networks:
+      - proxy
+      - default
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
+      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
+      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
+      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
+      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
+      WEB_CONCURRENCY: $WEB_CONCURRENCY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
+      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
+      DOMAIN: $DOMAIN
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      API_URL: $API_URL
+      DATABASE_URL: $DATABASE_URL
+      TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docs.entrypoints=http"
+      - "traefik.http.routers.docs.rule=Host(`dev-docs.eubucco.com`)"
+      - "traefik.http.middlewares.docs-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.docs.middlewares=docs-https-redirect"
+      - "traefik.http.routers.docs-secure.entrypoints=https"
+      - "traefik.http.routers.docs-secure.rule=Host(`dev-docs.eubucco.com`)"
+      - "traefik.http.routers.docs-secure.tls=true"
+      - "traefik.http.routers.docs-secure.tls.certresolver=http"
+      - "traefik.http.routers.docs-secure.service=docs"
+      - "traefik.http.services.docs.loadbalancer.server.port=8000"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.docs-secure.middlewares=secHeaders@file"
 
 
   pg_tileserv:
@@ -134,6 +183,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -183,6 +233,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -221,6 +272,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -251,6 +303,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
@@ -282,6 +335,7 @@ services:
       API_URL: $API_URL
       DATABASE_URL: $DATABASE_URL
       TILE_URL: $TILE_URL
+      DOCS_URL: $DOCS_URL
       POSTGRES_HOST: $POSTGRES_HOST
       POSTGRES_PORT: $POSTGRES_PORT
       POSTGRES_DB: $POSTGRES_DB
