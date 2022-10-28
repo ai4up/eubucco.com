@@ -6,3 +6,5 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/app/.docker/config.json:/config.json
     command: --interval 60 --cleanup --label-enable
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
