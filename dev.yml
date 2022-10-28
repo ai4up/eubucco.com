@@ -6,8 +6,9 @@ volumes:
   production_traefik: { }
 
 services:
-  django:
-    image: eubucco/eubucco.com:latest
+  dev-django:
+    image: eubucco/eubucco.com:dev
+    container_name: eubucco_dev_django
     depends_on:
       - postgres
       - redis
@@ -45,23 +46,23 @@ services:
 
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.django.entrypoints=http"
-      - "traefik.http.routers.django.rule=Host(`dev.eubucco.com`)"
-      - "traefik.http.middlewares.django-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.django.middlewares=django-https-redirect"
-      - "traefik.http.routers.django-secure.entrypoints=https"
-      - "traefik.http.routers.django-secure.rule=Host(`dev.eubucco.com`)"
-      - "traefik.http.routers.django-secure.tls=true"
-      - "traefik.http.routers.django-secure.tls.certresolver=http"
-      - "traefik.http.routers.django-secure.service=django"
-      - "traefik.http.services.django.loadbalancer.server.port=5000"
+      - "traefik.http.routers.dev-django.entrypoints=http"
+      - "traefik.http.routers.dev-django.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.middlewares.dev-django-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.dev-django.middlewares=dev-django-https-redirect"
+      - "traefik.http.routers.dev-django-secure.entrypoints=https"
+      - "traefik.http.routers.dev-django-secure.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.routers.dev-django-secure.tls=true"
+      - "traefik.http.routers.dev-django-secure.tls.certresolver=http"
+      - "traefik.http.routers.dev-django-secure.service=dev-django"
+      - "traefik.http.services.dev-django.loadbalancer.server.port=5000"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.django-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.dev-django-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
 
-  api:
-    image: eubucco/eubucco.com:latest
-    container_name: eubucco_production_api
+  dev-api:
+    image: eubucco/eubucco.com:dev
+    container_name: eubucco_dev_api
     command: /start-api
     depends_on:
       - postgres
@@ -97,23 +98,23 @@ services:
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.entrypoints=http"
-      - "traefik.http.routers.api.rule=Host(`dev-api.eubucco.com`)"
-      - "traefik.http.middlewares.api-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.api.middlewares=api-https-redirect"
-      - "traefik.http.routers.api-secure.entrypoints=https"
-      - "traefik.http.routers.api-secure.rule=Host(`dev-api.eubucco.com`)"
-      - "traefik.http.routers.api-secure.tls=true"
-      - "traefik.http.routers.api-secure.tls.certresolver=http"
-      - "traefik.http.routers.api-secure.service=api"
-      - "traefik.http.services.api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.dev-api.entrypoints=http"
+      - "traefik.http.routers.dev-api.rule=Host(`dev-api.eubucco.com`)"
+      - "traefik.http.middlewares.dev-api-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.dev-api.middlewares=dev-api-https-redirect"
+      - "traefik.http.routers.dev-api-secure.entrypoints=https"
+      - "traefik.http.routers.dev-api-secure.rule=Host(`dev-api.eubucco.com`)"
+      - "traefik.http.routers.dev-api-secure.tls=true"
+      - "traefik.http.routers.dev-api-secure.tls.certresolver=http"
+      - "traefik.http.routers.dev-api-secure.service=dev-api"
+      - "traefik.http.services.dev-api.loadbalancer.server.port=8000"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.api-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.dev-api-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
 
-  docs:
-    image: eubucco/eubucco.com:latest
-    container_name: eubucco_production_docs
+  dev-docs:
+    image: eubucco/eubucco.com:dev
+    container_name: eubucco_dev_docs
     command: /start-docs
     restart: unless-stopped
     networks:
@@ -145,18 +146,18 @@ services:
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.docs.entrypoints=http"
-      - "traefik.http.routers.docs.rule=Host(`dev-docs.eubucco.com`)"
-      - "traefik.http.middlewares.docs-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.docs.middlewares=docs-https-redirect"
-      - "traefik.http.routers.docs-secure.entrypoints=https"
-      - "traefik.http.routers.docs-secure.rule=Host(`dev-docs.eubucco.com`)"
-      - "traefik.http.routers.docs-secure.tls=true"
-      - "traefik.http.routers.docs-secure.tls.certresolver=http"
-      - "traefik.http.routers.docs-secure.service=docs"
-      - "traefik.http.services.docs.loadbalancer.server.port=8000"
+      - "traefik.http.routers.dev-docs.entrypoints=http"
+      - "traefik.http.routers.dev-docs.rule=Host(`dev-docs.eubucco.com`)"
+      - "traefik.http.middlewares.dev-docs-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.dev-docs.middlewares=dev-docs-https-redirect"
+      - "traefik.http.routers.dev-docs-secure.entrypoints=https"
+      - "traefik.http.routers.dev-docs-secure.rule=Host(`dev-docs.eubucco.com`)"
+      - "traefik.http.routers.dev-docs-secure.tls=true"
+      - "traefik.http.routers.dev-docs-secure.tls.certresolver=http"
+      - "traefik.http.routers.dev-docs-secure.service=dev-docs"
+      - "traefik.http.services.dev-docs.loadbalancer.server.port=8000"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.docs-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.dev-docs-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
 
 
@@ -250,7 +251,7 @@ services:
       - default
 
   celeryworker:
-    image: eubucco/eubucco.com:latest
+    image: eubucco/eubucco.com:dev
     restart: unless-stopped
     depends_on:
       - postgres
@@ -286,7 +287,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   celerybeat:
-    image: eubucco/eubucco.com:latest
+    image: eubucco/eubucco.com:dev
     depends_on:
       - postgres
       - redis
@@ -318,8 +319,8 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
-  flower:
-    image: eubucco/eubucco.com:latest
+  dev-flower:
+    image: eubucco/eubucco.com:dev
     restart: unless-stopped
     depends_on:
       - postgres
@@ -351,18 +352,18 @@ services:
     command: /start-flower
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.flower.entrypoints=http"
-      - "traefik.http.routers.flower.rule=Host(`dev-tasks.eubucco.com`)"
-      - "traefik.http.middlewares.flower-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.flower.middlewares=flower-https-redirect"
-      - "traefik.http.routers.flower-secure.entrypoints=https"
-      - "traefik.http.routers.flower-secure.rule=Host(`dev-tasks.eubucco.com`)"
-      - "traefik.http.routers.flower-secure.tls=true"
-      - "traefik.http.routers.flower-secure.tls.certresolver=http"
-      - "traefik.http.routers.flower-secure.service=flower"
-      - "traefik.http.services.flower.loadbalancer.server.port=5555"
+      - "traefik.http.routers.dev-flower.entrypoints=http"
+      - "traefik.http.routers.dev-flower.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.middlewares.dev-flower-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.dev-flower.middlewares=dev-flower-https-redirect"
+      - "traefik.http.routers.dev-flower-secure.entrypoints=https"
+      - "traefik.http.routers.dev-flower-secure.rule=Host(`dev-tasks.eubucco.com`)"
+      - "traefik.http.routers.dev-flower-secure.tls=true"
+      - "traefik.http.routers.dev-flower-secure.tls.certresolver=http"
+      - "traefik.http.routers.dev-flower-secure.service=dev-flower"
+      - "traefik.http.services.dev-flower.loadbalancer.server.port=5555"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.flower-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.dev-flower-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
 
 networks:
