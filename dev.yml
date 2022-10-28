@@ -161,7 +161,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
 
-  pg_tileserv:
+  dev-pg_tileserv:
     image: pramsey/pg_tileserv:latest
     depends_on:
       - postgres
@@ -195,18 +195,18 @@ services:
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.pg_tileserv.entrypoints=http"
-      - "traefik.http.routers.pg_tileserv.rule=Host(`dev-tiles.eubucco.com`)"
-      - "traefik.http.middlewares.pg_tileserv-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.pg_tileserv.middlewares=pg_tileserv-https-redirect"
-      - "traefik.http.routers.pg_tileserv-secure.entrypoints=https"
-      - "traefik.http.routers.pg_tileserv-secure.rule=Host(`dev-tiles.eubucco.com`)"
-      - "traefik.http.routers.pg_tileserv-secure.tls=true"
-      - "traefik.http.routers.pg_tileserv-secure.tls.certresolver=http"
-      - "traefik.http.routers.pg_tileserv-secure.service=pg_tileserv"
-      - "traefik.http.services.pg_tileserv.loadbalancer.server.port=7800"
+      - "traefik.http.routers.dev-pg_tileserv.entrypoints=http"
+      - "traefik.http.routers.dev-pg_tileserv.rule=Host(`dev-tiles.eubucco.com`)"
+      - "traefik.http.middlewares.dev-pg_tileserv-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.dev-pg_tileserv.middlewares=dev-pg_tileserv-https-redirect"
+      - "traefik.http.routers.dev-pg_tileserv-secure.entrypoints=https"
+      - "traefik.http.routers.dev-pg_tileserv-secure.rule=Host(`dev-tiles.eubucco.com`)"
+      - "traefik.http.routers.dev-pg_tileserv-secure.tls=true"
+      - "traefik.http.routers.dev-pg_tileserv-secure.tls.certresolver=http"
+      - "traefik.http.routers.dev-pg_tileserv-secure.service=dev-pg_tileserv"
+      - "traefik.http.services.dev-pg_tileserv.loadbalancer.server.port=7800"
       - "traefik.docker.network=proxy"
-      - "traefik.http.routers.pg_tileserv-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.dev-pg_tileserv-secure.middlewares=secHeaders@file"
 
   postgres:
     build:
