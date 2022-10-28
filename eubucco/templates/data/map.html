@@ -272,7 +272,7 @@
           onZoom(true)
         })
 
-        $.getJSON("{{ tile_url }}public.data_country.json", function (countryLayer) {
+        $.getJSON("{{ tile_url }}public.data_country_view.json", function (countryLayer) {
           cityTileUrl = countryLayer["tileurl"] + "?" + queryParam;
           addLayers(countryLayer["id"], countryLayer["geometrytype"], cityTileUrl);
           onZoom(true)
