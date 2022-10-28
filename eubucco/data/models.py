@@ -12,6 +12,7 @@ class BuildingType(models.TextChoices):
 class Country(models.Model):
     name = models.CharField(max_length=57, unique=True)
     geometry = models.GeometryField(srid=3035, null=True)
+    convex_hull = models.GeometryField(srid=3035, null=True)
     csv_path = models.FilePathField(null=True)
     csv_size_in_mb = models.FloatField(null=True)
     gpkg_path = models.FilePathField(null=True)

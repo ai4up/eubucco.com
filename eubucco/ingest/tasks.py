@@ -4,12 +4,14 @@ import os
 import shutil
 import zipfile
 from pathlib import Path
+from string import capwords
 from time import sleep, time
 
 import django.db
 import geopandas as gpd
 import pandas as pd
 import redis
+from django.contrib.gis.db.models import Union
 from django.contrib.gis.geos import MultiPolygon
 from pottery import synchronize
 
@@ -27,6 +29,9 @@ from eubucco.ingest.util import (
 CSV_PATH = "csvs/buildings"
 CACHE_PATH = ".cache"
 ADMIN_CODE_MATCHES = "csvs/util/admin-codes-matches-v0.1.csv"
+GADM_CITY_GEO = "csvs/util/gadm_country_city_geom.gpkg"
+GADM_COUNTRY_GEO = "csvs/util/gadm_country_geom.gpkg"
+
 r = redis.Redis(
     host=os.environ["REDIS_URL"].split("//")[-1].split(":")[0],
     port=os.environ["REDIS_URL"].split(":")[-1].split("/")[0],
@@ -72,6 +77,65 @@ def get_file_size(path: str) -> float:
     return file_stats.st_size / (1024 * 1024)
 
 
+def find_file(gdam: str, type: str) -> tuple[bool, str]:
+    pathlist = Path(CSV_PATH).rglob(f"*-{gdam}{type}")
+    for p in pathlist:
+        return True, str(p)
+    return False, ""
+
+
+@celery_app.task(
+    soft_time_limit=60 * 60 * 24 * 2, hard_time_limit=(60 * 60 * 24 * 2) + 1
+)
+def ingest_boundaries():
+    available_countries = []
+
+    df_boundaries_countries = gpd.read_file(GADM_COUNTRY_GEO)
+    for i, country_boundaries in df_boundaries_countries.iterrows():
+        logging.debug(f"Checking boundaries for {country_boundaries.country_name}")
+        gpkg_found, zipped_gpkg_path = find_file(
+            gdam=country_boundaries.gadm_code, type=".gpkg.zip"
+        )
+        csv_found, zipped_csv_path = find_file(
+            gdam=country_boundaries.gadm_code, type=".csv.zip"
+        )
+
+        if csv_found and gpkg_found:
+            logging.info(
+                f"Files found for boundaries for {country_boundaries.country_name}"
+            )
+            country_str = capwords(country_boundaries.country_name)
+            available_countries.append(country_boundaries["gadm_code"])
+
+            country, _ = Country.objects.get_or_create(name=country_str)
+            country.geometry = str(country_boundaries.geometry)
+            country.gpkg_size_in_mb = get_file_size(str(zipped_gpkg_path))
+            country.csv_path = zipped_csv_path
+            country.csv_size_in_mb = get_file_size(str(zipped_csv_path))
+            country.save()
+            country.convex_hull = country.geometry.convex_hull
+            country.save()
+
+    df = pd.read_csv(ADMIN_CODE_MATCHES)
+    df["city_id"] = [id.split("-")[1] for id in df["id"]]
+    df_boundaries = gpd.read_file(GADM_CITY_GEO)
+
+    for i, boundary in df_boundaries.iterrows():
+        if boundary.gadm_code in available_countries:
+            city_row = df.loc[df.city_id == boundary.city_id].iloc[0]
+            country, region, city = create_location(
+                city_row.country, city_row.region, city_row.city
+            )
+            city.geometry = str(boundary.geometry)
+            city.save()
+
+    for region in Region.objects.all():
+        region.geometry = City.objects.filter(in_region=region).aggregate(
+            area=Union("geometry")
+        )["area"]
+        region.save()
+
+
 @celery_app.task(
     soft_time_limit=60 * 60 * 24 * 2, hard_time_limit=(60 * 60 * 24 * 2) + 1
 )
@@ -80,10 +144,25 @@ def ingest_csv(zipped_gpkg_path: str):
         10**4
     )  # small chunks to keep memory in check on multiple ingestion workers
     df_code_matches = pd.read_csv(ADMIN_CODE_MATCHES)
-    country_extra = " OTHER-LICENSE" if "OTHER-LICENSE" in zipped_gpkg_path else ""
     start_time = time()
-
     extracted_path = unpack_csv(zipped_gpkg_path)
+    country_extra = " OTHER-LICENSE" if "OTHER-LICENSE" in zipped_gpkg_path else ""
+
+    if "OTHER-LICENSE" in zipped_gpkg_path:
+        pathlist = Path(extracted_path).rglob("*.gpkg")
+        for gpkg_path in pathlist:
+            df_raw = gpd.read_file(str(gpkg_path), rows=slice(1, 50))
+            df = match_gadm_info(df_raw, df_code_matches)
+            country_str = capwords(f"{df.iloc[0].country}{country_extra}")
+
+            country, _ = Country.objects.get_or_create(name=country_str)
+
+            country.gpkg_path = zipped_gpkg_path
+            country.gpkg_size_in_mb = get_file_size(str(zipped_gpkg_path))
+            country.csv_path = str(zipped_gpkg_path).replace(".gpkg.", ".csv.")
+            country.csv_size_in_mb = get_file_size(str(country.csv_path))
+            country.save()
+
     pathlist = Path(extracted_path).rglob("*.gpkg")
 
     country, gpkg_path = None, None
@@ -130,13 +209,7 @@ def ingest_csv(zipped_gpkg_path: str):
     )
     ingested_csv.save()
 
-    if country is not None:
-        country.gpkg_path = zipped_gpkg_path
-        country.gpkg_size_in_mb = get_file_size(str(zipped_gpkg_path))
-        country.csv_path = str(zipped_gpkg_path).replace(".gpkg.", ".csv.")
-        country.csv_size_in_mb = get_file_size(str(country.csv_path))
-        country.save()
-
+    if country is not None and "OTHER-LICENSE" in zipped_gpkg_path:
         create_polygon_for_country.delay(country.id)
 
     shutil.rmtree(extracted_path, ignore_errors=True)
@@ -180,6 +253,7 @@ def create_polygon_for_country(country_id: int):
 def start_ingestion_tasks():
     sleep(10)
     ingest_new_csvs.delay()
+    ingest_boundaries.delay()
 
 
 # @synchronize(key='eubucco.ingest.tasks.main', masters={r}, auto_release_time=20, blocking=True, timeout=1)

@@ -5,6 +5,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /home/app/.docker/config.json:/config.json
-    command: --interval 60 --cleanup --label-enable --include-restarting
+    command: --interval 60 --cleanup --label-enable --include-restarting --revive-stopped
     labels:
       - "com.centurylinklabs.watchtower.enable=true"

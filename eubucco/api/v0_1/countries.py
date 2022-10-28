@@ -15,13 +15,13 @@ router = APIRouter()
 class CountryResponse(BaseModel):
     id: int
     name: str
-    geometry: Optional[str]
+    convex_hull: Optional[str]
     csv_link: Optional[str]
     csv_size_in_mb: Optional[str]
     gpkg_link: Optional[str]
     gpkg_size_in_mb: Optional[str]
 
-    @validator("geometry", pre=True)
+    @validator("convex_hull", pre=True)
     def stringify_geometry(cls, v):
         return v.wkt if v is not None else None
 
@@ -37,7 +37,7 @@ class CountryResponse(BaseModel):
 
 @router.get("", response_model=list[CountryResponse])
 def get_all_countries():
-    return list(Country.objects.all())
+    return list(Country.objects.all().defer("geometry"))
 
 
 @router.get("/{country_id}/{type}", response_class=FileResponse)
