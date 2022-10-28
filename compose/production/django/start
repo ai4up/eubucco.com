@@ -5,8 +5,8 @@ set -o pipefail
 set -o nounset
 
 # Create minified tailwindcss stylesheet
-python /app/manage.py tailwind install
-python /app/manage.py tailwind build
+python manage.py tailwind install
+python manage.py tailwind build
 
 # Migrate Database
 python manage.py migrate
