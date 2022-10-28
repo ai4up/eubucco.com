@@ -209,10 +209,7 @@ services:
       - "traefik.http.routers.dev-pg_tileserv-secure.middlewares=secHeaders@file"
 
   postgres:
-    build:
-      context: .
-      dockerfile: ./compose/production/postgres/Dockerfile
-    image: eubucco_production_postgres
+    image: eubucco/postgis:latest
     restart: unless-stopped
     volumes:
       - production_postgres_data:/var/lib/postgresql/data:Z
