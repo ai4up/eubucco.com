@@ -13,12 +13,11 @@ The coordinate reference system used for all geometries is `EPSG:3035`.
 | Attribute | Type | Definition |
 | --------- | ---- | ---------- |
 | id | `string` | Unique EUBUCCO building identifier based on the version number of the database, the GADM city identifier and an ascending number for all buildings in the city |
-| id_source | `string` | Identifier from the original dataset (if no identifier was provided the file name and an |
-| ascending | `number` | for all buildings in the country was applied). |
-| height | `float` | Distance in meter between the elevation of the ground floor and of a point representing the top of the building (lowest or highest roof point, highest building point, ...); see the relevant height | definition in input−dataset−metatable−v0.1.xlsx |
+| id_source | `string` | Identifier from the original dataset (if no identifier was provided the file name and an ascending number for all buildings in the country was applied) |
+| height | `float` | Distance in meter between the elevation of the ground floor and of a point representing the top of the building (lowest or highest roof point, highest building point, ...); see the relevant height | definition in `input−dataset−metatable−v0.1.xlsx` |
 | age | `integer` | Initial construction end year of the building (e.g. not the renovation year, if any) |
 | type | `string` | Usage type of the building, based on our classification ∈ {residential, non−residential, unknown}
-| type_source | `string` / `float` | Usage type of the building, from the original dataset, possibly a human-readable type or a code; see |type_matches−v0.1.zip for human-readable matching translated in English if relevant |
+| type_source | `string` / `float` | Usage type of the building, from the original dataset, possibly a human-readable type or a code; see type_matches−v0.1.zip for human-readable matching translated in English if relevant |
 | geometry | `string` | Footprint of the building as a 2D (X,Y) polygon object projected in `ETRS89` (`EPSG: 3035`) and encoded as a WKT `string` (only included in GPKG files) |
 
 
