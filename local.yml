@@ -28,9 +28,7 @@ services:
     command: /start
 
   api:
-    build:
-      context: .
-      dockerfile: compose/local/fastapi/Dockerfile
+    <<: *django
     container_name: eubucco_local_api
     depends_on:
       - postgres
@@ -38,8 +36,10 @@ services:
       - "8001:8001"
     env_file:
       - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
     volumes:
-      - ./csvs:/csvs
+      - ./csvs:/app/csvs
+    command: /start-api
 
 
   postgres:
