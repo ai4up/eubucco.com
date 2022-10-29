@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 # Create your models here.
 class FileType(models.TextChoices):
-    BUILDING = "BE", _("building")
+    BUILDING = "BU", _("building")
     EXAMPLE = "EX", _("example")
     ADDITIONAL = "AD", _("additional")
 
