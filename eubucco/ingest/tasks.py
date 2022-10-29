@@ -123,16 +123,20 @@ def ingest_boundaries():
     df["city_id"] = [id.split("-")[1] for id in df["id"]]
     df_boundaries = gpd.read_file(GADM_CITY_GEO)
 
+    logging.info("Updateing city boundaries!")
     for i, boundary in df_boundaries.iterrows():
         if boundary.gadm_code in available_countries:
             city_row = df.loc[df.city_id == boundary.city_id].iloc[0]
             country, region, city = create_location(
                 city_row.country, city_row.region, city_row.city
             )
+            logging.info(f"Ingesting boundary of {city}")
             city.geometry = str(boundary.geometry)
             city.save()
 
+    logging.info("Updateing region boundaries!")
     for region in Region.objects.all():
+        logging.info(f"Ingesting boundary of {region}")
         region.geometry = City.objects.filter(in_region=region).aggregate(
             area=Union("geometry")
         )["area"]
