@@ -167,7 +167,7 @@ def ingest_csv(zipped_gpkg_path: str):
             country, _ = Country.objects.get_or_create(name=country_str)
 
             csv_file = ingest_file(
-                zipped_gpkg_path.replace("gpkg", "zip"), file_type=FileType.BUILDING
+                zipped_gpkg_path.replace("gpkg", "csv"), file_type=FileType.BUILDING
             )
             gpkg_file = ingest_file(zipped_gpkg_path, file_type=FileType.BUILDING)
 
