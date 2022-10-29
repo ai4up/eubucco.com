@@ -288,9 +288,6 @@ services:
     depends_on:
       - postgres
       - redis
-    networks:
-      - proxy
-      - default
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -325,6 +322,9 @@ services:
     depends_on:
       - postgres
       - redis
+    networks:
+      - proxy
+      - default
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
