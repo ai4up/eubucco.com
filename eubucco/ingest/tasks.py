@@ -65,9 +65,7 @@ def ingest_new_csvs():
 
 def unpack_csv(zipped_csv_path: str) -> str:
     logging.debug(f"Unpacking {zipped_csv_path}")
-    extracted_path = zipped_csv_path.replace("buildings", "cache").replace(
-        ".gpkg.zip", ""
-    )
+    extracted_path = zipped_csv_path.replace("csvs", "cache").replace(".gpkg.zip", "")
     with zipfile.ZipFile(zipped_csv_path, "r") as zip_ref:
         zip_ref.extractall(extracted_path)
 
