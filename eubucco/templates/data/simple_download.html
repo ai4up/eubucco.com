@@ -263,7 +263,7 @@
       countries.sort((a, b) => a.name.localeCompare(b.name))
       countryDropdown.innerHTML = '<option disabled selected>Select Country</option>'
       Object.entries(countries).forEach(
-              ([key, country]) => countryDropdown.innerHTML += `<option value=${country.id}> ${country.name}</option>`
+        ([key, country]) => countryDropdown.innerHTML += `<option value=${country.id}> ${country.name}</option>`
       );
     };
 
@@ -276,13 +276,26 @@
         resetMapPolygons()
       }
       var download_link_csv = document.getElementById("downloadCountryLinkCSV");
-      download_link_csv.setAttribute("href", selectedCountry.csv_link)
-      download_link_csv.innerHTML = `Download attributes-only CSV (${Math.round(selectedCountry.csv_size_in_mb)} MB)`
-      download_link_csv.removeAttribute('disabled');
-      var download_link_pkg = document.getElementById("downloadCountryLinkPKG");
-      download_link_pkg.setAttribute("href", selectedCountry.gpkg_link)
-      download_link_pkg.innerHTML = `Download full GPKG (${Math.round(selectedCountry.gpkg_size_in_mb)} MB)`
-      download_link_pkg.removeAttribute('disabled');
+      if (selectedCountry.csv === null) {
+        download_link_csv.setAttribute("disabled", "disabled")
+        download_link_csv.innerHTML = `Not available`
+        download_link_csv.removeAttribute('href');
+      } else {
+        download_link_csv.setAttribute("href", selectedCountry.csv.download_link)
+        download_link_csv.innerHTML = `Download attributes-only CSV (${Math.round(selectedCountry.csv.size_in_mb)} MB)`
+        download_link_csv.removeAttribute('disabled');
+      }
+
+      var download_link_gpkg = document.getElementById("downloadCountryLinkPKG");
+      if (selectedCountry.gpkg === null) {
+        download_link_gpkg.setAttribute("disabled", "disabled")
+        download_link_gpkg.innerHTML = `Not available`
+        download_link_gpkg.removeAttribute('href');
+      } else {
+        download_link_gpkg.setAttribute("href", selectedCountry.gpkg.download_link)
+        download_link_gpkg.innerHTML = `Download full GPKG (${Math.round(selectedCountry.gpkg.size_in_mb)} MB)`
+        download_link_gpkg.removeAttribute('disabled');
+      }
     }
 
     document.addEventListener("DOMContentLoaded", () => {

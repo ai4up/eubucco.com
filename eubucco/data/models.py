@@ -1,8 +1,10 @@
 from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 
-
 # Create your models here.
+from eubucco.files.models import File
+
+
 class BuildingType(models.TextChoices):
     RESIDENTIAL = "RE", _("residential")
     NON_RESIDENTIAL = "NR", _("non − residential")
@@ -13,10 +15,12 @@ class Country(models.Model):
     name = models.CharField(max_length=57, unique=True)
     geometry = models.GeometryField(srid=3035, null=True)
     convex_hull = models.GeometryField(srid=3035, null=True)
-    csv_path = models.FilePathField(null=True)
-    csv_size_in_mb = models.FloatField(null=True)
-    gpkg_path = models.FilePathField(null=True)
-    gpkg_size_in_mb = models.FloatField(null=True)
+    csv = models.ForeignKey(
+        File, on_delete=models.DO_NOTHING, blank=True, null=True, related_name="+"
+    )
+    gpkg = models.ForeignKey(
+        File, on_delete=models.DO_NOTHING, blank=True, null=True, related_name="+"
+    )
 
     def __str__(self):
         return self.name
@@ -35,7 +39,7 @@ class Region(models.Model):
 
 
 class City(models.Model):
-    name = models.CharField(max_length=60)
+    name = models.CharField(max_length=100)
     in_country = models.ForeignKey(Country, on_delete=models.CASCADE)
     in_region = models.ForeignKey(Region, on_delete=models.CASCADE)
     geometry = models.GeometryField(srid=3035, null=True)
@@ -64,7 +68,7 @@ class Building(models.Model):
         choices=BuildingType.choices,
         default=BuildingType.UNKNOWN,
     )
-    type_source = models.CharField(max_length=70)
+    type_source = models.CharField(max_length=100)
     geometry = models.GeometryField(srid=3035)
 
     def __str__(self):

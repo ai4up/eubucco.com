@@ -17,6 +17,8 @@ from pottery import synchronize
 
 from config import celery_app
 from eubucco.data.models import Building, City, Country, Region
+from eubucco.files.models import FileType
+from eubucco.files.tasks import ingest_file
 from eubucco.ingest.models import IngestedGPKG
 from eubucco.ingest.util import (
     create_location,
@@ -107,13 +109,14 @@ def ingest_boundaries():
             country_str = capwords(country_boundaries.country_name)
             available_countries.append(country_boundaries["gadm_code"])
 
+            csv_file = ingest_file(zipped_csv_path, file_type=FileType.BUILDING)
+            gpkg_file = ingest_file(zipped_gpkg_path, file_type=FileType.BUILDING)
+
             country, _ = Country.objects.get_or_create(name=country_str)
             country.geometry = str(country_boundaries.geometry)
-            country.gpkg_size_in_mb = get_file_size(str(zipped_gpkg_path))
-            country.csv_path = zipped_csv_path
-            country.csv_size_in_mb = get_file_size(str(zipped_csv_path))
-            country.save()
-            country.convex_hull = country.geometry.convex_hull
+            country.convex_hull = str(country_boundaries.geometry.convex_hull)
+            country.csv = csv_file
+            country.gpkg = gpkg_file
             country.save()
 
     df = pd.read_csv(ADMIN_CODE_MATCHES)

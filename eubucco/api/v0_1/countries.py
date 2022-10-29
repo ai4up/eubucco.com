@@ -1,12 +1,12 @@
-import os
 from typing import Optional
 
 from asgiref.sync import sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, root_validator, validator
+from pydantic import BaseModel, validator
 
+from eubucco.api.v0_1.files import FileInfoResponse
 from eubucco.data.models import Country
 
 router = APIRouter()
@@ -16,20 +16,12 @@ class CountryResponse(BaseModel):
     id: int
     name: str
     convex_hull: Optional[str]
-    csv_link: Optional[str]
-    csv_size_in_mb: Optional[str]
-    gpkg_link: Optional[str]
-    gpkg_size_in_mb: Optional[str]
+    csv: Optional[FileInfoResponse]
+    gpkg: Optional[FileInfoResponse]
 
     @validator("convex_hull", pre=True)
     def stringify_geometry(cls, v):
         return v.wkt if v is not None else None
-
-    @root_validator()
-    def create_download_links(cls, values):
-        values["csv_link"] = f"{os.environ['API_URL']}countries/{values['id']}/csv"
-        values["gpkg_link"] = f"{os.environ['API_URL']}countries/{values['id']}/gpkg"
-        return values
 
     class Config:
         orm_mode = True
@@ -37,7 +29,7 @@ class CountryResponse(BaseModel):
 
 @router.get("", response_model=list[CountryResponse])
 def get_all_countries():
-    return list(Country.objects.all().defer("geometry"))
+    return list(Country.objects.all().defer("geometry").prefetch_related())
 
 
 @router.get("/{country_id}/{type}", response_class=FileResponse)

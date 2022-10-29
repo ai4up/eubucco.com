@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 from time import sleep
-from uuid import UUID
 
 import redis
 from pottery import synchronize
@@ -23,7 +22,7 @@ DIRS = [
 ]
 
 
-def ingest_file(path_str: str, file_type: FileType) -> UUID:
+def ingest_file(path_str: str, file_type: FileType) -> File:
     path = Path(path_str)
     file = File.objects.filter(path=path_str).first()
     if file:
@@ -32,9 +31,9 @@ def ingest_file(path_str: str, file_type: FileType) -> UUID:
         file.name = path.name
         file.type = FileType(file_type)
         file.save()
-        return file.id
+        return file
 
-    logging.info(f"Detected file {file}")
+    logging.info(f"Detected new file at {path}")
     file = File(
         name=path.name,
         size_in_mb=get_file_size(path_str),
@@ -42,7 +41,7 @@ def ingest_file(path_str: str, file_type: FileType) -> UUID:
         type=FileType(file_type),
     )
     file.save()
-    return file.id
+    return file
 
 
 @celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
