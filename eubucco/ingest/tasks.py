@@ -124,13 +124,17 @@ def ingest_boundaries():
     logging.info("Updateing city boundaries!")
     for i, boundary in df_boundaries.iterrows():
         if boundary.gadm_code in available_countries:
-            city_row = df.loc[df.city_id == boundary.city_id].iloc[0]
-            country, region, city = create_location(
-                city_row.country, city_row.region, city_row.city
-            )
-            logging.info(f"Ingesting boundary of {city}")
-            city.geometry = str(boundary.geometry)
-            city.save()
+            cities = df.loc[df.city_id == boundary.city_id]
+            if len(cities) > 0:
+                city_row = cities.iloc[0]
+                country, region, city = create_location(
+                    city_row.country, city_row.region, city_row.city
+                )
+                logging.info(f"Ingesting boundary of {city}")
+                city.geometry = str(boundary.geometry)
+                city.save()
+            else:
+                logging.warning(f"City not in ADMIN CODE MATCHES {boundary}")
 
     logging.info("Updateing region boundaries!")
     for region in Region.objects.all():
@@ -162,10 +166,13 @@ def ingest_csv(zipped_gpkg_path: str):
 
             country, _ = Country.objects.get_or_create(name=country_str)
 
-            country.gpkg_path = zipped_gpkg_path
-            country.gpkg_size_in_mb = get_file_size(str(zipped_gpkg_path))
-            country.csv_path = str(zipped_gpkg_path).replace(".gpkg.", ".csv.")
-            country.csv_size_in_mb = get_file_size(str(country.csv_path))
+            csv_file = ingest_file(
+                zipped_gpkg_path.replace("gpkg", "zip"), file_type=FileType.BUILDING
+            )
+            gpkg_file = ingest_file(zipped_gpkg_path, file_type=FileType.BUILDING)
+
+            country.csv = csv_file
+            country.gpkg = gpkg_file
             country.save()
 
     pathlist = Path(extracted_path).rglob("*.gpkg")
@@ -182,7 +189,7 @@ def ingest_csv(zipped_gpkg_path: str):
                 df_to_ingest = df.loc[df.id_temp == temp_id]
                 row = df_to_ingest.iloc[0]
                 country, region, city = create_location(
-                    f"{row.country}{country_extra}", row.region, row.city
+                    row.country, row.region, row.city
                 )
                 logging.info(
                     f"Ingesting city: {city} in region: {region} in country: {country}"
@@ -223,25 +230,26 @@ def ingest_csv(zipped_gpkg_path: str):
 @celery_app.task(soft_time_limit=60 * 60 * 2, hard_time_limit=(60 * 60 * 2) + 1)
 def create_polygon_for_country(country_id: int):
     logging.debug(f"Creating Polygons for country_id {country_id}")
-    for city in City.objects.filter(in_country=country_id):
-        buildings_in_city = Building.objects.filter(city=city).all()
-        if buildings_in_city:
-            m = MultiPolygon([b.geometry for b in buildings_in_city])
-            city.geometry = m.convex_hull
-            city.save()
-
-    for region in Region.objects.filter(in_country=country_id):
-        cities_in_region = City.objects.filter(in_region=region).all()
-        if cities_in_region[0].geometry:
-            m = MultiPolygon([b.geometry for b in cities_in_region])
-            region.geometry = m.convex_hull
-            region.save()
+    # for city in City.objects.filter(in_country=country_id):
+    #     buildings_in_city = Building.objects.filter(city=city).all()
+    #     if buildings_in_city:
+    #         m = MultiPolygon([b.geometry for b in buildings_in_city])
+    #         city.geometry = m.convex_hull
+    #         city.save()
+    #
+    # for region in Region.objects.filter(in_country=country_id):
+    #     cities_in_region = City.objects.filter(in_region=region).all()
+    #     if cities_in_region[0].geometry:
+    #         m = MultiPolygon([b.geometry for b in cities_in_region])
+    #         region.geometry = m.convex_hull
+    #         region.save()
 
     for country in Country.objects.filter(pk=country_id):
         regions_in_country = Region.objects.filter(in_country=country).all()
         if regions_in_country[0].geometry:
             m = MultiPolygon([b.geometry for b in regions_in_country])
-            country.geometry = m.convex_hull
+            # country.geometry = m.convex_hull
+            country.convex_hull = m.convex_hull
             country.save()
 
         logging.info(f"Polygons for {country.name} are done!")
