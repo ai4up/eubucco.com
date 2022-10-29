@@ -4,11 +4,10 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('data', '0007_add_convex_hull'),
     ]
 
     operations = [
-        migrations.RunSQL('CREATE VIEW data_country_view AS SELECT id, geometry FROM public.data_country;')
+        migrations.RunSQL('CREATE VIEW data_country_view AS SELECT id, name, geometry FROM public.data_country;')
     ]
