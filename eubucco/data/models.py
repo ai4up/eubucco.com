@@ -68,7 +68,7 @@ class Building(models.Model):
         choices=BuildingType.choices,
         default=BuildingType.UNKNOWN,
     )
-    type_source = models.CharField(max_length=100)
+    type_source = models.CharField(max_length=150)
     geometry = models.GeometryField(srid=3035)
 
     def __str__(self):
