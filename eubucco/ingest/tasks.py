@@ -265,8 +265,8 @@ def create_polygon_for_country(country_id: int):
 )
 def start_ingestion_tasks():
     sleep(10)
+    ingest_boundaries()
     ingest_new_csvs.delay()
-    ingest_boundaries.delay()
 
 
 # @synchronize(key='eubucco.ingest.tasks.main', masters={r}, auto_release_time=20, blocking=True, timeout=1)
