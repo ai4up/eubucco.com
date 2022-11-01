@@ -1,0 +1,23 @@
+name: build/push dev docker image 
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Login to DockerHub Registry
+      run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+    - name: Build the Docker image
+      run: docker build -f compose/production/django/Dockerfile -t eubucco/eubucco.com:production .
+    - name: Push the latest dev Docker image
+      run: docker push eubucco/eubucco.com:production
+
