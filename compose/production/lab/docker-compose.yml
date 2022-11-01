@@ -4,6 +4,10 @@ services:
     image: jupyter/scipy-notebook
     volumes:
       - /home/app/eubucco/csvs:/home/jovyan/csvs:ro
+    networks:
+      - proxy
+      - default
+
     environment:
       JUPYTER_TOKEN: $JUPYTER_TOKEN
     labels:
@@ -20,3 +24,9 @@ services:
       - "traefik.http.services.lab.loadbalancer.server.port=8888"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.lab-secure.middlewares=secHeaders@file"
+
+
+networks:
+  default:
+  proxy:
+    external: true
