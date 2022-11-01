@@ -1,9 +1,11 @@
 version: "3"
 services:
-  jupyter:
+  lab:
     image: jupyter/scipy-notebook
     volumes:
       - /home/app/eubucco/csvs:/home/jovyan/csvs:ro
+    environment:
+      JUPYTER_TOKEN: $JUPYTER_TOKEN
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.lab.entrypoints=http"
