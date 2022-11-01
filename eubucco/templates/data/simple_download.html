@@ -25,28 +25,30 @@
 
 
 
+
   <article class="prose-2xl text-center lg:text-left">
-    <div class="container mx-auto px-4 py-4 w-full">
+    <div class="container mx-auto py-4 px-4 w-full">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div class="grid grid-rows-2 grid-flow-col">
-          <div class="flex gap-4"><select class="select select-primary flex-none w-24">
-            <option>v0.1</option>
-          </select>
+          <div class="text-center pb-2">Download the building data from EUBUCCO:</div>
+          <div class="flex gap-4">
+            <select class="select select-primary flex-none w-24">
+              <option>v0.1</option>
+            </select>
             <select id="countryDropdown" class="select select-primary flex-auto min-w-fit">
               <option disabled selected>Select Country</option>
-            </select></div>
-          <div class="text-sm text-center">Download the building data from EUBUCCO v0.1 as</div>
+            </select>
+          </div>
         </div>
 
         <div class="grid grid-rows-2 grid-flow-col">
+          <div class="text-center pb-2">Full file with geometries & attributes</div>
           <a id="downloadCountryLinkPKG" href="" class="btn btn-primary" disabled="disabled">Download GPKG</a>
-          <div class="text-sm text-center">Geopackage - footprint geometries + building attributes</div>
         </div>
 
         <div class="grid grid-rows-2 grid-flow-col">
-          <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download attributes-only
-            CSV</a>
-          <div class="text-sm text-center">CSV - building attributes only (height, type, and age)</div>
+          <div class="text-center pb-2">Attributes without geometries</div>
+          <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download CSV</a>
         </div>
         {#        <h1>For more info</h1>#}
 
@@ -54,8 +56,12 @@
         {#        <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download attributes-only#}
         {#          CSV</a>#}
       </div>
-              <p class="text-center">For scientific citation please refer to <a class="link" href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>;
-        for details on API, License and additional Files refer to our <a class="link" href="{% url 'docs' %}">Docs</a>.</p>
+      <p class="text-center">For details about the license, API and metadata, refer to our <a class="link"
+                                                                                              href="{% url 'docs' %}">Docs</a>.
+        The data is also archived on the scientific repository <a class="link"
+                                                                  href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>
+      </p>
+
       {#      <div class="max-w-5xl">#}
       {#        <p>Download the building data from EUBUCCO v0.1 as:</p>#}
       {#        <ul class="list-disc">#}
@@ -109,7 +115,7 @@
       {#        Zenodo version-specific DOI: XXX“</p>#}
 
       {#      </div>#}
-      <h1 class="">Examples</h1>
+      <h1 class="text-center pt-16">Examples</h1>
 
       <div class="container mx-auto px-4 py-4 w-full">
         <div class="overflow-x-auto">
@@ -129,7 +135,7 @@
                 <td>{{ example.city | capfirst }}</td>
                 <td><a href="{{ example.gpkg_link }}" class="link">Download full gpkg
                   ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)</a></td>
-                <td><a href="{{ example.csv_link }}" class="link">Download attributes-only csv
+                <td><a href="{{ example.csv_link }}" class="link">Download csv
                   ({{ example.csv_size_in_mb |floatformat:1 }}
                   Mb)</a></td>
               </tr>
@@ -138,7 +144,7 @@
           </table>
         </div>
         <div class="container mx-auto px-4 py-4 w-full">
-          <h1 class="pt-20">Additional Files</h1>
+          <h1 class="pt-20 text-center">Additional Files</h1>
         </div>
         <div class="overflow-x-auto">
 
@@ -227,15 +233,18 @@
       return convertedCoordinates
     }
 
+    function resetMapPolygons() {
+      polylines.forEach(function (polyline, index) {
+        polyline.remove()
+      })
+      polylines = []
+    }
 
     function updateMapPolygons(wkt_polygon_list, zoom, reset = true) {
       let latlang;
 
       if (reset) {
-        polylines.forEach(function (polyline, index) {
-          polyline.remove()
-        })
-        polylines = []
+        resetMapPolygons()
       }
       wkt_polygon_list.forEach(function (wkt_polygon, index) {
         polygon.read(wkt_polygon)
@@ -254,22 +263,39 @@
       countries.sort((a, b) => a.name.localeCompare(b.name))
       countryDropdown.innerHTML = '<option disabled selected>Select Country</option>'
       Object.entries(countries).forEach(
-              ([key, country]) => countryDropdown.innerHTML += `<option value=${country.id}> ${country.name}</option>`
+        ([key, country]) => countryDropdown.innerHTML += `<option value=${country.id}> ${country.name}</option>`
       );
     };
 
 
     const onSelectCountry = async () => {
       selectedCountry = countries.filter(country => country.id === parseInt(countryDropdown.options[countryDropdown.selectedIndex].value))[0]
-      updateMapPolygons([selectedCountry.geometry], 4)
+      if (selectedCountry.convex_hull !== null) {
+        updateMapPolygons([selectedCountry.convex_hull], 4)
+      } else {
+        resetMapPolygons()
+      }
       var download_link_csv = document.getElementById("downloadCountryLinkCSV");
-      download_link_csv.setAttribute("href", selectedCountry.csv_link)
-      download_link_csv.innerHTML = `Download attributes-only CSV (${Math.round(selectedCountry.csv_size_in_mb)} MB)`
-      download_link_csv.removeAttribute('disabled');
-      var download_link_pkg = document.getElementById("downloadCountryLinkPKG");
-      download_link_pkg.setAttribute("href", selectedCountry.gpkg_link)
-      download_link_pkg.innerHTML = `Download full GPKG (${Math.round(selectedCountry.gpkg_size_in_mb)} MB)`
-      download_link_pkg.removeAttribute('disabled');
+      if (selectedCountry.csv === null) {
+        download_link_csv.setAttribute("disabled", "disabled")
+        download_link_csv.innerHTML = `Not available`
+        download_link_csv.removeAttribute('href');
+      } else {
+        download_link_csv.setAttribute("href", selectedCountry.csv.download_link)
+        download_link_csv.innerHTML = `Download attributes-only CSV (${Math.round(selectedCountry.csv.size_in_mb)} MB)`
+        download_link_csv.removeAttribute('disabled');
+      }
+
+      var download_link_gpkg = document.getElementById("downloadCountryLinkPKG");
+      if (selectedCountry.gpkg === null) {
+        download_link_gpkg.setAttribute("disabled", "disabled")
+        download_link_gpkg.innerHTML = `Not available`
+        download_link_gpkg.removeAttribute('href');
+      } else {
+        download_link_gpkg.setAttribute("href", selectedCountry.gpkg.download_link)
+        download_link_gpkg.innerHTML = `Download full GPKG (${Math.round(selectedCountry.gpkg.size_in_mb)} MB)`
+        download_link_gpkg.removeAttribute('disabled');
+      }
     }
 
     document.addEventListener("DOMContentLoaded", () => {

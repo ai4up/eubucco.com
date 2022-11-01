@@ -1,0 +1,20 @@
+version: "3"
+services:
+  jupyter:
+    image: jupyter/scipy-notebook
+    volumes:
+      - /home/app/eubucco/csvs:/home/jovyan/csvs:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.plausible.entrypoints=http"
+      - "traefik.http.routers.plausible.rule=Host(`lab.eubucco.com`)"
+      - "traefik.http.middlewares.plausible-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.plausible.middlewares=plausible-https-redirect"
+      - "traefik.http.routers.plausible-secure.entrypoints=https"
+      - "traefik.http.routers.plausible-secure.rule=Host(`lab.eubucco.com`)"
+      - "traefik.http.routers.plausible-secure.tls=true"
+      - "traefik.http.routers.plausible-secure.tls.certresolver=http"
+      - "traefik.http.routers.plausible-secure.service=plausible"
+      - "traefik.http.services.plausible.loadbalancer.server.port=8888"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.plausible-secure.middlewares=secHeaders@file"

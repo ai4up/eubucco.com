@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('ingested_on', models.DateTimeField(auto_now_add=True)),
                 ('size_in_mb', models.FloatField()),
                 ('path', models.FilePathField(max_length=200, unique=True)),
-                ('type', models.CharField(choices=[('BE', 'building'), ('EX', 'example'), ('AD', 'additional')], db_index=True, max_length=2)),
+                ('type', models.CharField(choices=[('BU', 'building'), ('EX', 'example'), ('AD', 'additional')], db_index=True, max_length=2)),
             ],
         ),
     ]

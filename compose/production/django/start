@@ -5,8 +5,13 @@ set -o pipefail
 set -o nounset
 
 # Create minified tailwindcss stylesheet
-#python /app/manage.py tailwind build
+python manage.py tailwind install
+python manage.py tailwind build
 
-python /app/manage.py collectstatic --noinput
+# Migrate Database
+python manage.py migrate
+
+# Prepare static files
+python manage.py collectstatic --noinput
 
 /usr/local/bin/gunicorn config.asgi --bind 0.0.0.0:5000 --chdir=/app -k uvicorn.workers.UvicornWorker

@@ -30,6 +30,11 @@ django_application = get_asgi_application()
 # Import websocket application here, so apps from django_application are loaded first
 from config.websocket import websocket_application  # noqa isort:skip
 
+# Reset Cache on Startup
+from django.core.cache import cache  # noqa isort:skip
+
+cache.clear()
+
 
 async def application(scope, receive, send):
     if scope["type"] == "http":

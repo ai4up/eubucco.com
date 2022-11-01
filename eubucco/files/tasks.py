@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 from time import sleep
-from uuid import UUID
 
 import redis
 from pottery import synchronize
@@ -23,7 +22,7 @@ DIRS = [
 ]
 
 
-def ingest_file(path_str: str, file_type: str) -> UUID:
+def ingest_file(path_str: str, file_type: FileType) -> File:
     path = Path(path_str)
     file = File.objects.filter(path=path_str).first()
     if file:
@@ -32,16 +31,17 @@ def ingest_file(path_str: str, file_type: str) -> UUID:
         file.name = path.name
         file.type = FileType(file_type)
         file.save()
-    else:
-        logging.info(f"Detected file {file}")
-        file = File(
-            name=path.name,
-            size_in_mb=get_file_size(path_str),
-            path=str(path),
-            type=FileType(file_type),
-        )
-        file.save()
-    return file.id
+        return file
+
+    logging.info(f"Detected new file at {path}")
+    file = File(
+        name=path.name,
+        size_in_mb=get_file_size(path_str),
+        path=str(path),
+        type=FileType(file_type),
+    )
+    file.save()
+    return file
 
 
 @celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
@@ -52,7 +52,7 @@ def scan_files():
         pathlist = Path(dir)
         for path in pathlist.glob("*"):
             if not path.name.startswith("."):
-                ingest_file(path_str=str(path), file_type=str(file_type))
+                ingest_file(path_str=str(path), file_type=file_type)
 
 
 @celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
