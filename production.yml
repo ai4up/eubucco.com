@@ -7,8 +7,8 @@ volumes:
 
 services:
   django:
-    image: eubucco/eubucco.com:dev
-    container_name: eubucco_dev_django
+    image: eubucco/eubucco.com:production
+    container_name: eubucco_django
     depends_on:
       - postgres
       - redis
@@ -47,11 +47,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.django.entrypoints=http"
-      - "traefik.http.routers.django.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.routers.django.rule=Host(`eubucco.com`)"
       - "traefik.http.middlewares.django-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.django.middlewares=django-https-redirect"
       - "traefik.http.routers.django-secure.entrypoints=https"
-      - "traefik.http.routers.django-secure.rule=Host(`dev.eubucco.com`)"
+      - "traefik.http.routers.django-secure.rule=Host(`eubucco.com`)"
       - "traefik.http.routers.django-secure.tls=true"
       - "traefik.http.routers.django-secure.tls.certresolver=http"
       - "traefik.http.routers.django-secure.service=django"
@@ -61,8 +61,8 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   api:
-    image: eubucco/eubucco.com:dev
-    container_name: eubucco_dev_api
+    image: eubucco/eubucco.com:production
+    container_name: eubucco_api
     command: /start-api
     depends_on:
       - postgres
@@ -113,8 +113,8 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   docs:
-    image: eubucco/eubucco.com:dev
-    container_name: eubucco_dev_docs
+    image: eubucco/eubucco.com:production
+    container_name: eubucco_docs
     command: /start-docs
     restart: unless-stopped
     networks:
@@ -248,7 +248,7 @@ services:
       - default
 
   celeryworker:
-    image: eubucco/eubucco.com:dev
+    image: eubucco/eubucco.com:production
     restart: unless-stopped
     depends_on:
       - postgres
@@ -284,7 +284,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   celerybeat:
-    image: eubucco/eubucco.com:dev
+    image: eubucco/eubucco.com:production
     depends_on:
       - postgres
       - redis
@@ -317,7 +317,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   flower:
-    image: eubucco/eubucco.com:dev
+    image: eubucco/eubucco.com:production
     restart: unless-stopped
     depends_on:
       - postgres
