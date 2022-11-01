@@ -255,7 +255,7 @@ def create_polygon_for_country(country_id: int):
         logging.info(f"Polygons for {country.name} are done!")
 
 
-@celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
+@celery_app.task(soft_time_limit=60 * 60 * 12, hard_time_limit=(60 * 60 * 12) + 1)
 @synchronize(
     key="eubucco.ingest.tasks.main",
     masters={r},
