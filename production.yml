@@ -47,7 +47,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.django.entrypoints=http"
-      - "traefik.http.routers.django.rule=Host(`eubucco.com`, `www.eubucco.com`)"
+      - "traefik.http.routers.django.rule=Host(`eubucco.com`) || Host(`www.eubucco.com`)"
       - "traefik.http.middlewares.django-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.django.middlewares=django-https-redirect"
       - "traefik.http.routers.django-secure.entrypoints=https"
