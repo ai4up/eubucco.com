@@ -32,11 +32,11 @@ def get_all_countries():
     return list(Country.objects.all().defer("geometry").prefetch_related())
 
 
-@router.get("/{country_id}/{type}", response_class=FileResponse)
-async def download_example(country_id, type):
+@router.get("/{country_id}/{file_type}", response_class=FileResponse)
+async def download_example(country_id, file_type):
     try:
         country = await sync_to_async(Country.objects.get)(pk=country_id)
-        if type == "csv":
+        if file_type == "csv":
             return FileResponse(
                 f"{country.csv_path}",
                 headers={
@@ -44,7 +44,7 @@ async def download_example(country_id, type):
                 },
             )
 
-        if type == "gpkg":
+        if file_type == "gpkg":
             return FileResponse(
                 f"{country.gpkg_path}",
                 headers={
