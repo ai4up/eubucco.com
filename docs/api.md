@@ -2,7 +2,7 @@
 
 ## API Explorer
 
-[API Explorer](http://0.0.0.0:8000/api/v1/docs)
+[API Explorer](https://api.eubucco.com/)
 
 The API Explorer offers an easy way to interact and understand out API. 
 
