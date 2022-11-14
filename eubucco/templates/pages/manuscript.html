@@ -1,22 +1,43 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-{#  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"#}
-{#          integrity="sha512-tqaIiFJopq4lTBmFlWF0MNzzTpDsHyug8tJaaY0VkcH5AR2ANMJlcD+3fIL+RQ4JU3K6edt9OoySKfCCyKgkng=="#}
-{#          crossorigin="anonymous" referrerpolicy="no-referrer"></script>#}
-{#  <iframe src="/web/viewer.html?file={% static 'docs/EUBUCCO-v01.pdf' %}"></iframe>#}
-  <object
+  <div id="pdf_viewer" class="flex items-center justify-center h-screen">
+    <a class="btn btn-primary" href="{% static 'docs/EUBUCCO-v01.pdf' %}">View Manuscript</a>
+  </div>
+
+  <script>
+    function iOS() {
+      return [
+          'iPad Simulator',
+          'iPhone Simulator',
+          'iPod Simulator',
+          'iPad',
+          'iPhone',
+          'iPod'
+        ].includes(navigator.platform)
+        // iPad on iOS 13 detection
+        || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+    }
+
+    pdfViewerDiv = document.getElementById("pdf_viewer");
+
+    console.log("HELLO")
+    if (!iOS()) {
+      pdfViewerDiv.innerHTML = `    <object
           data="{% static 'docs/EUBUCCO-v01.pdf' %}"
           type="application/pdf"
           aria-labelledby="PDF document"
           class="w-full h-[calc(100vh-64px)]"
-  >
-    <iframe class="w-full h-[calc(100vh-64px)]" src="{% static 'docs/EUBUCCO-v01.pdf' %}" allowfullscreen>
-      <p>
-        Your browser does not support PDFs.
-        <a href="{% static 'docs/EUBUCCO-v01.pdf' %}">Download the PDF</a>
-      </p>
-    </iframe>
-  </object>
+    >
+      <iframe class="w-full h-[calc(100vh-64px)]" src="{% static 'docs/EUBUCCO-v01.pdf' %}" allowfullscreen>
+        <p>
+          Your browser does not support PDFs.
+          <a href="{% static 'docs/EUBUCCO-v01.pdf' %}">Download the PDF</a>
+        </p>
+      </iframe>
+    </object>`
+    }
 
+
+  </script>
 {% endblock content %}
