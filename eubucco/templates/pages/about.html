@@ -1,2 +1,24 @@
 {% extends "base.html" %}
-<p>All about mee</p>
+{% load static %}
+{% block content %}
+  <div class="flex justify-center items-center">
+    <div class="grid max-w-5xl py-4 lg:grid-cols-2 gap-4">
+      <article class="prose-2xl">
+
+        <h2>About</h2>
+        <p>Mercator Research Institute on Global Commons and Climate Change (MCC) <br>
+        EUREF Campus 19 <br>
+        Torgauer Straße 12-15 <br>
+        10829 Berlin</p>
+      </article>
+      <div class="place-self-center">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2429.87419833718!2d13.353446015983938!3d52.4814134468402!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47a8506b2e2e838f%3A0xfc523d77ca01ff72!2sMercator%20Research%20Institute%20on%20Global%20Commons%20and%20Climate%20Change%20(MCC)%20gGmbH!5e0!3m2!1sde!2sde!4v1668166427951!5m2!1sde!2sde"
+          width="450" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </div>
+
+
+{% endblock content %}
