@@ -139,56 +139,64 @@
 {#    </ul>#}
 {#  </div>#}
 {#</div>#}
-<header class="sticky top-0 z-50">
-  <div class="navbar w-full bg-base-300">
-    <div class="flex-1 px-2 mx-2"><a href="/">EUBUCCO</a></div>
-    <div class="flex-none lg:hidden">
-      <label for="my-drawer" class="btn btn-square btn-ghost">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-             class="inline-block w-6 h-6 stroke-current">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-      </label>
-    </div>
-    <div class="flex-none hidden lg:block">
-      <ul class="menu menu-horizontal">
-        <!-- Navbar menu content here -->
-        {#        <li><a href="/">Home</a></li>#}
-        <li><a href="{% url 'data:index' %}">Data</a></li>
-        <li><a href="{% url 'docs' %}">Docs</a></li>
-        <li><a href="{% url 'data:map' %}#3.98/48.52/7.49">Map</a></li>
-        <li><a href="{% url 'paper' %}">Paper</a></li>
-        {#              <li><a href="{% url 'blog:index' %}">Blog</a></li>#}
-        {#              <li><a href="http://0.0.0.0:7800/" target="_blank" rel="noopener noreferrer">Tile Server</a></li>#}
-        {#              <li><a href="/api/v1/docs" target="_blank" rel="noopener noreferrer">API Docs</a></li>#}
-        <li><a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer">
-          <div class="w-6 rounded"><img src="{% static 'images/white_github.png' %}"/></div>
-        </a></li>
 
-        {#              <li><a href="http://0.0.0.0:9000/" target="_blank" rel="noopener noreferrer">Docs</a></li>#}
-        {##}
-        {#              {% if request.user.is_authenticated %}#}
-        {#                <li><a class="nav-link" href="{% url 'account_logout' %}">Sign Out</a></li>#}
-        {#                <li><a href="{% url 'users:detail' request.user.username %}">{{ request.user.username }}</a></li>#}
-        {#              {% else %}#}
-        {#                <li><a href="{% url 'account_signup' %}">Register</a></li>#}
-        {#                <li><a href="{% url 'account_login' %}">Login</a></li>#}
-        {#              {% endif %}#}
-      </ul>
-    </div>
-    {#                </div>#}
-  </div>
-</header>
-<div class="drawer h-[calc(100vh-64px)] drawer-end">
+<div class="drawer drawer-end">
   <input id="my-drawer" type="checkbox" class="drawer-toggle"/>
   <div class="drawer-content">
     <div class="flex flex-col">
 
-      <div class="">
+      <div class=" flex flex-col">
         {#    <!-- Page content here -->#}
+        <header class="sticky top-0 z-50">
+          <div class="navbar w-full bg-base-300">
+            <div class="flex-1 px-2 mx-2"><a href="/">EUBUCCO</a></div>
+            <div class="flex-none lg:hidden">
+              <label for="my-drawer" class="btn btn-square btn-ghost">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                     class="inline-block w-6 h-6 stroke-current">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+              </label>
+            </div>
+            <div class="flex-none hidden lg:block">
+              <ul class="menu menu-horizontal">
+                <!-- Navbar menu content here -->
+                {#        <li><a href="/">Home</a></li>#}
+                <li><a href="{% url 'data:index' %}">Data</a></li>
+                <li><a href="{% url 'docs' %}">Docs</a></li>
+                <li><a href="{% url 'data:map' %}#3.98/48.52/7.49">Map</a></li>
+                <li><a href="{% url 'paper' %}">Paper</a></li>
+                {#              <li><a href="{% url 'blog:index' %}">Blog</a></li>#}
+                {#              <li><a href="http://0.0.0.0:7800/" target="_blank" rel="noopener noreferrer">Tile Server</a></li>#}
+                {#              <li><a href="/api/v1/docs" target="_blank" rel="noopener noreferrer">API Docs</a></li>#}
+                <li><a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer">
+                  <div class="w-6 rounded"><img src="{% static 'images/white_github.png' %}"/></div>
+                </a></li>
+
+                {#              <li><a href="http://0.0.0.0:9000/" target="_blank" rel="noopener noreferrer">Docs</a></li>#}
+                {##}
+                {#              {% if request.user.is_authenticated %}#}
+                {#                <li><a class="nav-link" href="{% url 'account_logout' %}">Sign Out</a></li>#}
+                {#                <li><a href="{% url 'users:detail' request.user.username %}">{{ request.user.username }}</a></li>#}
+                {#              {% else %}#}
+                {#                <li><a href="{% url 'account_signup' %}">Register</a></li>#}
+                {#                <li><a href="{% url 'account_login' %}">Login</a></li>#}
+                {#              {% endif %}#}
+              </ul>
+            </div>
+            {#                </div>#}
+          </div>
+        </header>
+
         {% block content %}
         {% endblock content %}
+        <footer class="footer p-4 bg-base-300 text-neutral-content justify-center bottom-0 mt-auto">
+          <div class="items-center grid-flow-col">
+            <p>Created @ <a class="link" href="https://www.mcc-berlin.net/">mcc-berlin.net</a></p>
+            <a class="link" href="{% url 'about' %}">About</a>
+          </div>
+        </footer>
       </div>
     </div>
   </div>
@@ -215,6 +223,5 @@
 {#  </article>#}
 {#</div>#}
 </div>
-
 </body>
 </html>
