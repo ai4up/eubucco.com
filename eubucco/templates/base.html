@@ -188,7 +188,7 @@
             {#                </div>#}
           </div>
         </header>
-        <div class="min-h-[calc(var(--app-height)-116px)]">
+        <div class="min-h-[var(--content-height)]">
           {% block content %}
           {% endblock content %}
         </div>
@@ -231,6 +231,9 @@
     const doc = document.documentElement
     doc.style.setProperty(`--app-height`,
       `${window.innerHeight}px`
+    )
+    doc.style.setProperty(`--content-height`,
+      `${window.innerHeight - 116}px`
     )
   }
   window.addEventListener(`resize`,
