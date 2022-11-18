@@ -1,36 +1,30 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-  <div id="pdf_viewer" class="flex h-[calc(100vh-149px)] justify-center items-center">
-    <div class="text-center">
-      <a class="btn btn-primary" href="{% static 'docs/EUBUCCO-v01.pdf' %}">View Manuscript</a>
-    </div>
+  <div id="pdf_viewer" class="flex items-center justify-center h-[var(--content-height)]">
+    <a class="btn btn-primary" href="{% static 'docs/EUBUCCO-v01.pdf' %}">View Paper</a>
   </div>
-{#  <div id="pdf_viewer" class="flex items-center justify-center h-screen]">#}
-{#    <a class="btn btn-primary" href="{% static 'docs/EUBUCCO-v01.pdf' %}">View Manuscript</a>#}
-{#  </div>#}
 
 
+  <script>
+    function iOS() {
+      return [
+          'iPad Simulator',
+          'iPhone Simulator',
+          'iPod Simulator',
+          'iPad',
+          'iPhone',
+          'iPod'
+        ].includes(navigator.platform)
+        // iPad on iOS 13 detection
+        || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+    }
 
-    <script>
-      function iOS() {
-        return [
-            'iPad Simulator',
-            'iPhone Simulator',
-            'iPod Simulator',
-            'iPad',
-            'iPhone',
-            'iPod'
-          ].includes(navigator.platform)
-          // iPad on iOS 13 detection
-          || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
-      }
+    pdfViewerDiv = document.getElementById("pdf_viewer");
 
-      pdfViewerDiv = document.getElementById("pdf_viewer");
-
-      if (!iOS()) {
-        pdfViewerDiv.className = '';
-        pdfViewerDiv.innerHTML = `  <object
+    if (!iOS()) {
+      pdfViewerDiv.className = '';
+      pdfViewerDiv.innerHTML = `  <object
       data="{% static 'docs/EUBUCCO-v01.pdf' %}"
       type="application/pdf"
       aria-labelledby="PDF document"
@@ -43,8 +37,8 @@
         </p>
       </iframe>
     </object>`
-      };
+    }
 
 
-    </script>
+  </script>
 {% endblock content %}
