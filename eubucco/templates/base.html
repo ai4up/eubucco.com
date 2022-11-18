@@ -145,7 +145,7 @@
   <div class="drawer-content">
     <div class="flex flex-col">
 
-      <div class=" flex flex-col">
+      <div class="flex flex-col">
         {#    <!-- Page content here -->#}
         <header class="sticky top-0 z-50">
           <div class="navbar w-full bg-base-300">
@@ -188,9 +188,12 @@
             {#                </div>#}
           </div>
         </header>
+        <div class="min-h-[calc(var(--app-height)-116px)]">
+          {% block content %}
+          {% endblock content %}
+        </div>
 
-        {% block content %}
-        {% endblock content %}
+
         <footer class="footer p-4 bg-base-300 text-neutral-content justify-center bottom-0 mt-auto">
           <div class="items-center grid-flow-col">
             <p>Created @ <a class="link" href="https://www.mcc-berlin.net/">mcc-berlin.net</a></p>
@@ -223,5 +226,17 @@
 {#  </article>#}
 {#</div>#}
 </div>
+<script>
+  const appHeight = () => {
+    const doc = document.documentElement
+    doc.style.setProperty(`--app-height`,
+      `${window.innerHeight}px`
+    )
+  }
+  window.addEventListener(`resize`,
+    appHeight
+  )
+  appHeight()
+</script>
 </body>
 </html>
