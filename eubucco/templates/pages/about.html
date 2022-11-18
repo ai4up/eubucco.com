@@ -1,20 +1,27 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
-  <div class="flex justify-center items-center">
-    <div class="grid max-w-5xl py-4 lg:grid-cols-2 gap-4">
-      <article class="prose-2xl">
-
+  <div class="flex justify-center items-center h-[var(--content-height)]">
+    <div class="grid max-w-5xl py-8 lg:grid-cols-2 gap-4">
+      <article class="prose sm:prose-2xl">
         <h2>About</h2>
-        <p>Mercator Research Institute on Global Commons and Climate Change (MCC) <br>
-        EUREF Campus 19 <br>
-        Torgauer Straße 12-15 <br>
-        10829 Berlin</p>
+        <p>Sustainability Economics of Human Settlements<br>
+          Technische Universität Berlin<br>
+          Straße des 17. Juni 145<br>
+          10623 Berlin<br>
+          email: info[at]eubucco[dot]com</p>
       </article>
       <div class="place-self-center">
         <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2429.87419833718!2d13.353446015983938!3d52.4814134468402!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47a8506b2e2e838f%3A0xfc523d77ca01ff72!2sMercator%20Research%20Institute%20on%20Global%20Commons%20and%20Climate%20Change%20(MCC)%20gGmbH!5e0!3m2!1sde!2sde!4v1668166427951!5m2!1sde!2sde"
+          class="hidden block sm:visible sm:inline"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3483.837365957049!2d13.321514925748804!3d52.513036376702665!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47a8510377b41205%3A0xc4eeb84866781f75!2sStr.%20des%2017.%20Juni%20145%2C%2010623%20Berlin!5e0!3m2!1sde!2sde!4v1668768352182!5m2!1sde!2sde"
           width="450" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+
+        <iframe
+          class="sm:hidden sm:block"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4856.254475554419!2d13.321514925748804!3d52.513036376702665!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47a8510377b41205%3A0xc4eeb84866781f75!2sStr.%20des%2017.%20Juni%20145%2C%2010623%20Berlin!5e0!3m2!1sde!2sde!4v1668768564046!5m2!1sde!2sde"
+          width="250" height="250" style="border:0;" allowfullscreen="" loading="lazy"
           referrerpolicy="no-referrer-when-downgrade"></iframe>
       </div>
     </div>
