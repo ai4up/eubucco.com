@@ -4,10 +4,11 @@ from uuid import UUID
 
 from asgiref.sync import sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, root_validator, validator
 
+from eubucco.analytics.tasks import insert_download_analytics
 from eubucco.files.models import File
 
 router = APIRouter()
@@ -45,9 +46,13 @@ async def get_file_info(file_id):
 
 
 @router.get("/{file_id}/download", response_class=FileResponse)
-async def download_file(file_id):
+async def download_file(request: Request, file_id: str):
     try:
         file = await sync_to_async(File.objects.get)(pk=file_id)
+        referer = request.headers.get("referer")
+        is_api = False if referer else True
+        await sync_to_async(insert_download_analytics)(file.id, is_api)
+
         return FileResponse(
             f"{file.path}",
             headers={
