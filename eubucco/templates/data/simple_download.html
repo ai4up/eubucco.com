@@ -135,9 +135,9 @@
             {% for example in examples %}
               <tr>
                 <td>{{ example.city | capfirst }}</td>
-                <td><a href="{{ example.gpkg_link }}" class="link">Download full gpkg
+                <td><a href="{{ example.gpkg_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download full gpkg
                   ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)</a></td>
-                <td><a href="{{ example.csv_link }}" class="link">Download csv
+                <td><a href="{{ example.csv_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download csv
                   ({{ example.csv_size_in_mb |floatformat:1 }}
                   Mb)</a></td>
               </tr>
@@ -164,7 +164,7 @@
             {% for file in additional_files %}
               <tr>
                 <td>{{ file.name }}</td>
-                <td><a href="{{ file.download_link }}" class="link">Download file
+                <td><a href="{{ file.download_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download file
                   ({{ file.size_in_mb |floatformat:2 }} Mb)</a></td>
                 <td>{{ file.info }}</td>
               </tr>
@@ -284,6 +284,7 @@
         download_link_csv.removeAttribute('href');
       } else {
         download_link_csv.setAttribute("href", selectedCountry.csv.download_link)
+        download_link_csv.setAttribute("referrerpolicy", "strict-origin-when-cross-origin")
         download_link_csv.innerHTML = `Download attributes-only CSV (${Math.round(selectedCountry.csv.size_in_mb)} MB)`
         download_link_csv.removeAttribute('disabled');
       }
@@ -295,6 +296,7 @@
         download_link_gpkg.removeAttribute('href');
       } else {
         download_link_gpkg.setAttribute("href", selectedCountry.gpkg.download_link)
+        download_link_gpkg.setAttribute("referrerpolicy", "strict-origin-when-cross-origin")
         download_link_gpkg.innerHTML = `Download full GPKG (${Math.round(selectedCountry.gpkg.size_in_mb)} MB)`
         download_link_gpkg.removeAttribute('disabled');
       }
