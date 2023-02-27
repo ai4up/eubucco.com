@@ -210,6 +210,7 @@ services:
 
   postgres:
     image: eubucco/postgis:latest
+    container_name: dev-db
     restart: unless-stopped
     volumes:
       - production_postgres_data:/var/lib/postgresql/data:Z
