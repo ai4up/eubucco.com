@@ -7,6 +7,7 @@ services:
     networks:
       - proxy
       - default
+      - dev-db
 
     environment:
       JUPYTER_TOKEN: $JUPYTER_TOKEN
@@ -29,4 +30,6 @@ services:
 networks:
   default:
   proxy:
+    external: true
+  dev-db:
     external: true

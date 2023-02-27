@@ -216,6 +216,7 @@ services:
       - production_postgres_data_backups:/backups:z
     networks:
       - default
+      - dev-db
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -370,3 +371,5 @@ networks:
   default:
   proxy:
     external: true
+  dev-db:
+    name: dev-db
