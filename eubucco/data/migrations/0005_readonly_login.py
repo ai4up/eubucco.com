@@ -5,7 +5,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('data', '0004_readonly_login'),
+        ('data', '0004_readonly'),
     ]
 
     operations = [
