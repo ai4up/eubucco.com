@@ -26,6 +26,12 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.lab-secure.middlewares=secHeaders@file"
 
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2GB
+
 
 networks:
   default:
