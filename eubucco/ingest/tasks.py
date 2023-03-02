@@ -63,12 +63,26 @@ def ingest_new_csvs():
         ingest_csv.delay(str(path))
 
 
+def recursion_upack(extracted_path: str):
+    """this is only needed because germany is zipped in sub files that are zipped as well
+    to be reomved in future iterations!"""
+    pathlist = Path(extracted_path).rglob("*.gpkg.zip")
+    logging.info(f"Recursion unpack triggered at {extracted_path}")
+    for path in pathlist:
+        if not str(path).split("/")[-1].startswith("."):
+            logging.info(f"Recursion unpacking {path}")
+            with zipfile.ZipFile(path, "r") as zip_ref:
+                zip_ref.extractall(extracted_path)
+
+
 def unpack_csv(zipped_csv_path: str) -> str:
-    logging.debug(f"Unpacking {zipped_csv_path}")
+    logging.info(f"Unpacking {zipped_csv_path}")
     extracted_path = zipped_csv_path.replace("csvs", "cache").replace(".gpkg.zip", "")
+    logging.info(f"To location {extracted_path}")
     with zipfile.ZipFile(zipped_csv_path, "r") as zip_ref:
         zip_ref.extractall(extracted_path)
 
+    recursion_upack(extracted_path)
     return extracted_path
 
 
