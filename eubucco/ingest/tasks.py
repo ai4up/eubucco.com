@@ -99,7 +99,7 @@ def find_file(gdam: str, type: str) -> tuple[bool, str]:
 
 
 @celery_app.task(
-    soft_time_limit=60 * 60 * 24 * 2, hard_time_limit=(60 * 60 * 24 * 2) + 1
+    soft_time_limit=60 * 60 * 24 * 7, hard_time_limit=(60 * 60 * 24 * 7) + 1
 )
 def ingest_boundaries():
     available_countries = []
