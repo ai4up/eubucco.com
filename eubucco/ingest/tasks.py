@@ -135,7 +135,7 @@ def ingest_boundaries():
     df["city_id"] = [id.split("-")[1] for id in df["id"]]
     df_boundaries = gpd.read_file(GADM_CITY_GEO)
 
-    logging.info("Updateing city boundaries!")
+    logging.info("Updating city boundaries!")
     for i, boundary in df_boundaries.iterrows():
         if boundary.gadm_code in available_countries:
             cities = df.loc[df.city_id == boundary.city_id]
@@ -150,7 +150,7 @@ def ingest_boundaries():
             else:
                 logging.warning(f"City not in ADMIN CODE MATCHES {boundary}")
 
-    logging.info("Updateing region boundaries!")
+    logging.info("Updating region boundaries!")
     for region in Region.objects.all():
         logging.info(f"Ingesting boundary of {region}")
         region.geometry = City.objects.filter(in_region=region).aggregate(
