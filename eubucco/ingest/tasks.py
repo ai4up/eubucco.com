@@ -13,7 +13,7 @@ import pandas as pd
 import redis
 from django.contrib.gis.db.models import Union
 from django.contrib.gis.geos import MultiPolygon
-from pottery import synchronize
+from pottery import Redlock
 
 from config import celery_app
 from eubucco.data.models import Building, City, Country, Region
@@ -160,7 +160,7 @@ def ingest_boundaries():
 
 
 @celery_app.task(
-    soft_time_limit=60 * 60 * 24 * 2, hard_time_limit=(60 * 60 * 24 * 2) + 1
+    soft_time_limit=60 * 60 * 24 * 7, hard_time_limit=(60 * 60 * 24 * 7) + 1
 )
 def ingest_csv(zipped_gpkg_path: str):
     chunksize = (
@@ -270,15 +270,7 @@ def create_polygon_for_country(country_id: int):
 
 
 @celery_app.task(soft_time_limit=60 * 60 * 12, hard_time_limit=(60 * 60 * 12) + 1)
-@synchronize(
-    key="eubucco.ingest.tasks.main",
-    masters={r},
-    auto_release_time=20,
-    blocking=True,
-    timeout=1,
-)
 def start_ingestion_tasks():
-    sleep(10)
     ingest_boundaries()
     ingest_new_csvs.delay()
 
@@ -287,7 +279,14 @@ def start_ingestion_tasks():
 def main():
     """In dev mode django and the watcher are started. We use this main function to start
     the ingestion tasks only once with the lock applied here!"""
-    start_ingestion_tasks.delay()
+
+    lock = Redlock(key="eubucco.ingest.tasks.main", masters={r}, auto_release_time=20)
+    if lock.acquire(blocking=False):
+        start_ingestion_tasks.delay()
+        sleep(10)
+        lock.release()
+    else:
+        logging.debug("Ingestion is already running on other thread")
 
 
 main()
