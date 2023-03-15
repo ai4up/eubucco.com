@@ -4,7 +4,7 @@ from pathlib import Path
 from time import sleep
 
 import redis
-from pottery import synchronize
+from pottery import Redlock
 
 from config import celery_app
 from eubucco.files.models import File, FileType
@@ -56,13 +56,6 @@ def scan_files():
 
 
 @celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
-@synchronize(
-    key="eubucco.examples.files.main",
-    masters={r},
-    auto_release_time=20,
-    blocking=True,
-    timeout=1,
-)
 def start_example_ingestion_tasks():
     sleep(10)
     scan_files.delay()
@@ -72,8 +65,14 @@ def start_example_ingestion_tasks():
 def main():
     """In dev mode django and the watcher are started. We use this main function to start
     the ingestion tasks only once with the lock applied here!"""
-    # logging.info("ASDASDASHDUOAISD")
-    start_example_ingestion_tasks.delay()
+
+    lock = Redlock(key="eubucco.examples.files.main", masters={r}, auto_release_time=20)
+    if lock.acquire(blocking=False):
+        start_example_ingestion_tasks.delay()
+        sleep(10)
+        lock.release()
+    else:
+        logging.debug("Ingestion is already running on other thread")
 
 
 main()

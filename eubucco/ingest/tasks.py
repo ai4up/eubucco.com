@@ -13,7 +13,7 @@ import pandas as pd
 import redis
 from django.contrib.gis.db.models import Union
 from django.contrib.gis.geos import MultiPolygon
-from pottery import synchronize
+from pottery import Redlock
 
 from config import celery_app
 from eubucco.data.models import Building, City, Country, Region
@@ -63,12 +63,26 @@ def ingest_new_csvs():
         ingest_csv.delay(str(path))
 
 
+def recursion_upack(extracted_path: str):
+    """this is only needed because germany is zipped in sub files that are zipped as well
+    to be reomved in future iterations!"""
+    pathlist = Path(extracted_path).rglob("*.gpkg.zip")
+    logging.info(f"Recursion unpack triggered at {extracted_path}")
+    for path in pathlist:
+        if not str(path).split("/")[-1].startswith("."):
+            logging.info(f"Recursion unpacking {path}")
+            with zipfile.ZipFile(path, "r") as zip_ref:
+                zip_ref.extractall(extracted_path)
+
+
 def unpack_csv(zipped_csv_path: str) -> str:
-    logging.debug(f"Unpacking {zipped_csv_path}")
+    logging.info(f"Unpacking {zipped_csv_path}")
     extracted_path = zipped_csv_path.replace("csvs", "cache").replace(".gpkg.zip", "")
+    logging.info(f"To location {extracted_path}")
     with zipfile.ZipFile(zipped_csv_path, "r") as zip_ref:
         zip_ref.extractall(extracted_path)
 
+    recursion_upack(extracted_path)
     return extracted_path
 
 
@@ -85,7 +99,7 @@ def find_file(gdam: str, type: str) -> tuple[bool, str]:
 
 
 @celery_app.task(
-    soft_time_limit=60 * 60 * 24 * 2, hard_time_limit=(60 * 60 * 24 * 2) + 1
+    soft_time_limit=60 * 60 * 24 * 7, hard_time_limit=(60 * 60 * 24 * 7) + 1
 )
 def ingest_boundaries():
     available_countries = []
@@ -121,7 +135,7 @@ def ingest_boundaries():
     df["city_id"] = [id.split("-")[1] for id in df["id"]]
     df_boundaries = gpd.read_file(GADM_CITY_GEO)
 
-    logging.info("Updateing city boundaries!")
+    logging.info("Updating city boundaries!")
     for i, boundary in df_boundaries.iterrows():
         if boundary.gadm_code in available_countries:
             cities = df.loc[df.city_id == boundary.city_id]
@@ -136,7 +150,7 @@ def ingest_boundaries():
             else:
                 logging.warning(f"City not in ADMIN CODE MATCHES {boundary}")
 
-    logging.info("Updateing region boundaries!")
+    logging.info("Updating region boundaries!")
     for region in Region.objects.all():
         logging.info(f"Ingesting boundary of {region}")
         region.geometry = City.objects.filter(in_region=region).aggregate(
@@ -146,7 +160,7 @@ def ingest_boundaries():
 
 
 @celery_app.task(
-    soft_time_limit=60 * 60 * 24 * 2, hard_time_limit=(60 * 60 * 24 * 2) + 1
+    soft_time_limit=60 * 60 * 24 * 7, hard_time_limit=(60 * 60 * 24 * 7) + 1
 )
 def ingest_csv(zipped_gpkg_path: str):
     chunksize = (
@@ -256,15 +270,7 @@ def create_polygon_for_country(country_id: int):
 
 
 @celery_app.task(soft_time_limit=60 * 60 * 12, hard_time_limit=(60 * 60 * 12) + 1)
-@synchronize(
-    key="eubucco.ingest.tasks.main",
-    masters={r},
-    auto_release_time=20,
-    blocking=True,
-    timeout=1,
-)
 def start_ingestion_tasks():
-    sleep(10)
     ingest_boundaries()
     ingest_new_csvs.delay()
 
@@ -273,7 +279,14 @@ def start_ingestion_tasks():
 def main():
     """In dev mode django and the watcher are started. We use this main function to start
     the ingestion tasks only once with the lock applied here!"""
-    start_ingestion_tasks.delay()
+
+    lock = Redlock(key="eubucco.ingest.tasks.main", masters={r}, auto_release_time=20)
+    if lock.acquire(blocking=False):
+        start_ingestion_tasks.delay()
+        sleep(10)
+        lock.release()
+    else:
+        logging.debug("Ingestion is already running on other thread")
 
 
 main()

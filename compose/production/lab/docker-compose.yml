@@ -7,6 +7,7 @@ services:
     networks:
       - proxy
       - default
+      - dev-db
 
     environment:
       JUPYTER_TOKEN: $JUPYTER_TOKEN
@@ -25,8 +26,16 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.lab-secure.middlewares=secHeaders@file"
 
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2GB
+
 
 networks:
   default:
   proxy:
+    external: true
+  dev-db:
     external: true
