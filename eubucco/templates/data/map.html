@@ -76,6 +76,9 @@
       <button id="switchChoroplethHeight" class="active">
         <div class="text-xl">Height</div>
       </button>
+      <button id="switchChoroplethAge">
+        <div class="text-xl">Age</div>
+      </button>
       <button id="switchChoroplethType">
         <div class="text-xl">Type</div>
       </button>
@@ -83,14 +86,14 @@
   </div>
 
 
-    <div id="toast" class="toast toast-center toast-top w-full flex pt-16">
-      <div class="alert alert-info justify-center">
-        <div class="justify-center">
-          <p class="justify-center">Here you can explore the data. Depending on your Zoom level you will see the
-            Countries, Region, Cities or Buildings!</p>
-        </div>
+  <div id="toast" class="toast toast-center toast-top w-full flex pt-16">
+    <div class="alert alert-info justify-center">
+      <div class="justify-center">
+        <p class="justify-center">Here you can explore the data. Depending on your Zoom level you will see the
+          Countries, Region, Cities or Buildings!</p>
       </div>
     </div>
+  </div>
 
   <script>
 
@@ -208,6 +211,35 @@
           ['get', 'height'],
           0,
           '#5e4ea6',
+          1600,
+          '#2f89be',
+          1700,
+          '#62c3a5',
+          1850,
+          '#addda3',
+          1950,
+          '#e6f697',
+          1980,
+          '#ffffba',
+          2000,
+          '#fce08c',
+          2010,
+          '#f46d45',
+          2020,
+          '#d3404a',
+          2030,
+          '#a00042'
+        ],
+        'fill-opacity': 0.75,
+      }
+
+      const ageChoropleth = {
+        'fill-color': [
+          'interpolate',
+          ['linear'],
+          ['get', 'age'],
+          0,
+          '#5e4ea6',
           10,
           '#2f89be',
           20,
@@ -252,8 +284,10 @@
 
           if (choroplethChoice === 'height') {
             config['paint'] = heightChoropleth
-          } else if ((choroplethChoice === 'type')) {
+          } else if (choroplethChoice === 'type') {
             config['paint'] = typeChoropleth
+          } else if (choroplethChoice === 'age') {
+            config['paint'] = ageChoropleth
           } else {
             config["paint"] = paints[paint]
           }
@@ -292,6 +326,7 @@
         document.getElementById("switchChoroplethOff").classList.add('active')
         document.getElementById("switchChoroplethHeight").classList.remove('active')
         document.getElementById("switchChoroplethType").classList.remove('active')
+        document.getElementById("switchChoroplethAge").classList.remove('active')
         choroplethChoice = 'off'
         resetLayers()
       }
@@ -300,14 +335,26 @@
         document.getElementById("switchChoroplethHeight").classList.add('active')
         document.getElementById("switchChoroplethOff").classList.remove('active')
         document.getElementById("switchChoroplethType").classList.remove('active')
+        document.getElementById("switchChoroplethAge").classList.remove('active')
         choroplethChoice = 'height'
         resetLayers()
       }
+
+      document.getElementById("switchChoroplethAge").onclick = function () {
+        document.getElementById("switchChoroplethAge").classList.add('active')
+        document.getElementById("switchChoroplethOff").classList.remove('active')
+        document.getElementById("switchChoroplethType").classList.remove('active')
+        document.getElementById("switchChoroplethHeight").classList.remove('active')
+        choroplethChoice = 'age'
+        resetLayers()
+      }
+
 
       document.getElementById("switchChoroplethType").onclick = function () {
         document.getElementById("switchChoroplethType").classList.add('active')
         document.getElementById("switchChoroplethHeight").classList.remove('active')
         document.getElementById("switchChoroplethOff").classList.remove('active')
+        document.getElementById("switchChoroplethAge").classList.remove('active')
         choroplethChoice = 'type'
         resetLayers()
       }
