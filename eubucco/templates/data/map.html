@@ -198,11 +198,27 @@
         return value
       }
 
+      function typeEnumToString(value) {
+        if (value === "UN") {
+          return 'Unknown'
+        } else if (value === "NR") {
+          return 'Non-residential'
+        } else {
+          return 'Residential'
+        }
+      }
+
       function featureHtml(f) {
         var p = f.properties;
         var h = "<p>";
         for (var k in p) {
-          h += "<b>" + k + ":</b> " + roundIfNeeded(p[k]) + "<br/>"
+          if (k === 'type') {
+            value = typeEnumToString(p[k])
+          } else {
+            value = roundIfNeeded(p[k])
+          }
+
+          h += "<b>" + k + ":</b> " + value + "<br/>"
         }
         h += "</p>";
         return h
