@@ -191,12 +191,18 @@
         }
       };
 
+      function roundIfNeeded(value) {
+        if (typeof value == 'number') {
+          return value.toFixed(2)
+        }
+        return value
+      }
 
       function featureHtml(f) {
         var p = f.properties;
         var h = "<p>";
         for (var k in p) {
-          h += "<b>" + k + ":</b> " + p[k] + "<br/>"
+          h += "<b>" + k + ":</b> " + roundIfNeeded(p[k]) + "<br/>"
         }
         h += "</p>";
         return h
