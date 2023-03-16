@@ -211,35 +211,6 @@
           ['get', 'height'],
           0,
           '#5e4ea6',
-          1600,
-          '#2f89be',
-          1700,
-          '#62c3a5',
-          1850,
-          '#addda3',
-          1950,
-          '#e6f697',
-          1980,
-          '#ffffba',
-          2000,
-          '#fce08c',
-          2010,
-          '#f46d45',
-          2020,
-          '#d3404a',
-          2030,
-          '#a00042'
-        ],
-        'fill-opacity': 0.75,
-      }
-
-      const ageChoropleth = {
-        'fill-color': [
-          'interpolate',
-          ['linear'],
-          ['get', 'age'],
-          0,
-          '#5e4ea6',
           10,
           '#2f89be',
           20,
@@ -257,6 +228,35 @@
           250,
           '#d3404a',
           500,
+          '#a00042'
+        ],
+        'fill-opacity': 0.75,
+      }
+
+      const ageChoropleth = {
+        'fill-color': [
+          'interpolate',
+          ['linear'],
+          ['get', 'age'],
+          0,
+          '#5e4ea6',
+          1600,
+          '#2f89be',
+          1700,
+          '#62c3a5',
+          1850,
+          '#addda3',
+          1950,
+          '#e6f697',
+          1980,
+          '#ffffba',
+          2000,
+          '#fce08c',
+          2010,
+          '#f46d45',
+          2020,
+          '#d3404a',
+          2030,
           '#a00042'
         ],
         'fill-opacity': 0.75,
@@ -280,8 +280,6 @@
           "filter": ["match", ["geometry-type"], [gtype, "Multi" + gtype], true, false],
         }
         if (id === 'public.data_building' && gtype === 'Polygon' && paint === 'fill') {
-          config['height'] = heightChoropleth
-
           if (choroplethChoice === 'height') {
             config['paint'] = heightChoropleth
           } else if (choroplethChoice === 'type') {
