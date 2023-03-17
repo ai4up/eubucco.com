@@ -32,9 +32,7 @@ urlpatterns = [
     ),
     path(
         "tutorials",
-        cache_page(60 * 60)(
-            TemplateView.as_view(template_name="pages/tutorial-getting-started.html")
-        ),
+        cache_page(60 * 60)(TemplateView.as_view(template_name="pages/tutorials.html")),
         name="tutorials",
     ),
     # Django Admin, use {% url 'admin:index' %}
