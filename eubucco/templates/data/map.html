@@ -296,6 +296,10 @@
         return value
       }
 
+      function removeTrailingZero(value) {
+        return value.split('.')[0]
+      }
+
       function typeEnumToString(value) {
         if (value === "RE") {
           return 'Residential'
@@ -357,6 +361,8 @@
         for (var k in p) {
           if (k === 'type') {
             value = typeEnumToString(p[k])
+          } else if (k === 'id_source'){
+            value = removeTrailingZero(p[k])
           } else {
             value = roundIfNeeded(p[k])
           }
