@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+  <iframe
+    class="min-h-[var(--content-height)]"
+    style="width:100%"
+    frameborder="0"
+    src="{% static 'html/tutorial-getting-started.html' %}"
+    >
+  </iframe>
+{% endblock content %}
