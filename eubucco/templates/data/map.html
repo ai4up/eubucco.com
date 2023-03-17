@@ -407,7 +407,7 @@
         for (var k in p) {
           if (k === 'type') {
             value = typeEnumToString(p[k])
-          } else if (k === 'id_source') {
+          } else if (k === 'id_source' || k === 'age') {
             value = removeTrailingZero(p[k])
           } else {
             value = roundIfNeeded(p[k])
