@@ -18,6 +18,18 @@
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="{% static 'js/leaflet-tilelayer-colorfilter.min.js' %}"></script>
 
+  <style>
+    :root {
+      --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .map-tiles {
+        filter: var(--map-tiles-filter, none);
+      }
+    }
+  </style>
+
   <div class="h-80 lg:h-96" id="map">
     {#    <div id="map"></div>#}
     {#    {% leaflet_map "yourmap" callback="window.map_init_basic" %}#}
@@ -28,7 +40,7 @@
 
   <article class="prose-2xl text-center lg:text-left">
     <div class="container mx-auto pt-4 px-4 w-full">
-{#      <h2 class="text-center">Download</h2>#}
+      {#      <h2 class="text-center">Download</h2>#}
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div class="grid grid-rows-2 grid-flow-col">
@@ -135,9 +147,11 @@
             {% for example in examples %}
               <tr>
                 <td>{{ example.city | capfirst }}</td>
-                <td><a href="{{ example.gpkg_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download full gpkg
+                <td><a href="{{ example.gpkg_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download
+                  full gpkg
                   ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)</a></td>
-                <td><a href="{{ example.csv_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download csv
+                <td><a href="{{ example.csv_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download
+                  csv
                   ({{ example.csv_size_in_mb |floatformat:1 }}
                   Mb)</a></td>
               </tr>
@@ -164,9 +178,12 @@
             {% for file in additional_files %}
               <tr>
                 <td>{{ file.name }}</td>
-                <td><a href="{{ file.download_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download file
+                <td><a href="{{ file.download_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download
+                  file
                   ({{ file.size_in_mb |floatformat:2 }} Mb)</a></td>
-                <td><div class="overflow-y-auto">{{ file.info }}</div></td>
+                <td>
+                  <div class="overflow-y-auto">{{ file.info }}</div>
+                </td>
               </tr>
             {% endfor %}
             </tbody>
@@ -217,12 +234,10 @@
     {#choose a map from http://leaflet-extras.github.io/leaflet-providers/preview/#}
     {#https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}#}
     polylineRenderer = L.canvas({padding: 0.5});
-    L.tileLayer.colorFilter('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap',
-      filter: mapFilter,
+    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      className: 'map-tiles'
     }).addTo(map);
-
 
     {#HELPER FUNCTIONS#}
 
