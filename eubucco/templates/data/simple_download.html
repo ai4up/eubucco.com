@@ -166,7 +166,7 @@
                 <td>{{ file.name }}</td>
                 <td><a href="{{ file.download_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download file
                   ({{ file.size_in_mb |floatformat:2 }} Mb)</a></td>
-                <td>{{ file.info }}</td>
+                <td><div class="overflow-y-auto">{{ file.info }}</div></td>
               </tr>
             {% endfor %}
             </tbody>
