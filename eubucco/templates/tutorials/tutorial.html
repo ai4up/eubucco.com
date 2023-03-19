@@ -2,10 +2,17 @@
 {% load static %}
 {% block content %}
   <iframe
-    class="min-h-[var(--content-height)]"
+    class="min-h-[var(--content-height)] hidden dark:block"
     style="width:100%"
     frameborder="0"
-    src="{{ url }}"
-    >
+    src="{{ dark_url }}"
+  >
+  </iframe>
+  <iframe
+    class="min-h-[var(--content-height)] block dark:hidden"
+    style="width:100%"
+    frameborder="0"
+    src="{{ light_url }}"
+  >
   </iframe>
 {% endblock content %}
