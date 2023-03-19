@@ -26,8 +26,12 @@
         right: 0;
       }
 
-      .map-popup, .mapboxgl-popup-content, .maplibregl-popup-content, .maplibregl-popup-tip, .mapboxgl-popup-tip {
-        background-color: hsl(var(--n));
+      .map-popup, .mapboxgl-popup-content, .maplibregl-popup-content {
+        background-color: hsl(var(--b1));
+      }
+
+      .maplibregl-popup-tip, .mapboxgl-popup-tip {
+        background-color: transparent;
       }
 
       #meta {
@@ -101,6 +105,7 @@
   <script>
 
     var map;
+    var paints;
     var mapcolor = "white";
     let currentLayer = null;
     let choroplethChoice = 'height'
@@ -156,30 +161,12 @@
             }
           },
           'layers': [{
-            'id': 'carto-dark-layer',
+            'id': 'carto-layer',
             'source': 'carto-dark',
-
-
             'type': 'raster',
             'minzoom': 0,
             'maxzoom': 22
           }]
-        }
-      };
-
-      var paints = {
-        "circle": {
-          "circle-color": mapcolor,
-          "circle-radius": 3
-        },
-        "line": {
-          "line-color": mapcolor,
-          "line-width": 0.5
-        },
-        "fill": {
-          "fill-color": mapcolor,
-          "fill-outline-color": mapcolor,
-          "fill-opacity": 0
         }
       };
 
@@ -334,7 +321,6 @@
           }
           if (index > 2) {
             if (index % 2 === 0) {
-              console.log(value, item);
               const legendElement = document.createElement("div");
               legendElement.innerHTML = value
               legendElement.style.backgroundColor = item
@@ -461,41 +447,89 @@
 
       }
 
+      function mountMap(dark = true) {
+        if (dark === true) {
+          mapConfig['style']['layers'][0]['source'] = 'carto-dark'
+        } else {
+          mapConfig['style']['layers'][0]['source'] = 'carto-light'
+        }
+        map = new maplibregl.Map(mapConfig);
+        map.addControl(new maplibregl.NavigationControl());
+        map.on("load", function () {
+          updateLegend()
 
-      map = new maplibregl.Map(mapConfig);
-      map.addControl(new maplibregl.NavigationControl());
-      map.on("load", function () {
-        updateLegend()
+          {#queryParam = new URLSearchParams(window.location.search).toString();#}
+          {#if (queryParam.length <= 1) {#}
+          {#  queryParam = "";}#}
+          queryParam = 'properties=name'
+          queryParamBuildings = 'properties=id,id_source,type,type_source,height,age'
 
-        {#queryParam = new URLSearchParams(window.location.search).toString();#}
-        {#if (queryParam.length <= 1) {#}
-        {#  queryParam = "";}#}
-        queryParam = 'properties=name'
-        queryParamBuildings = 'properties=id,id_source,type,type_source,height,age'
+          tileUrl = layer["tileurl"] + "?" + queryParamBuildings;
 
-        tileUrl = layer["tileurl"] + "?" + queryParamBuildings;
-
-        addLayers(layer["id"], layer["geometrytype"], tileUrl);
-        onZoom(true)
-
-        $.getJSON("{{ tile_url }}public.data_city.json", function (cityLayer) {
-          cityTileUrl = cityLayer["tileurl"] + "?" + queryParam;
-          addLayers(cityLayer["id"], cityLayer["geometrytype"], cityTileUrl);
+          addLayers(layer["id"], layer["geometrytype"], tileUrl);
           onZoom(true)
-        })
 
-        $.getJSON("{{ tile_url }}public.data_region.json", function (regionLayer) {
-          cityTileUrl = regionLayer["tileurl"] + "?" + queryParam;
-          addLayers(regionLayer["id"], regionLayer["geometrytype"], cityTileUrl);
-          onZoom(true)
-        })
+          $.getJSON("{{ tile_url }}public.data_city.json", function (cityLayer) {
+            cityTileUrl = cityLayer["tileurl"] + "?" + queryParam;
+            addLayers(cityLayer["id"], cityLayer["geometrytype"], cityTileUrl);
+            onZoom(true)
+          })
 
-        $.getJSON("{{ tile_url }}public.data_country_view.json", function (countryLayer) {
-          cityTileUrl = countryLayer["tileurl"] + "?" + queryParam;
-          addLayers(countryLayer["id"], countryLayer["geometrytype"], cityTileUrl);
-          onZoom(true)
-        })
-      });
+          $.getJSON("{{ tile_url }}public.data_region.json", function (regionLayer) {
+            cityTileUrl = regionLayer["tileurl"] + "?" + queryParam;
+            addLayers(regionLayer["id"], regionLayer["geometrytype"], cityTileUrl);
+            onZoom(true)
+          })
+
+          $.getJSON("{{ tile_url }}public.data_country_view.json", function (countryLayer) {
+            cityTileUrl = countryLayer["tileurl"] + "?" + queryParam;
+            addLayers(countryLayer["id"], countryLayer["geometrytype"], cityTileUrl);
+            onZoom(true)
+          })
+        });
+      }
+
+      const runColorMode = (fn) => {
+        if (!window.matchMedia) {
+          return;
+        }
+
+        const query = window.matchMedia('(prefers-color-scheme: dark)');
+
+        fn(query.matches);
+
+        query.addEventListener('change', (event) => fn(event.matches));
+      }
+
+      runColorMode((isDarkMode) => {
+        let dark
+        if (isDarkMode) {
+          mapcolor = "white"
+          dark = true
+        } else {
+          mapcolor = "black"
+          dark = false
+        }
+
+        paints = {
+          "circle": {
+            "circle-color": mapcolor,
+            "circle-radius": 3
+          },
+          "line": {
+            "line-color": mapcolor,
+            "line-width": 0.5
+          },
+          "fill": {
+            "fill-color": mapcolor,
+            "fill-outline-color": mapcolor,
+            "fill-opacity": 0
+          }
+        };
+
+        mountMap(dark)
+
+      })
 
 
       function enableLayer(source) {
