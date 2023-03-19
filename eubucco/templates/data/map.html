@@ -286,7 +286,11 @@
       }
 
       function removeTrailingZero(value) {
-        return value.split('.')[0]
+        if (_.isString(value)) {
+          return value.split('.')[0]
+        } else {
+          return value
+        }
       }
 
       function typeEnumToString(value) {
