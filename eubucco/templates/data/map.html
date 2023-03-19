@@ -286,7 +286,7 @@
       }
 
       function removeTrailingZero(value) {
-        if (_.isString(value)) {
+        if (typeof value === 'string' || value instanceof String) {
           return value.split('.')[0]
         } else {
           return value
