@@ -23,13 +23,6 @@ urlpatterns = [
     ),
     path("docs", cache_page(60 * 60)(DocsRedirectView.as_view()), name="docs"),
     path("about", TemplateView.as_view(template_name="pages/about.html"), name="about"),
-    path(
-        "paper",
-        cache_page(60 * 60)(
-            TemplateView.as_view(template_name="pages/manuscript.html")
-        ),
-        name="paper",
-    ),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
     # User management
