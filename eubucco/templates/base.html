@@ -1,6 +1,6 @@
 {% load tailwind_tags %}
 <!DOCTYPE html>
-<html lang="en" data-theme="night">
+<html lang="en">
 <head>
   {% load static %}
   <title>EUBUCCO</title>
@@ -35,9 +35,9 @@
             </div>
 
             <div class="flex-none hidden lg:block">
-              <ul class="menu menu-horizontal">
+              <ul class="menu menu-horizontal dropdown-content">
                 <!-- Navbar menu content here -->
-                {% include "menu_links.html" %}
+                {% include "menu_links_desktop.html" %}
               </ul>
             </div>
           </div>
@@ -52,7 +52,7 @@
 
         <footer class="footer p-4 bg-base-300 text-neutral-content justify-center bottom-0 mt-auto">
           <div class="items-center grid-flow-col">
-            <a class="link" href="{% url 'about' %}">About</a>
+            <a class="link text-base-content" href="{% url 'about' %}">About</a>
           </div>
         </footer>
       </div>
@@ -62,7 +62,7 @@
     <label for="my-drawer" class="drawer-overlay"></label>
     <ul class="menu p-4 overflow-y-auto w-80 bg-base-100 text-base-content">
       <!-- Sidebar content here -->
-      {% include "menu_links.html" %}
+      {% include "menu_links_mobile.html" %}
 
     </ul>
   </div>

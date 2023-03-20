@@ -21,13 +21,17 @@
       #map {
         position: absolute;
         top: 60px;
-        bottom: 0;
+        bottom: 64px;
         left: 0;
         right: 0;
       }
 
-      .map-popup, .mapboxgl-popup-content, .maplibregl-popup-content, .maplibregl-popup-tip, .mapboxgl-popup-tip{
-        background-color: hsl(var(--n));
+      .map-popup, .mapboxgl-popup-content, .maplibregl-popup-content {
+        background-color: hsl(var(--b1));
+      }
+
+      .maplibregl-popup-tip, .mapboxgl-popup-tip {
+        background-color: transparent;
       }
 
       #meta {
@@ -35,8 +39,8 @@
         color: hsl(var(--bc));
         background: hsl(var(--b1));
         position: absolute;
-        top: 10;
-        left: 20;
+        top: -10;
+        left: 50%;
         padding: 10 20;
         margin: 0;
         width: min-content;
@@ -54,18 +58,42 @@
   </head>
   <body>
 
-{#  <div id="meta">#}
-{#    <h1>public.data_building</h1>#}
-{##}
-{##}
-{#    <hr/>#}
-{#    <p class="properties">age city_id country_id height id id_source region_id type type_source </p>#}
-{##}
-{#  </div>#}
+  {#  <div id="meta">#}
+  {#    <h1>public.data_building</h1>#}
+  {##}
+  {##}
+  {#    <hr/>#}
+  {#    <p class="properties">age city_id country_id height id id_source region_id type type_source </p>#}
+  {##}
+  {#  </div>#}
 
-  <div id="map"></div>
+  <div id="map">
+    {#    <div id="meta" class="tabs tabs-boxed">#}
+    {#      <a class="tab">Off</a>#}
+    {#      <a class="tab tab-active">Height</a>#}
+    {#      <a class="tab">Type</a>#}
+    {#    </div>#}
+    <div class="btm-nav z-1">
+      <button id="switchChoroplethOff">
+        <div class="text-xl">Off</div>
+      </button>
+      <button id="switchChoroplethHeight" class="active">
+        <div class="text-xl">Height</div>
+      </button>
+      <button id="switchChoroplethAge">
+        <div class="text-xl">Age</div>
+      </button>
+      <button id="switchChoroplethType">
+        <div class="text-xl">Type</div>
+      </button>
+    </div>
+  </div>
 
-  <div id="toast" class="toast toast-center toast-bottom w-full flex ">
+  <div id='legend' class="absolute bottom-20 left-4 bg-neutral">
+  </div>
+
+
+  <div id="toast" class="toast toast-center toast-top w-full flex pt-16">
     <div class="alert alert-info justify-center">
       <div class="justify-center">
         <p class="justify-center">Here you can explore the data. Depending on your Zoom level you will see the
@@ -77,8 +105,10 @@
   <script>
 
     var map;
-    var mapcolor = "blue";
+    var paints;
+    var mapcolor = "white";
     let currentLayer = null;
+    let choroplethChoice = 'height'
 
     {# hide toast after time#}
     setTimeout(function () {
@@ -131,30 +161,12 @@
             }
           },
           'layers': [{
-            'id': 'carto-dark-layer',
+            'id': 'carto-layer',
             'source': 'carto-dark',
-
-
             'type': 'raster',
             'minzoom': 0,
             'maxzoom': 22
           }]
-        }
-      };
-
-      var paints = {
-        "circle": {
-          "circle-color": mapcolor,
-          "circle-radius": 3
-        },
-        "line": {
-          "line-color": mapcolor,
-          "line-width": 1.5
-        },
-        "fill": {
-          "fill-color": mapcolor,
-          "fill-outline-color": mapcolor,
-          "fill-opacity": 0.1
         }
       };
 
@@ -180,23 +192,218 @@
         return id + "." + gtype + "." + paint;
       }
 
+      const heightChoropleth = {
+        'fill-color': [
+          'interpolate',
+          ['linear'],
+          ['get', 'height'],
+          0,
+          '#5e4ea6',
+          5,
+          '#2f89be',
+          10,
+          '#62c3a5',
+          15,
+          '#e6f697',
+          20,
+          '#fce08c',
+          25,
+          '#f46d45',
+          50,
+          '#d3404a',
+          1000,
+          '#a00042'
+        ],
+        'fill-opacity': 0.75,
+      }
+
+      const ageChoropleth = {
+        'fill-color': [
+          'interpolate',
+          ['linear'],
+          ['get', 'age'],
+          0,
+          '#5e4ea6',
+          1900,
+          '#2f89be',
+          1945,
+          '#62c3a5',
+          1960,
+          '#addda3',
+          1970,
+          '#e6f697',
+          1980,
+          '#ffffba',
+          1990,
+          '#fce08c',
+          2000,
+          '#f46d45',
+          2010,
+          '#d3404a',
+          2030,
+          '#a00042'
+        ],
+        'fill-opacity': 0.75,
+      }
+
+      const typeChoropleth = {
+        'fill-color': ['match', ['get', 'type'],
+          'RE', 'green',
+          'NR', 'red',
+          'white'],
+        'fill-opacity': 0.75,
+      }
+
       function layerConfig(id, gtype, paint) {
-        return {
+        config = {
           "id": layerId(id, gtype, paint),
           "source": id,
           "source-layer": id,
           "type": paint,
-          "paint": paints[paint],
-          "filter": ["match", ["geometry-type"], [gtype, "Multi" + gtype], true, false]
+          "filter": ["match", ["geometry-type"], [gtype, "Multi" + gtype], true, false],
         }
+        if (id === 'public.data_building' && gtype === 'Polygon' && paint === 'fill') {
+          if (choroplethChoice === 'height') {
+            config['paint'] = heightChoropleth
+          } else if (choroplethChoice === 'type') {
+            config['paint'] = typeChoropleth
+          } else if (choroplethChoice === 'age') {
+            config['paint'] = ageChoropleth
+          } else {
+            config["paint"] = paints[paint]
+          }
+        } else {
+          config["paint"] = paints[paint]
+        }
+        return config
       };
 
+      function roundIfNeeded(value) {
+        if (typeof value == 'number') {
+          return value.toFixed(2)
+        }
+        return value
+      }
+
+      function removeTrailingZero(value) {
+        if (typeof value === 'string' || value instanceof String) {
+          return value.split('.')[0]
+        } else {
+          return value
+        }
+      }
+
+      function typeEnumToString(value) {
+        if (value === "RE") {
+          return 'Residential'
+        } else if (value === "NR") {
+          return 'Non-residential'
+        } else {
+          return 'Unknown'
+        }
+      }
+
+      function updateLegend() {
+        let value = 0
+        const legend = document.getElementById("legend");
+        legend.replaceChildren()
+        let choropleth
+
+        if (choroplethChoice === 'height') {
+          choropleth = heightChoropleth
+        } else if (choroplethChoice === 'age') {
+          choropleth = ageChoropleth
+        } else if (choroplethChoice === 'type') {
+          choropleth = typeChoropleth
+        } else {
+          return
+        }
+
+        choropleth['fill-color'].forEach(function (item, index) {
+          if (choroplethChoice === 'type') {
+            index += 1
+          }
+          if (index > 2) {
+            if (index % 2 === 0) {
+              const legendElement = document.createElement("div");
+              legendElement.innerHTML = value
+              legendElement.style.backgroundColor = item
+              legendElement.classList.add('p-2')
+              legendElement.classList.add('text-center')
+              legendElement.classList.add('text-black')
+              legend.appendChild(legendElement)
+            } else {
+              if (choroplethChoice === 'type') {
+                value = typeEnumToString(item)
+              } else {
+                value = item
+              }
+            }
+          }
+        });
+        mapping = []
+      }
+
+
+      function resetLayers() {
+        map.removeLayer('public.data_building.Point.circle')
+        map.removeLayer('public.data_building.Polygon.fill')
+        map.removeLayer('public.data_building.LineString.line')
+        map.removeLayer('public.data_building.Polygon.line')
+        addOneLayer('public.data_building', 'Polygon')
+        updateLegend()
+      }
+
+      document.getElementById("switchChoroplethOff").onclick = function () {
+        document.getElementById("switchChoroplethOff").classList.add('active')
+        document.getElementById("switchChoroplethHeight").classList.remove('active')
+        document.getElementById("switchChoroplethType").classList.remove('active')
+        document.getElementById("switchChoroplethAge").classList.remove('active')
+        choroplethChoice = 'off'
+        resetLayers()
+      }
+
+      document.getElementById("switchChoroplethHeight").onclick = function () {
+        document.getElementById("switchChoroplethHeight").classList.add('active')
+        document.getElementById("switchChoroplethOff").classList.remove('active')
+        document.getElementById("switchChoroplethType").classList.remove('active')
+        document.getElementById("switchChoroplethAge").classList.remove('active')
+        choroplethChoice = 'height'
+        resetLayers()
+      }
+
+      document.getElementById("switchChoroplethAge").onclick = function () {
+        document.getElementById("switchChoroplethAge").classList.add('active')
+        document.getElementById("switchChoroplethOff").classList.remove('active')
+        document.getElementById("switchChoroplethType").classList.remove('active')
+        document.getElementById("switchChoroplethHeight").classList.remove('active')
+        choroplethChoice = 'age'
+        resetLayers()
+      }
+
+
+      document.getElementById("switchChoroplethType").onclick = function () {
+        document.getElementById("switchChoroplethType").classList.add('active')
+        document.getElementById("switchChoroplethHeight").classList.remove('active')
+        document.getElementById("switchChoroplethOff").classList.remove('active')
+        document.getElementById("switchChoroplethAge").classList.remove('active')
+        choroplethChoice = 'type'
+        resetLayers()
+      }
 
       function featureHtml(f) {
         var p = f.properties;
         var h = "<p>";
         for (var k in p) {
-          h += "<b>" + k + ":</b> " + p[k] + "<br/>"
+          if (k === 'type') {
+            value = typeEnumToString(p[k])
+          } else if (k === 'id_source' || k === 'age') {
+            value = removeTrailingZero(p[k])
+          } else {
+            value = roundIfNeeded(p[k])
+          }
+
+          h += "<b>" + k + ":</b> " + value + "<br/>"
         }
         h += "</p>";
         return h
@@ -205,9 +412,9 @@
       function addLayerBehavior(id) {
         map.on('click', id, function (e) {
           new maplibregl.Popup()
-                  .setLngLat(e.lngLat)
-                  .setHTML(featureHtml(e.features[0]))
-                  .addTo(map);
+            .setLngLat(e.lngLat)
+            .setHTML(featureHtml(e.features[0]))
+            .addTo(map);
         });
 
 
@@ -244,40 +451,89 @@
 
       }
 
+      function mountMap(dark = true) {
+        if (dark === true) {
+          mapConfig['style']['layers'][0]['source'] = 'carto-dark'
+        } else {
+          mapConfig['style']['layers'][0]['source'] = 'carto-light'
+        }
+        map = new maplibregl.Map(mapConfig);
+        map.addControl(new maplibregl.NavigationControl());
+        map.on("load", function () {
+          updateLegend()
 
-      map = new maplibregl.Map(mapConfig);
-      map.addControl(new maplibregl.NavigationControl());
-      map.on("load", function () {
+          {#queryParam = new URLSearchParams(window.location.search).toString();#}
+          {#if (queryParam.length <= 1) {#}
+          {#  queryParam = "";}#}
+          queryParam = 'properties=name'
+          queryParamBuildings = 'properties=id,id_source,type,type_source,height,age'
 
-        {#queryParam = new URLSearchParams(window.location.search).toString();#}
-        {#if (queryParam.length <= 1) {#}
-        {#  queryParam = "";}#}
-        queryParam = 'properties=name'
-        queryParamBuildings = 'properties=id,id_source,type,type_source,hight,age'
+          tileUrl = layer["tileurl"] + "?" + queryParamBuildings;
 
-        tileUrl = layer["tileurl"] + "?" + queryParamBuildings;
-
-        addLayers(layer["id"], layer["geometrytype"], tileUrl);
-        onZoom(true)
-
-        $.getJSON("{{ tile_url }}public.data_city.json", function (cityLayer) {
-          cityTileUrl = cityLayer["tileurl"] + "?" + queryParam;
-          addLayers(cityLayer["id"], cityLayer["geometrytype"], cityTileUrl);
+          addLayers(layer["id"], layer["geometrytype"], tileUrl);
           onZoom(true)
-        })
 
-        $.getJSON("{{ tile_url }}public.data_region.json", function (regionLayer) {
-          cityTileUrl = regionLayer["tileurl"] + "?" + queryParam;
-          addLayers(regionLayer["id"], regionLayer["geometrytype"], cityTileUrl);
-          onZoom(true)
-        })
+          $.getJSON("{{ tile_url }}public.data_city.json", function (cityLayer) {
+            cityTileUrl = cityLayer["tileurl"] + "?" + queryParam;
+            addLayers(cityLayer["id"], cityLayer["geometrytype"], cityTileUrl);
+            onZoom(true)
+          })
 
-        $.getJSON("{{ tile_url }}public.data_country_view.json", function (countryLayer) {
-          cityTileUrl = countryLayer["tileurl"] + "?" + queryParam;
-          addLayers(countryLayer["id"], countryLayer["geometrytype"], cityTileUrl);
-          onZoom(true)
-        })
-      });
+          $.getJSON("{{ tile_url }}public.data_region.json", function (regionLayer) {
+            cityTileUrl = regionLayer["tileurl"] + "?" + queryParam;
+            addLayers(regionLayer["id"], regionLayer["geometrytype"], cityTileUrl);
+            onZoom(true)
+          })
+
+          $.getJSON("{{ tile_url }}public.data_country_view.json", function (countryLayer) {
+            cityTileUrl = countryLayer["tileurl"] + "?" + queryParam;
+            addLayers(countryLayer["id"], countryLayer["geometrytype"], cityTileUrl);
+            onZoom(true)
+          })
+        });
+      }
+
+      const runColorMode = (fn) => {
+        if (!window.matchMedia) {
+          return;
+        }
+
+        const query = window.matchMedia('(prefers-color-scheme: dark)');
+
+        fn(query.matches);
+
+        query.addEventListener('change', (event) => fn(event.matches));
+      }
+
+      runColorMode((isDarkMode) => {
+        let dark
+        if (isDarkMode) {
+          mapcolor = "white"
+          dark = true
+        } else {
+          mapcolor = "black"
+          dark = false
+        }
+
+        paints = {
+          "circle": {
+            "circle-color": mapcolor,
+            "circle-radius": 3
+          },
+          "line": {
+            "line-color": mapcolor,
+            "line-width": 0.5
+          },
+          "fill": {
+            "fill-color": mapcolor,
+            "fill-outline-color": mapcolor,
+            "fill-opacity": 0
+          }
+        };
+
+        mountMap(dark)
+
+      })
 
 
       function enableLayer(source) {
@@ -336,6 +592,7 @@
         onZoom()
       })
     });
+
 
   </script>
 

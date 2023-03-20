@@ -1,0 +1,18 @@
+{% load static %}
+<li><a href="{% url 'data:index' %}">Data</a></li>
+<li><a href="{% url 'docs' %}">Docs</a></li>
+<li><a href="{% url 'data:map' %}">Map</a></li>
+<li tabindex="0">
+  <a class="justify-between" href="{% url 'tutorials:getting_started' %}">
+    Tutorials
+  </a>
+  <ul>
+    <li class="bg-base-300"><a href="{% url 'tutorials:getting_started' %}">Getting Started</a></li>
+    <li class="bg-base-300"><a href="{% url 'tutorials:predicting_age' %}">Predicting Age</a></li>
+  </ul>
+</li>
+<li><a href="https://www.nature.com/articles/s41597-023-02040-2">Paper</a></li>
+<li><a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer">
+  <div class="w-6 rounded hidden dark:block"><img src="{% static 'images/white_github.png' %}"/></div>
+  <div class="w-6 rounded block dark:hidden"><img src="{% static 'images/dark_github.png' %}"/></div>
+</a></li>
