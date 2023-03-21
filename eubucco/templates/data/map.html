@@ -319,6 +319,7 @@
           return
         }
 
+        let legendColors = []
         choropleth['fill-color'].forEach(function (item, index) {
           if (choroplethChoice === 'type') {
             index += 1
@@ -327,7 +328,13 @@
             if (index % 2 === 0) {
               const legendElement = document.createElement("div");
               legendElement.innerHTML = value
-              legendElement.style.backgroundColor = item
+
+              if (choroplethChoice === 'type') {
+                legendElement.style.backgroundColor = item
+              }
+
+              legendColors.push(item)
+
               legendElement.classList.add('p-2')
               legendElement.classList.add('text-center')
               legendElement.classList.add('text-black')
@@ -341,6 +348,9 @@
             }
           }
         });
+        legendStyle = "linear-gradient(to bottom," + legendColors.join(',') + ")"
+        console.log(legendStyle)
+        legend.style.background = legendStyle
         mapping = []
       }
 
