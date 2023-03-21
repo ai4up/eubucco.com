@@ -57,21 +57,21 @@
           Wagner,
           F. et al. EUBUCCO v0.1: European building stock characteristics in a common and open database for 200+ million
           individual buildings. Sci Data 10, 147 (2023). https://doi.org/10.1038/s41597-023-02040-2</p>
-        <div class="flex flex-row justify-center pb-2">
-          <div class="px-1">
-            Bibtex
-          </div>
-          <div class="tooltip tooltip-right px-1" data-tip="copy">
-            <button class="btn btn-square btn-ghost pb-1" onclick="CopyToClipboard('bibtex');return false;">
+        <div class="px-1">
+          Bibtex
+        </div>
+        <div class="relative">
+          <div class="tooltip tooltip-right absolute top-0 right-0" data-tip="copy">
+            <button class="btn btn-square btn-ghost" onclick="CopyToClipboard('bibtex');return false;">
               <svg class="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
                 <path
                   d="M 16 3 C 14.742188 3 13.847656 3.890625 13.40625 5 L 6 5 L 6 28 L 26 28 L 26 5 L 18.59375 5 C 18.152344 3.890625 17.257813 3 16 3 Z M 16 5 C 16.554688 5 17 5.445313 17 6 L 17 7 L 20 7 L 20 9 L 12 9 L 12 7 L 15 7 L 15 6 C 15 5.445313 15.445313 5 16 5 Z M 8 7 L 10 7 L 10 11 L 22 11 L 22 7 L 24 7 L 24 26 L 8 26 Z"></path>
               </svg>
             </button>
+
           </div>
-        </div>
-        <textarea id="bibtex" readonly wrap="off" rows="10"
-                  class="textarea resize-none text-left leading-normal w-full h-50 bg-base-200 font-mono">
+          <textarea id="bibtex" readonly wrap="off" rows="10"
+                    class="textarea resize-none text-left leading-normal w-full h-50 bg-base-200 font-mono">
 @article{eubucco_2023,
 	title        = {EUBUCCO v0.1: European building stock characteristics in a common and open database for 200+ million individual buildings},
 	author       = {‎{Milojevic-Dupont, Nikola and Wagner, Felix} and Nachtigall, Florian and Hu, Jiawei and Br{\"u}ser, Geza Boi and Zumwald, Marius and Biljecki, Filip and Heeren, Niko and Kaack, Lynn H. and Pichler, Peter-Paul and Creutzig, Felix},
@@ -82,6 +82,7 @@
 	pages        = 147,
 	doi          = {10.1038/s41597-023-02040-2}
 }</textarea>
+        </div>
 
 
         <div class="divider"></div>
