@@ -218,6 +218,8 @@ services:
     networks:
       - default
       - dev-db
+    ports:
+      - 5432:5432
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
