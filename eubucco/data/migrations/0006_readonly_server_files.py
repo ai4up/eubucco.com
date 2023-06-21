@@ -10,5 +10,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL('GRANT pg_read_server_files TO "readaccess";'),
+        migrations.RunSQL('GRANT pg_read_server_files TO "readonly";'),
     ]
