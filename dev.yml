@@ -1,9 +1,9 @@
 version: '3.2'
 
 volumes:
-  production_postgres_data: { }
-  production_postgres_data_backups: { }
-  production_traefik: { }
+  production_postgres_data: {}
+  production_postgres_data_backups: {}
+  production_traefik: {}
 
 services:
   dev-django:
@@ -160,7 +160,6 @@ services:
       - "traefik.http.routers.dev-docs-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
 
-
   dev-pg_tileserv:
     image: pramsey/pg_tileserv:latest
     depends_on:
@@ -215,6 +214,7 @@ services:
     volumes:
       - production_postgres_data:/var/lib/postgresql/data:Z
       - production_postgres_data_backups:/backups:z
+      - /home/app/eubucco/export:/export:z
     networks:
       - default
       - dev-db

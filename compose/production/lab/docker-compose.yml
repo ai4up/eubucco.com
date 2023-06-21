@@ -4,6 +4,7 @@ services:
     image: jupyter/scipy-notebook
     volumes:
       - /home/app/eubucco/csvs:/home/jovyan/csvs:ro
+      - /home/app/eubucco/export:/home/jovyan/export:z
     networks:
       - proxy
       - default
@@ -31,7 +32,6 @@ services:
         limits:
           cpus: '1'
           memory: 2GB
-
 
 networks:
   default:
