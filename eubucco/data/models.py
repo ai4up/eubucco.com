@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 
 # Create your models here.
 from eubucco.files.models import File
+from eubucco.utils.version_enum import VersionEnum
 
 
 class BuildingType(models.TextChoices):
@@ -49,20 +50,6 @@ class City(models.Model):
 
     def __str__(self):
         return self.name
-
-
-class VersionEnum(models.IntegerChoices):
-    V01 = 1, _("v0.1")
-    VMSFT24 = 2, _("msft24")
-
-    def version_from_path(self, path):
-        version_string = path.split("-")[0]
-        if version_string == "v0_1":
-            return self.V01
-        elif version_string == "vmsft24":
-            return self.VMSFT24
-        else:
-            raise ValueError(f"Unknown version {version_string}")
 
 
 class Building(models.Model):
