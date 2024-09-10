@@ -27,6 +27,7 @@ from eubucco.ingest.util import (
     match_type_source,
     sanitize_building_age,
 )
+from eubucco.utils.version_enum import VersionEnum
 
 CSV_PATH = "csvs/buildings"
 CACHE_PATH = ".cache"
@@ -170,6 +171,7 @@ def ingest_csv(zipped_gpkg_path: str):
     start_time = time()
     extracted_path = unpack_csv(zipped_gpkg_path)
     country_extra = " OTHER-LICENSE" if "OTHER-LICENSE" in zipped_gpkg_path else ""
+    version = VersionEnum.version_from_path(path=zipped_gpkg_path)
 
     if "OTHER-LICENSE" in zipped_gpkg_path:
         pathlist = Path(extracted_path).rglob("*.gpkg")
@@ -222,6 +224,7 @@ def ingest_csv(zipped_gpkg_path: str):
                             type=match_building_type(row["type"]),
                             type_source=match_type_source(row["type_source"]),
                             geometry=row["geometry"].wkt,
+                            version=version,
                         )
                     )
                 Building.objects.bulk_create(buildings, ignore_conflicts=True)
