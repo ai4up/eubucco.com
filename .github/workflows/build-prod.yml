@@ -1,4 +1,4 @@
-name: build/push dev docker image 
+name: build/push dev docker image
 
 on:
   push:
@@ -20,4 +20,3 @@ jobs:
       run: docker build -f compose/production/django/Dockerfile -t eubucco/eubucco.com:production .
     - name: Push the latest dev Docker image
       run: docker push eubucco/eubucco.com:production
-

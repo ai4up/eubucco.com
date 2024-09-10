@@ -51,6 +51,20 @@ class City(models.Model):
         return self.name
 
 
+class VersionEnum(models.IntegerChoices):
+    V01 = 1, _("v0.1")
+    VMSFT24 = 2, _("msft24")
+
+    def version_from_path(self, path):
+        version_string = path.split("-")[0]
+        if version_string == "v0_1":
+            return self.V01
+        elif version_string == "vmsft24":
+            return self.VMSFT24
+        else:
+            raise ValueError(f"Unknown version {version_string}")
+
+
 class Building(models.Model):
     id = models.CharField(max_length=50, primary_key=True)
     id_source = models.CharField(max_length=80)
@@ -70,6 +84,7 @@ class Building(models.Model):
     )
     type_source = models.CharField(max_length=150)
     geometry = models.GeometryField(srid=3035)
+    version = models.IntegerField(choices=VersionEnum.choices, null=False)
 
     def __str__(self):
         return self.id

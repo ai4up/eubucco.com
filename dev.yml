@@ -214,7 +214,7 @@ services:
     volumes:
       - production_postgres_data:/var/lib/postgresql/data:Z
       - production_postgres_data_backups:/backups:z
-      - /home/app/eubucco/export:/export:z
+      - /home/app/eubucco/export:/export
     networks:
       - default
       - dev-db
