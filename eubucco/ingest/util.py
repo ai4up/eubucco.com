@@ -15,7 +15,7 @@ def match_gadm_info(df_temp, df_overview):
     # this old version leads to memory leak
     # df_temp['id_temp'] = df_temp['id'].str.rsplit('-', 1).apply(lambda x: x[0])
 
-    df_temp["id_temp"] = ["-".join(c.split("-")[:2]) for c in df_temp.id]
+    df_temp["id_temp"] = [c.split("-")[1] for c in df_temp.id]
     # merge with overview file
     df_out = df_temp.merge(df_overview, left_on="id_temp", right_on="id")
     # # keep only relevant columns

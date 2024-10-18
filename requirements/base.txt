@@ -29,3 +29,5 @@ pottery==3.0.0
 fastapi==0.85.1
 geopandas==0.11.0
 mkdocs-material==8.5.7
+numpy==1.26.4
+fiona==1.9.6

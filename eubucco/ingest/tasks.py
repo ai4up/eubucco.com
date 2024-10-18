@@ -27,11 +27,12 @@ from eubucco.ingest.util import (
     match_type_source,
     sanitize_building_age,
 )
-from eubucco.utils.version_enum import VersionEnum
+from eubucco.utils import version_enum
 
 CSV_PATH = "csvs/buildings"
 CACHE_PATH = ".cache"
 ADMIN_CODE_MATCHES = "csvs/util/admin-codes-matches-v0.1.csv"
+ADMIN_CODE_MATCHES_NO_VERSION = "csvs/util/admin-codes-matches_no_version.csv"
 GADM_CITY_GEO = "csvs/util/gadm_country_city_geom.gpkg"
 GADM_COUNTRY_GEO = "csvs/util/gadm_country_geom.gpkg"
 
@@ -70,10 +71,13 @@ def recursion_upack(extracted_path: str):
     pathlist = Path(extracted_path).rglob("*.gpkg.zip")
     logging.info(f"Recursion unpack triggered at {extracted_path}")
     for path in pathlist:
+        logging.info(f"Check {path}")
         if not str(path).split("/")[-1].startswith("."):
             logging.info(f"Recursion unpacking {path}")
             with zipfile.ZipFile(path, "r") as zip_ref:
                 zip_ref.extractall(extracted_path)
+
+    logging.info("Recursion unpacking done!")
 
 
 def unpack_csv(zipped_csv_path: str) -> str:
@@ -82,6 +86,8 @@ def unpack_csv(zipped_csv_path: str) -> str:
     logging.info(f"To location {extracted_path}")
     with zipfile.ZipFile(zipped_csv_path, "r") as zip_ref:
         zip_ref.extractall(extracted_path)
+
+    logging.info(f"Unpacking {zipped_csv_path} done!")
 
     recursion_upack(extracted_path)
     return extracted_path
@@ -114,6 +120,9 @@ def ingest_boundaries():
         csv_found, zipped_csv_path = find_file(
             gdam=country_boundaries.gadm_code, type=".csv.zip"
         )
+
+        if "v0_1-" not in zipped_gpkg_path:
+            continue
 
         if csv_found and gpkg_found:
             logging.info(
@@ -167,11 +176,13 @@ def ingest_csv(zipped_gpkg_path: str):
     chunksize = (
         10**4
     )  # small chunks to keep memory in check on multiple ingestion workers
-    df_code_matches = pd.read_csv(ADMIN_CODE_MATCHES)
+    df_code_matches = pd.read_csv(ADMIN_CODE_MATCHES_NO_VERSION)
     start_time = time()
     extracted_path = unpack_csv(zipped_gpkg_path)
     country_extra = " OTHER-LICENSE" if "OTHER-LICENSE" in zipped_gpkg_path else ""
-    version = VersionEnum.version_from_path(path=zipped_gpkg_path)
+    version = version_enum.version_from_path(path=zipped_gpkg_path)
+
+    logging.info(f"Starting ingestion of {zipped_gpkg_path}, version {version}")
 
     if "OTHER-LICENSE" in zipped_gpkg_path:
         pathlist = Path(extracted_path).rglob("*.gpkg")
@@ -208,7 +219,7 @@ def ingest_csv(zipped_gpkg_path: str):
                     row.country, row.region, row.city
                 )
                 logging.info(
-                    f"Ingesting city: {city} in region: {region} in country: {country}"
+                    f"Ingesting city: {city} in region: {region} in country: {country} coming from {zipped_gpkg_path}"
                 )
                 buildings = []
                 for i, row in df_to_ingest.iterrows():
@@ -227,6 +238,9 @@ def ingest_csv(zipped_gpkg_path: str):
                             version=version,
                         )
                     )
+
+                logging.info(f"Ingesting {len(buildings)} buildings")
+                logging.info(f"First is {buildings[0]} coming from {zipped_gpkg_path}")
                 Building.objects.bulk_create(buildings, ignore_conflicts=True)
                 gc.collect()
                 django.db.reset_queries()

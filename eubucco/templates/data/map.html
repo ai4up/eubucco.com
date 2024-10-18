@@ -46,6 +46,24 @@
         width: min-content;
       }
 
+      #versionToggle {
+        position: absolute;
+        right: 20px;
+        bottom: 84px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: hsl(var(--b1));
+        border: 1px solid hsl(var(--bc));
+        padding: 10px;
+        font-weight: bold;
+      }
+
+      .versionButton.active {
+        background-color: #007BFF;
+        color: white;
+      }
+
       #meta h1 {
         margin: 0;
       }
@@ -90,6 +108,8 @@
   </div>
 
   <div id='legend' class="absolute bottom-20 left-4 bg-neutral border border-[color:var(--bc)] font-bold">
+  </div>
+  <div id="versionToggle" class="absolute bottom-20 right-4 bg-neutral border border-[color:var(--bc)] font-bold">
   </div>
 
 
@@ -303,6 +323,64 @@
           }
         }
 
+        function versionEnumToString(value) {
+          if (value === 1) {
+            return 'v0.1';
+          } else if (value === 2) {
+            return 'msft24';
+          } else {
+            return 'Unknown version';
+          }
+        }
+
+        var versionToggleDiv = document.getElementById('versionToggle');
+        var versions = {
+          1: 'v0.1',
+          2: 'msft24'
+        };
+
+        for (var version in versions) {
+          var button = document.createElement('button');
+          button.textContent = versions[version];
+          button.classList.add('versionButton');
+          button.dataset.version = version;
+          button.id = 'versionButton_' + version;
+          versionToggleDiv.appendChild(button);
+        }
+
+// Add event listeners to version toggle buttons
+        var versionButtons = document.getElementsByClassName('versionButton');
+        for (var i = 0; i < versionButtons.length; i++) {
+          versionButtons[i].addEventListener('click', function () {
+            var version = this.dataset.version;
+            toggleVersion(version);
+          });
+        }
+
+
+// Function to toggle version visibility
+        function toggleVersion(version) {
+          var fillFilter = map.getFilter('public.data_building.Polygon.fill');
+          var lineFilter = map.getFilter('public.data_building.Polygon.line');
+          var versionButtons = document.getElementsByClassName('versionButton');
+          for (var j = 0; j < versionButtons.length; j++) {
+            versionButtons[j].classList.remove('active');
+          }
+          if (fillFilter && fillFilter[2] == version && lineFilter && lineFilter[2] == version) {
+            // If a filter for the selected version is already applied, remove it
+            map.setFilter('public.data_building.Polygon.fill', null);
+            map.setFilter('public.data_building.Polygon.line', null);
+            button = document.getElementById('versionButton_' + version);
+            button.classList.remove('active');
+          } else {
+            // If not, apply the filter to only show the buildings of the selected version
+            map.setFilter('public.data_building.Polygon.fill', ['==', 'version', parseInt(version)]);
+            map.setFilter('public.data_building.Polygon.line', ['==', 'version', parseInt(version)]);
+            button = document.getElementById('versionButton_' + version);
+            button.classList.add('active');
+          }
+        }
+
         function updateLegend() {
           let value = 0
           const legend = document.getElementById("legend");
@@ -432,6 +510,8 @@
               value = typeEnumToString(p[k])
             } else if (k === 'id_source' || k === 'age') {
               value = removeTrailingZero(p[k])
+            } else if (k === 'version') {
+              value = versionEnumToString(p[k]);
             } else {
               value = roundIfNeeded(p[k])
             }
@@ -467,6 +547,7 @@
           if (gtypebasic == "Polygon") {
             map.addLayer(layerConfig(id, gtypebasic, "line"));
           }
+          map.setPaintProperty('public.data_building.Polygon.line', 'line-color', ['match', ['get', 'version'], 1, 'blue', 2, 'red', 'black']);
         }
 
         function addLayers(id, gtype, url) {
@@ -499,7 +580,7 @@
             {#if (queryParam.length <= 1) {#}
             {#  queryParam = "";}#}
             queryParam = 'properties=name'
-            queryParamBuildings = 'properties=id,id_source,type,type_source,height,age'
+            queryParamBuildings = 'properties=id,id_source,type,type_source,height,age,version'
 
             tileUrl = layer["tileurl"] + "?" + queryParamBuildings;
 
@@ -523,6 +604,10 @@
               addLayers(countryLayer["id"], countryLayer["geometrytype"], cityTileUrl);
               onZoom(true)
             })
+
+            toggleVersion(1);
+            toggleVersion(1);
+            toggleVersion(1);
           });
         }
 

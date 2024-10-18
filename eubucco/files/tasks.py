@@ -26,7 +26,7 @@ def ingest_file(path_str: str, file_type: FileType) -> File:
     path = Path(path_str)
     file = File.objects.filter(path=path_str).first()
     if file:
-        logging.debug("File already in db, updateing")
+        logging.debug("File already in db, updating")
         file.size_in_mb = get_file_size(path_str)
         file.name = path.name
         file.type = FileType(file_type)

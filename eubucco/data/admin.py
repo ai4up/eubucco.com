@@ -18,6 +18,7 @@ class BuildingAdmin(OSMGeoAdmin):
         "type",
         "type_source",
         "geometry",
+        "version",
     )
     search_fields = ["id", "age", "type"]
 
