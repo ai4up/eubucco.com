@@ -151,6 +151,10 @@ def ingest_boundaries():
             cities = df.loc[df.city_id == boundary.city_id]
             if len(cities) > 0:
                 city_row = cities.iloc[0]
+                if not city_row.city or isinstance(city_row.city, float):
+                    logging.warning(f"City not in ADMIN CODE MATCHES {boundary}")
+                    continue
+
                 country, region, city = create_location(
                     city_row.country, city_row.region, city_row.city
                 )
