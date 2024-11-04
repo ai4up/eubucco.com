@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import zipfile
+from math import isnan
 from pathlib import Path
 from string import capwords
 from time import sleep, time
@@ -219,6 +220,10 @@ def ingest_csv(zipped_gpkg_path: str):
             for temp_id in df.id_temp.unique():
                 df_to_ingest = df.loc[df.id_temp == temp_id]
                 row = df_to_ingest.iloc[0]
+
+                if isinstance(row.city, float) and isnan(row.city):
+                    logging.warning(f"Skipping row {row} from {gpkg_path}, city is nan")
+                    continue
                 country, region, city = create_location(
                     row.country, row.region, row.city
                 )
