@@ -46,6 +46,16 @@ DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# OBJECT STORAGE (MinIO / S3 compatible)
+# ------------------------------------------------------------------------------
+MINIO_ENDPOINT = env("MINIO_ENDPOINT", default="http://127.0.0.1:9000")
+MINIO_PUBLIC_ENDPOINT = env("MINIO_PUBLIC_ENDPOINT", default=MINIO_ENDPOINT)
+MINIO_BUCKET = env("MINIO_BUCKET", default="eubucco")
+MINIO_REGION = env("MINIO_REGION", default="eu")
+MINIO_ACCESS_KEY = env("MINIO_ACCESS_KEY", default="minioadmin")
+MINIO_SECRET_KEY = env("MINIO_SECRET_KEY", default="minioadmin")
+MINIO_USE_SSL = env.bool("MINIO_USE_SSL", default=False)
+
 # URLS
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf

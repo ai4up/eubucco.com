@@ -4,6 +4,7 @@ volumes:
   eubucco_local_postgres_data: { }
   eubucco_local_postgres_data_backups: { }
   eubucco_local_data_dumps: { }
+  eubucco_local_minio_data: { }
 
 services:
   django: &django
@@ -17,12 +18,21 @@ services:
       - postgres
       - redis
       - mailhog
+      - minio
     volumes:
       - .:/app:z
       - eubucco_local_data_dumps:/dumps
     env_file:
       - ./.envs/.local/.django
       - ./.envs/.local/.postgres
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      MINIO_BUCKET: eubucco
+      MINIO_REGION: eu
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_USE_SSL: "false"
     ports:
       - "8000:8000"
     command: /start
@@ -32,6 +42,7 @@ services:
     container_name: eubucco_local_api
     depends_on:
       - postgres
+      - minio
     ports:
       - "8001:8001"
     env_file:
@@ -39,6 +50,14 @@ services:
       - ./.envs/.local/.postgres
     volumes:
       - ./csvs:/app/csvs
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      MINIO_BUCKET: eubucco
+      MINIO_REGION: eu
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_USE_SSL: "false"
     command: /start-api
 
 
@@ -97,6 +116,7 @@ services:
       - redis
       - postgres
       - mailhog
+      - minio
     ports: [ ]
     command: /start-celeryworker
 
@@ -108,6 +128,7 @@ services:
       - redis
       - postgres
       - mailhog
+      - minio
     ports: [ ]
     command: /start-celerybeat
 
@@ -128,3 +149,32 @@ services:
     # Without tty, no stdin, and tailwind watcher aborts
     # https://github.com/tailwindlabs/tailwindcss/issues/5324
     tty: true
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    container_name: eubucco_local_minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - eubucco_local_minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  minio-setup:
+    image: minio/mc:RELEASE.2024-05-09T17-04-24Z
+    container_name: eubucco_local_minio_setup
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-eubucco}
+    entrypoint: |
+      /bin/sh -c "
+      until (/usr/bin/mc alias set localminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}); do echo 'waiting for minio...' && sleep 1; done;
+      /usr/bin/mc mb -p localminio/${MINIO_BUCKET};
+      /usr/bin/mc anonymous set download localminio/${MINIO_BUCKET};
+      "

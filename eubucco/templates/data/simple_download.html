@@ -76,6 +76,20 @@
                                                                   href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>
       </p>
 
+      <div class="divider my-8">Or download by NUTS region</div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="grid grid-rows-2 grid-flow-col lg:col-span-1">
+          <div class="text-center pb-2">NUTS (0–3)</div>
+          <input list="nutsOptions" id="nutsInput" class="input input-primary w-full" placeholder="e.g. DE, DE1, DE12, DE123">
+          <datalist id="nutsOptions"></datalist>
+          <p class="text-sm text-center lg:text-left pt-2">Type to fuzzy-search; country choice prefilters.</p>
+        </div>
+        <div class="grid grid-rows-2 grid-flow-col lg:col-span-2">
+          <div class="text-center pb-2">Matching downloads</div>
+          <div id="nutsResults" class="text-sm space-y-2"></div>
+        </div>
+      </div>
+
       {#      <div class="max-w-5xl">#}
       {#        <p>Download the building data from EUBUCCO v0.1 as:</p>#}
       {#        <ul class="list-disc">#}
@@ -207,6 +221,37 @@
   <script type="module">
     let countries;
     let selectedCountry;
+    let nutsPartitions = [];
+    const countryIso2 = {
+      "Austria": "AT",
+      "Belgium": "BE",
+      "Bulgaria": "BG",
+      "Croatia": "HR",
+      "Cyprus": "CY",
+      "Czech Republic": "CZ",
+      "Germany": "DE",
+      "Denmark": "DK",
+      "Estonia": "EE",
+      "Spain": "ES",
+      "Finland": "FI",
+      "France": "FR",
+      "Greece": "EL",
+      "Hungary": "HU",
+      "Ireland": "IE",
+      "Italy": "IT",
+      "Lithuania": "LT",
+      "Luxembourg": "LU",
+      "Latvia": "LV",
+      "Malta": "MT",
+      "Netherlands": "NL",
+      "Poland": "PL",
+      "Portugal": "PT",
+      "Romania": "RO",
+      "Sweden": "SE",
+      "Slovenia": "SI",
+      "Slovakia": "SK",
+      "Switzerland": "CH",
+    };
 
 
     let API_URL = "{{ API_URL }}"
@@ -273,6 +318,60 @@
       }
     }
 
+    {#NUTS DOWNLOAD LOGIC#}
+    const nutsInput = document.getElementById("nutsInput");
+    const nutsOptions = document.getElementById("nutsOptions");
+
+    const loadNutsPartitions = async () => {
+      const APIResponse = await fetch(`${API_URL}datalake/nuts?version=v0_1`);
+      nutsPartitions = await APIResponse.json();
+      populateNutsOptions();
+    }
+
+    const populateNutsOptions = (countryPrefix = "") => {
+      const prefix = countryPrefix ? countryPrefix.toUpperCase() : "";
+      const codes = new Set();
+      nutsPartitions.forEach(part => {
+        if (!prefix || part.nuts_id.startsWith(prefix)) {
+          codes.add(part.nuts_id);
+        }
+      });
+      nutsOptions.innerHTML = "";
+      Array.from(codes).sort().forEach(code => nutsOptions.innerHTML += `<option value="${code}">`);
+    }
+
+    const renderNutsResults = () => {
+      const container = document.getElementById("nutsResults");
+      const candidate = (nutsInput.value || "").trim().toUpperCase();
+      if (!candidate) {
+        container.innerHTML = `<p class="text-center lg:text-left">Select a NUTS code (0–3) to see matching downloads.</p>`;
+        return;
+      }
+      const matches = nutsPartitions.filter(part => part.nuts_id.toUpperCase().includes(candidate));
+      if (matches.length === 0) {
+        container.innerHTML = `<p class="text-error">No NUTS3 partitions match <span class="font-bold">${candidate}</span>.</p>`;
+        return;
+      }
+      const totalFiles = matches.reduce((sum, part) => sum + part.files.length, 0);
+      const version = matches[0].version;
+      const s3Glob = `s3://eubucco/buildings/${version}/nuts_id=${candidate}*/`;
+      let html = `<p>Found <span class="font-bold">${matches.length}</span> NUTS3 partition(s) (${totalFiles} file(s)) matching <span class="font-bold">${candidate}</span>.</p>`;
+      html += `<p class="break-all">S3 glob for DuckDB/Polars: <code class="badge badge-outline badge-lg">${s3Glob}*.parquet</code></p>`;
+      html += `<ul class="list-disc pl-4 space-y-1">`;
+      matches.slice(0, 12).forEach(part => {
+        const file = part.files[0];
+        const sizeMb = Math.round(file.size_bytes / 1e6);
+        html += `<li>${part.nuts_id} — <a class="link" href="${file.presigned_url}" referrerpolicy="strict-origin-when-cross-origin">Download (${sizeMb} MB)</a></li>`;
+      });
+      if (matches.length > 12) {
+        html += `<li>…and ${matches.length - 12} more partitions. Use the S3 glob above to fetch all.</li>`;
+      }
+      html += `</ul>`;
+      container.innerHTML = html;
+    }
+
+    const onNutsChange = () => renderNutsResults();
+
     {#UPDATE VIA API FUNCTIONS#}
     const updateCountries = async () => {
       const APIResponse = await fetch(`${API_URL}countries`);
@@ -315,12 +414,21 @@
         download_link_gpkg.innerHTML = `Download full GPKG (${Math.round(selectedCountry.gpkg.size_in_mb)} MB)`
         download_link_gpkg.removeAttribute('disabled');
       }
+
+      // Prefilter NUTS options using country->ISO2 mapping when available
+      const iso2 = countryIso2[selectedCountry.name] || "";
+      populateNutsOptions(iso2);
+      nutsInput.value = iso2;
+      renderNutsResults();
     }
 
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('countryDropdown').addEventListener('change', onSelectCountry);
+      nutsInput.addEventListener('input', onNutsChange);
+      renderNutsResults();
     });
 
     updateCountries()
+    loadNutsPartitions()
   </script>
 {% endblock %}

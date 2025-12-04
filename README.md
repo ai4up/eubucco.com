@@ -32,6 +32,32 @@ here: [Getting Up and Running Locally With Docker](https://cookiecutter-django.r
 
     docker compose -f local.yml up --build
 
+## Data lake: MinIO + Parquet + DuckDB
+
+- Object storage: `local.yml` now starts a MinIO server on `9000` (S3 API) and `9001` (console) with a bucket named `eubucco` created by the `minio-setup` sidecar.
+- Ingestion: run `publish_parquet_partitions` to transform the zipped GPKG sources into Parquet partitioned by `nuts_id` and upload them to MinIO.
+    ```bash
+    docker compose -f local.yml run --rm django \
+      python manage.py shell -c "from eubucco.ingest.tasks import publish_parquet_partitions; publish_parquet_partitions(chunk_size=20000)"
+    ```
+  Add an optional `csvs/util/nuts_lookup.csv` (columns: `country,region,city,nuts_level,nuts_id`) to control the NUTS mapping; otherwise regions are used as the partition key.
+- If you already have per-NUTS3 Parquet files (filename is the NUTS3 code, e.g. `ES300.parquet`), drop them into `csvs/buildings_parquet/` and push them straight to MinIO without conversion:
+    ```bash
+    docker compose -f local.yml run --rm django \
+      python manage.py shell -c "from eubucco.ingest.tasks import stage_existing_parquet; stage_existing_parquet(version_tag='v0_1')"
+    ```
+- Public endpoint for presigned links: set `MINIO_PUBLIC_ENDPOINT` (default in local.yml is `http://localhost:9000`) so browser downloads don’t point at the internal `minio:9000` host.
+- API discovery: `GET http://localhost:8001/v0.1/datalake/nuts` lists available partitions; `GET http://localhost:8001/v0.1/datalake/nuts/<version>/<nuts_id>` returns presigned links for one partition.
+- DuckDB example for a local subset:
+    ```bash
+    duckdb -c "INSTALL httpfs; LOAD httpfs;
+    SET s3_endpoint='http://localhost:9000';
+    SET s3_access_key_id='minioadmin';
+    SET s3_secret_access_key='minioadmin';
+    SET s3_use_ssl=false;
+    SELECT count(*) FROM read_parquet('s3://eubucco/buildings/v0_1/nuts_id=CY00/*.parquet');"
+    ```
+
 ### Setting Up Your Users
 
 - To create a **normal user account**, just go to Sign Up and fill out the form. Once you submit it, you'll see a "

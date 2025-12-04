@@ -1,28 +1,23 @@
-import gc
 import logging
-import os
 import shutil
+import tempfile
 import zipfile
-from math import isnan
 from pathlib import Path
-from string import capwords
-from time import sleep, time
+from typing import Iterable, Optional
 
-import django.db
 import geopandas as gpd
 import pandas as pd
-import redis
-from django.contrib.gis.db.models import Union
-from django.contrib.gis.geos import MultiPolygon
-from pottery import Redlock
 
 from config import celery_app
-from eubucco.data.models import Building, City, Country, Region
-from eubucco.files.models import FileType
-from eubucco.files.tasks import ingest_file
-from eubucco.ingest.models import IngestedGPKG
+from eubucco.datalake.minio_client import (
+    MinioSettings,
+    build_client,
+    ensure_bucket,
+    public_s3_uri,
+    upload_file,
+)
+from eubucco.datalake.constants import DATASET_PREFIX
 from eubucco.ingest.util import (
-    create_location,
     match_building_type,
     match_gadm_info,
     match_type_source,
@@ -30,289 +25,225 @@ from eubucco.ingest.util import (
 )
 from eubucco.utils import version_enum
 
-CSV_PATH = "csvs/buildings"
-CACHE_PATH = ".cache"
-ADMIN_CODE_MATCHES = "csvs/util/admin-codes-matches-v0.1.csv"
-ADMIN_CODE_MATCHES_NO_VERSION = "csvs/util/admin-codes-matches_no_version.csv"
-GADM_CITY_GEO = "csvs/util/gadm_country_city_geom.gpkg"
-GADM_COUNTRY_GEO = "csvs/util/gadm_country_geom.gpkg"
+CSV_PATH = Path("csvs/buildings")
+ADMIN_CODE_MATCHES_NO_VERSION = Path("csvs/util/admin-codes-matches_no_version.csv")
+PARQUET_CACHE = Path(".cache/parquet-buildings")
+NUTS_LOOKUP_PATH = Path("csvs/util/nuts_lookup.csv")
+RAW_PARQUET_DIR = Path("csvs/buildings_parquet")
 
-r = redis.Redis(
-    host=os.environ["REDIS_URL"].split("//")[-1].split(":")[0],
-    port=os.environ["REDIS_URL"].split(":")[-1].split("/")[0],
-    db=os.environ["REDIS_URL"].split("/")[-1],
-)
-
-# shutil.rmtree(CACHE_PATH, ignore_errors=True)
-Path(CACHE_PATH).mkdir(parents=True, exist_ok=True)
+PARQUET_CACHE.mkdir(parents=True, exist_ok=True)
 
 
-@celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
-def ingest_new_csvs():
-    logging.info("Starting ingestion task")
-    if not os.path.exists(ADMIN_CODE_MATCHES):
-        logging.error("MISSING ADMIN_CODE_MATCHES! Can not ingest csvs.")
-        return
-
-    pathlist = Path(CSV_PATH).rglob("*.gpkg.zip")
-    for path in pathlist:
-        filename = path.name
-        ingested_csv = IngestedGPKG.objects.filter(name=filename).first()
-        if ingested_csv:
-            logging.debug(f"CSV {filename} is already ingested. Skipping!")
-            continue
-
-        logging.info(f"New CSV {filename} found. Trigger async ingestion.")
-        ingest_csv.delay(str(path))
-
-
-def recursion_upack(extracted_path: str):
-    """this is only needed because germany is zipped in sub files that are zipped as well
-    to be reomved in future iterations!"""
-    pathlist = Path(extracted_path).rglob("*.gpkg.zip")
-    logging.info(f"Recursion unpack triggered at {extracted_path}")
-    for path in pathlist:
-        logging.info(f"Check {path}")
-        if not str(path).split("/")[-1].startswith("."):
-            logging.info(f"Recursion unpacking {path}")
-            with zipfile.ZipFile(path, "r") as zip_ref:
-                zip_ref.extractall(extracted_path)
-
-    logging.info("Recursion unpacking done!")
-
-
-def unpack_csv(zipped_csv_path: str) -> str:
-    logging.info(f"Unpacking {zipped_csv_path}")
-    extracted_path = zipped_csv_path.replace("csvs", "cache").replace(".gpkg.zip", "")
-    logging.info(f"To location {extracted_path}")
-    with zipfile.ZipFile(zipped_csv_path, "r") as zip_ref:
-        zip_ref.extractall(extracted_path)
-
-    logging.info(f"Unpacking {zipped_csv_path} done!")
-
-    recursion_upack(extracted_path)
-    return extracted_path
-
-
-def get_file_size(path: str) -> float:
-    file_stats = os.stat(str(path))
-    return file_stats.st_size / (1024 * 1024)
-
-
-def find_file(gdam: str, type: str) -> tuple[bool, str]:
-    pathlist = Path(CSV_PATH).rglob(f"*-{gdam}{type}")
-    for p in pathlist:
-        return True, str(p)
-    return False, ""
-
-
-@celery_app.task(
-    soft_time_limit=60 * 60 * 24 * 7, hard_time_limit=(60 * 60 * 24 * 7) + 1
-)
-def ingest_boundaries():
-    available_countries = []
-
-    df_boundaries_countries = gpd.read_file(GADM_COUNTRY_GEO)
-    for i, country_boundaries in df_boundaries_countries.iterrows():
-        logging.debug(f"Checking boundaries for {country_boundaries.country_name}")
-        gpkg_found, zipped_gpkg_path = find_file(
-            gdam=country_boundaries.gadm_code, type=".gpkg.zip"
+def _load_admin_code_matches() -> pd.DataFrame:
+    if not ADMIN_CODE_MATCHES_NO_VERSION.exists():
+        raise FileNotFoundError(
+            f"Missing admin code matches at {ADMIN_CODE_MATCHES_NO_VERSION}"
         )
-        csv_found, zipped_csv_path = find_file(
-            gdam=country_boundaries.gadm_code, type=".csv.zip"
-        )
+    return pd.read_csv(ADMIN_CODE_MATCHES_NO_VERSION)
 
-        if "v0_1-" not in zipped_gpkg_path:
-            continue
 
-        if csv_found and gpkg_found:
-            logging.info(
-                f"Files found for boundaries for {country_boundaries.country_name}"
+def _load_nuts_lookup() -> Optional[pd.DataFrame]:
+    if NUTS_LOOKUP_PATH.exists():
+        lookup = pd.read_csv(NUTS_LOOKUP_PATH)
+        expected = {"country", "region", "city", "nuts_id", "nuts_level"}
+        missing_columns = expected.difference(set(lookup.columns))
+        if missing_columns:
+            raise ValueError(
+                f"NUTS lookup {NUTS_LOOKUP_PATH} is missing columns: {missing_columns}"
             )
-            country_str = capwords(country_boundaries.country_name)
-            available_countries.append(country_boundaries["gadm_code"])
-
-            csv_file = ingest_file(zipped_csv_path, file_type=FileType.BUILDING)
-            gpkg_file = ingest_file(zipped_gpkg_path, file_type=FileType.BUILDING)
-
-            country, _ = Country.objects.get_or_create(name=country_str)
-            country.geometry = str(country_boundaries.geometry)
-            country.convex_hull = str(country_boundaries.geometry.convex_hull)
-            country.csv = csv_file
-            country.gpkg = gpkg_file
-            country.save()
-
-    df = pd.read_csv(ADMIN_CODE_MATCHES)
-    df["city_id"] = [id.split("-")[1] for id in df["id"]]
-    df_boundaries = gpd.read_file(GADM_CITY_GEO)
-
-    logging.info("Updating city boundaries!")
-    for i, boundary in df_boundaries.iterrows():
-        if boundary.gadm_code in available_countries:
-            cities = df.loc[df.city_id == boundary.city_id]
-            if len(cities) > 0:
-                city_row = cities.iloc[0]
-                if not city_row.city or isinstance(city_row.city, float):
-                    logging.warning(f"City not in ADMIN CODE MATCHES {boundary}")
-                    continue
-
-                country, region, city = create_location(
-                    city_row.country, city_row.region, city_row.city
-                )
-                logging.info(f"Ingesting boundary of {city}")
-                city.geometry = str(boundary.geometry)
-                city.save()
-            else:
-                logging.warning(f"City not in ADMIN CODE MATCHES {boundary}")
-
-    logging.info("Updating region boundaries!")
-    for region in Region.objects.all():
-        logging.info(f"Ingesting boundary of {region}")
-        region.geometry = City.objects.filter(in_region=region).aggregate(
-            area=Union("geometry")
-        )["area"]
-        region.save()
-
-
-@celery_app.task(
-    soft_time_limit=60 * 60 * 24 * 7, hard_time_limit=(60 * 60 * 24 * 7) + 1
-)
-def ingest_csv(zipped_gpkg_path: str):
-    chunksize = (
-        10**4
-    )  # small chunks to keep memory in check on multiple ingestion workers
-    df_code_matches = pd.read_csv(ADMIN_CODE_MATCHES_NO_VERSION)
-    start_time = time()
-    extracted_path = unpack_csv(zipped_gpkg_path)
-    country_extra = " OTHER-LICENSE" if "OTHER-LICENSE" in zipped_gpkg_path else ""
-    version = version_enum.version_from_path(path=zipped_gpkg_path)
-
-    logging.info(f"Starting ingestion of {zipped_gpkg_path}, version {version}")
-
-    if "OTHER-LICENSE" in zipped_gpkg_path:
-        pathlist = Path(extracted_path).rglob("*.gpkg")
-        for gpkg_path in pathlist:
-            df_raw = gpd.read_file(str(gpkg_path), rows=slice(1, 50))
-            df = match_gadm_info(df_raw, df_code_matches)
-            country_str = capwords(f"{df.iloc[0].country}{country_extra}")
-
-            country, _ = Country.objects.get_or_create(name=country_str)
-
-            csv_file = ingest_file(
-                zipped_gpkg_path.replace("gpkg", "csv"), file_type=FileType.BUILDING
-            )
-            gpkg_file = ingest_file(zipped_gpkg_path, file_type=FileType.BUILDING)
-
-            country.csv = csv_file
-            country.gpkg = gpkg_file
-            country.save()
-
-    pathlist = Path(extracted_path).rglob("*.gpkg")
-
-    country, gpkg_path = None, None
-    for gpkg_path in pathlist:
-        for i in range(0, (10**10), chunksize):
-            df_raw = gpd.read_file(gpkg_path, rows=slice(i, i + chunksize))
-            if len(df_raw) == 0:
-                break
-
-            df = match_gadm_info(df_raw, df_code_matches)
-            for temp_id in df.id_temp.unique():
-                df_to_ingest = df.loc[df.id_temp == temp_id]
-                row = df_to_ingest.iloc[0]
-
-                if isinstance(row.city, float) and isnan(row.city):
-                    logging.warning(f"Skipping row {row} from {gpkg_path}, city is nan")
-                    continue
-                country, region, city = create_location(
-                    row.country, row.region, row.city
-                )
-                logging.info(
-                    f"Ingesting city: {city} in region: {region} in country: {country} coming from {zipped_gpkg_path}"
-                )
-                buildings = []
-                for i, row in df_to_ingest.iterrows():
-                    buildings.append(
-                        Building(
-                            id=row["id_x"],
-                            id_source=row["id_source"],
-                            country=country,
-                            region=region,
-                            city=city,
-                            height=row["height"],
-                            age=sanitize_building_age(row["age"]),  # row['age'],
-                            type=match_building_type(row["type"]),
-                            type_source=match_type_source(row["type_source"]),
-                            geometry=row["geometry"].wkt,
-                            version=version,
-                        )
-                    )
-
-                logging.info(f"Ingesting {len(buildings)} buildings")
-                logging.info(f"First is {buildings[0]} coming from {zipped_gpkg_path}")
-                Building.objects.bulk_create(buildings, ignore_conflicts=True)
-                gc.collect()
-                django.db.reset_queries()
-
-    ingested_csv = IngestedGPKG(
-        name=zipped_gpkg_path.split("/")[-1],
-        size_in_mb=round(os.stat(zipped_gpkg_path).st_size / (1024 * 1024), 2),
-        ingestion_time_in_s=time() - start_time,
+        return lookup
+    logging.warning(
+        "NUTS lookup file not found. Falling back to region names for partitioning."
     )
-    ingested_csv.save()
-
-    if country is not None and "OTHER-LICENSE" in zipped_gpkg_path:
-        create_polygon_for_country.delay(country.id)
-
-    shutil.rmtree(extracted_path, ignore_errors=True)
+    return None
 
 
-@celery_app.task(soft_time_limit=60 * 60 * 2, hard_time_limit=(60 * 60 * 2) + 1)
-def create_polygon_for_country(country_id: int):
-    logging.debug(f"Creating Polygons for country_id {country_id}")
-    # for city in City.objects.filter(in_country=country_id):
-    #     buildings_in_city = Building.objects.filter(city=city).all()
-    #     if buildings_in_city:
-    #         m = MultiPolygon([b.geometry for b in buildings_in_city])
-    #         city.geometry = m.convex_hull
-    #         city.save()
-    #
-    # for region in Region.objects.filter(in_country=country_id):
-    #     cities_in_region = City.objects.filter(in_region=region).all()
-    #     if cities_in_region[0].geometry:
-    #         m = MultiPolygon([b.geometry for b in cities_in_region])
-    #         region.geometry = m.convex_hull
-    #         region.save()
-
-    for country in Country.objects.filter(pk=country_id):
-        regions_in_country = Region.objects.filter(in_country=country).all()
-        if regions_in_country[0].geometry:
-            m = MultiPolygon([b.geometry for b in regions_in_country])
-            # country.geometry = m.convex_hull
-            country.convex_hull = m.convex_hull
-            country.save()
-
-        logging.info(f"Polygons for {country.name} are done!")
+def _extract_gpkg(zipped_gpkg_path: Path) -> Path:
+    temp_dir = Path(tempfile.mkdtemp(prefix="eubucco-gpkg-"))
+    with zipfile.ZipFile(zipped_gpkg_path, "r") as zip_ref:
+        zip_ref.extractall(temp_dir)
+    for nested in temp_dir.rglob("*.zip"):
+        if nested.name.startswith("."):
+            continue
+        with zipfile.ZipFile(nested, "r") as zip_ref:
+            zip_ref.extractall(temp_dir)
+    return temp_dir
 
 
-@celery_app.task(soft_time_limit=60 * 60 * 12, hard_time_limit=(60 * 60 * 12) + 1)
-def start_ingestion_tasks():
-    ingest_boundaries()
-    ingest_new_csvs.delay()
+def _iter_chunks(gpkg_path: Path, chunk_size: int) -> Iterable[gpd.GeoDataFrame]:
+    for start in range(0, 10**10, chunk_size):
+        gdf = gpd.read_file(gpkg_path, rows=slice(start, start + chunk_size))
+        if len(gdf) == 0:
+            break
+        yield gdf
 
 
-# @synchronize(key='eubucco.ingest.tasks.main', masters={r}, auto_release_time=20, blocking=True, timeout=1)
-def main():
-    """In dev mode django and the watcher are started. We use this main function to start
-    the ingestion tasks only once with the lock applied here!"""
-
-    lock = Redlock(key="eubucco.ingest.tasks.main", masters={r}, auto_release_time=20)
-    if lock.acquire(blocking=False):
-        start_ingestion_tasks.delay()
-        sleep(10)
-        lock.release()
+def _derive_nuts(df: pd.DataFrame, nuts_lookup: Optional[pd.DataFrame]) -> pd.DataFrame:
+    if nuts_lookup is not None:
+        merged = df.merge(
+            nuts_lookup, on=["country", "region", "city"], how="left", suffixes=("", "_lkp")
+        )
+        df["nuts_id"] = merged["nuts_id"]
+        df["nuts_level"] = merged["nuts_level"]
     else:
-        logging.debug("Ingestion is already running on other thread")
+        df["nuts_id"] = df["region"]
+        df["nuts_level"] = "unspecified"
+
+    df["nuts_id"] = df["nuts_id"].fillna(df["region"])
+    df["nuts_level"] = df["nuts_level"].fillna("unspecified")
+    df["nuts_id"] = df["nuts_id"].astype(str).str.replace(" ", "_")
+    return df
 
 
-main()
+def _prepare_chunk(
+    df_raw: gpd.GeoDataFrame,
+    df_code_matches: pd.DataFrame,
+    version_value: int,
+    nuts_lookup: Optional[pd.DataFrame],
+) -> pd.DataFrame:
+    df = match_gadm_info(df_raw, df_code_matches)
+    df.rename(columns={"id_x": "id"}, inplace=True)
+    df = _derive_nuts(df, nuts_lookup)
+    df["geometry_wkb"] = df["geometry"].to_wkb()
+    df["version"] = version_value
+
+    df["type"] = [match_building_type(val).value for val in df["type"]]
+    df["age"] = [sanitize_building_age(val) for val in df["age"]]
+    df["type_source"] = [match_type_source(val) for val in df["type_source"]]
+
+    df = df.drop(columns=["geometry", "id_temp"], errors="ignore")
+    ordered_columns = [
+        "id",
+        "id_source",
+        "country",
+        "region",
+        "city",
+        "nuts_id",
+        "nuts_level",
+        "height",
+        "age",
+        "type",
+        "type_source",
+        "geometry_wkb",
+        "version",
+    ]
+    return df[ordered_columns]
+
+
+def _write_partition(df: pd.DataFrame, dataset_root: Path, counters: dict[str, int]) -> None:
+    grouped = df.groupby("nuts_id")
+    for nuts_id, df_partition in grouped:
+        dest_dir = dataset_root / f"nuts_id={nuts_id}"
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        file_index = counters.get(nuts_id, 0)
+        dest_path = dest_dir / f"part-{file_index}.parquet"
+        df_partition.to_parquet(dest_path, index=False)
+        counters[nuts_id] = file_index + 1
+
+
+def _upload_dataset(dataset_root: Path, dataset_prefix: str, settings: MinioSettings) -> None:
+    client, settings = build_client(settings=settings)
+    ensure_bucket(client, settings)
+    for parquet_file in dataset_root.rglob("*.parquet"):
+        relative_key = parquet_file.relative_to(dataset_root).as_posix()
+        object_key = f"{dataset_prefix}/{relative_key}"
+        logging.info("Uploading %s to %s", parquet_file, public_s3_uri(settings, object_key))
+        upload_file(client, settings, object_key, str(parquet_file))
+
+
+def _build_chunk_iterator(
+    gpkg_path: Path,
+    df_code_matches: pd.DataFrame,
+    version_value: int,
+    nuts_lookup: Optional[pd.DataFrame],
+    chunk_size: int,
+) -> Iterable[pd.DataFrame]:
+    for chunk in _iter_chunks(gpkg_path, chunk_size=chunk_size):
+        yield _prepare_chunk(
+            df_raw=chunk,
+            df_code_matches=df_code_matches,
+            version_value=version_value,
+            nuts_lookup=nuts_lookup,
+        )
+
+
+@celery_app.task(
+    soft_time_limit=60 * 60 * 24 * 3,
+    hard_time_limit=(60 * 60 * 24 * 3) + 10,
+)
+def publish_parquet_partitions(version_override: Optional[str] = None, chunk_size: int = 50_000):
+    """
+    Convert the source GPKG building data into Parquet, partitioned by NUTS,
+    and upload the partitions to the configured MinIO bucket.
+    """
+    df_code_matches = _load_admin_code_matches()
+    nuts_lookup = _load_nuts_lookup()
+    settings = MinioSettings()
+
+    for zipped_gpkg_path in CSV_PATH.rglob("*.gpkg.zip"):
+        version_tag = version_override or str(zipped_gpkg_path.name).split("-")[0]
+        try:
+            resolved_version = version_enum.version_from_path(f"{version_tag}-placeholder")
+            version_value = int(resolved_version)
+        except Exception:
+            logging.warning("Unknown version tag %s, persisting as-is", version_tag)
+            version_value = version_tag
+        dataset_prefix = f"{DATASET_PREFIX}/{version_tag}"
+        parquet_root = PARQUET_CACHE / version_tag
+        shutil.rmtree(parquet_root, ignore_errors=True)
+        partition_counters: dict[str, int] = {}
+
+        logging.info("Building parquet dataset for %s (version %s)", zipped_gpkg_path, version_tag)
+        extraction_dir = _extract_gpkg(zipped_gpkg_path)
+        try:
+            gpkg_files = list(Path(extraction_dir).rglob("*.gpkg"))
+            if not gpkg_files:
+                logging.warning("No gpkg files found in %s", extraction_dir)
+                continue
+            for gpkg_path in gpkg_files:
+                for df in _build_chunk_iterator(
+                    gpkg_path=gpkg_path,
+                    df_code_matches=df_code_matches,
+                    version_value=version_value,
+                    nuts_lookup=nuts_lookup,
+                    chunk_size=chunk_size,
+                ):
+                    _write_partition(df, parquet_root, partition_counters)
+            _upload_dataset(parquet_root, dataset_prefix, settings=settings)
+        finally:
+            shutil.rmtree(extraction_dir, ignore_errors=True)
+            shutil.rmtree(parquet_root, ignore_errors=True)
+
+
+@celery_app.task(soft_time_limit=60 * 5, hard_time_limit=(60 * 5) + 5)
+def republish_latest_dataset():
+    publish_parquet_partitions.delay()
+
+
+@celery_app.task(soft_time_limit=60 * 60, hard_time_limit=(60 * 60) + 5)
+def stage_existing_parquet(
+    version_tag: str = "v0_1",
+    source_dir: str = RAW_PARQUET_DIR,
+):
+    """
+    Upload pre-built NUTS3 Parquet files (one file per NUTS3 code) to MinIO using the
+    `s3://<bucket>/buildings/<version>/nuts_id=<NUTS3>/...` layout.
+    """
+    client, settings = build_client()
+    ensure_bucket(client, settings)
+    base = Path(source_dir)
+    if not base.exists():
+        raise FileNotFoundError(f"Parquet source dir not found: {base}")
+
+    uploaded = 0
+    for parquet_path in base.rglob("*.parquet"):
+        nuts_id = parquet_path.stem
+        object_key = f"{DATASET_PREFIX}/{version_tag}/nuts_id={nuts_id}/{parquet_path.name}"
+        logging.info("Uploading %s -> %s", parquet_path, public_s3_uri(settings, object_key))
+        upload_file(client, settings, object_key, str(parquet_path))
+        uploaded += 1
+
+    if uploaded == 0:
+        logging.warning("No parquet files found under %s", base)
+    else:
+        logging.info("Uploaded %s parquet files for version %s", uploaded, version_tag)
