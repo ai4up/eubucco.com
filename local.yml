@@ -33,6 +33,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
+      NUTS_PM_TILES_URL: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}/${MINIO_BUCKET:-eubucco}/${NUTS_PM_TILES_OBJECT:-nuts.pmtiles}
     ports:
       - "8000:8000"
     command: /start
@@ -58,6 +59,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_USE_SSL: "false"
+      NUTS_PM_TILES_URL: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}/${MINIO_BUCKET:-eubucco}/${NUTS_PM_TILES_OBJECT:-nuts.pmtiles}
     command: /start-api
 
 
@@ -159,6 +161,7 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - eubucco_local_minio_data:/data
+      - ./tiles:/tiles:ro
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -172,9 +175,13 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-eubucco}
+      NUTS_PM_TILES_OBJECT: ${NUTS_PM_TILES_OBJECT:-nuts.pmtiles}
     entrypoint: |
       /bin/sh -c "
       until (/usr/bin/mc alias set localminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}); do echo 'waiting for minio...' && sleep 1; done;
       /usr/bin/mc mb -p localminio/${MINIO_BUCKET};
       /usr/bin/mc anonymous set download localminio/${MINIO_BUCKET};
+      if [ -f /tiles/nuts.pmtiles ]; then /usr/bin/mc cp /tiles/nuts.pmtiles localminio/${MINIO_BUCKET}/${NUTS_PM_TILES_OBJECT}; fi;
       "
+    volumes:
+      - ./tiles:/tiles:ro

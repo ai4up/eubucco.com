@@ -1,46 +1,64 @@
 {% extends "base.html" %}
 {% load static %}
 
-{#Update and include https://github.com/maplibre/martin#using-with-maplibre !!!#}
-
 {% block content %}
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.1/dist/leaflet.css"
-        integrity="sha256-sA+zWATbFveLLNqWO2gtiw3HL/lh1giY/Inf1BJ0z14="
-        crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.1/dist/leaflet.js"
-          integrity="sha256-NDI0K41gVbWqfkkaHj15IzU7PtMoelkzyKp8TOaFQ3s="
-          crossorigin=""></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"
-          integrity="sha512-ha3Is9IgbEyIInSb+4S6IlEwpimz00N5J/dVLQFKhePkZ/HywIbxLeEu5w+hRjVBpbujTogNyT311tluwemy9w=="
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/wicket/1.3.8/wicket.min.js"
-          integrity="sha512-aaiN+QIXD0N9Id865vSDEfttZJV9v8ZGh7jXMnYI2zbZhkSYOulS4IH0u4pC61/KXT20UedYzL5xi5siIg6mlw=="
-          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="{% static 'js/leaflet-tilelayer-colorfilter.min.js' %}"></script>
+<link href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3.2.0/dist/pmtiles.js"></script>
 
-  <style>
-    :root {
-      --map-tiles-filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+<style>
+  body {
+    overflow: hidden !important;
+  }
+  
+  #map { 
+    width: 100%;
+    height: 100%;
+  }
+  
+  @media (min-width: 768px) {
+    .main-container {
+      flex-direction: row;
+      height: var(--content-height);
+      overflow: hidden;
     }
-
-    @media (prefers-color-scheme: dark) {
-      .map-tiles {
-        filter: var(--map-tiles-filter, none);
-      }
+    
+    .map-column {
+      width: 50%;
+      flex-shrink: 0;
+      height: 100%;
     }
-  </style>
+    
+    .map-column > div {
+      height: 100%;
+    }
+    
+    .article-column {
+      width: 50%;
+      height: 100%;
+      overflow-y: auto;
+    }
+  }
+  
+  @media (max-width: 767px) {
+    .map-column > div {
+      height: 20rem;
+    }
+  }
+</style>
 
-  <div class="h-80 lg:h-96 z-0" id="map">
-    {#    <div id="map"></div>#}
-    {#    {% leaflet_map "yourmap" callback="window.map_init_basic" %}#}
+<div class="main-container w-full flex flex-col gap-6">
+
+  <!-- LEFT COLUMN: MAP -->
+  <div class="map-column w-full">
+    <div>
+      <div id="map"></div>
+    </div>
   </div>
 
-
-
-
-  <article class="prose-2xl text-center lg:text-left">
+  <!-- RIGHT COLUMN: ARTICLE -->
+  <article class="article-column w-full">
     <div class="container mx-auto pt-4 px-4 w-full">
-      {#      <h2 class="text-center">Download</h2>#}
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div class="grid grid-rows-2 grid-flow-col">
@@ -64,149 +82,102 @@
           <div class="text-center pb-2">Attributes without geometries</div>
           <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download CSV</a>
         </div>
-        {#        <h1>For more info</h1>#}
-
-        {#        <a id="downloadCountryLinkPKG" href="" class="btn btn-primary" disabled="disabled">Download GPKG</a>#}
-        {#        <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download attributes-only#}
-        {#          CSV</a>#}
       </div>
-      <p class="text-center">For details about the license, API and metadata, refer to our <a class="link"
-                                                                                              href="{% url 'docs' %}">Docs</a>.
-        The data is also archived on the scientific repository <a class="link"
-                                                                  href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>
+
+      <p class="text-center">
+        For details about the license, API and metadata, refer to our 
+        <a class="link" href="{% url 'docs' %}">Docs</a>.
+        The data is also archived on 
+        <a class="link" href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>.
       </p>
 
       <div class="divider my-8">Or download by NUTS region</div>
+
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div class="grid grid-rows-2 grid-flow-col lg:col-span-1">
           <div class="text-center pb-2">NUTS (0–3)</div>
-          <input list="nutsOptions" id="nutsInput" class="input input-primary w-full" placeholder="e.g. DE, DE1, DE12, DE123">
+          <input list="nutsOptions" id="nutsInput"
+                 class="input input-primary w-full"
+                 placeholder="e.g. DE, DE1, DE12, DE123">
           <datalist id="nutsOptions"></datalist>
-          <p class="text-sm text-center lg:text-left pt-2">Type to fuzzy-search; country choice prefilters.</p>
+          <p class="text-sm text-center lg:text-left pt-2">
+            Type to fuzzy-search; country choice prefilters.
+          </p>
         </div>
+
         <div class="grid grid-rows-2 grid-flow-col lg:col-span-2">
           <div class="text-center pb-2">Matching downloads</div>
           <div id="nutsResults" class="text-sm space-y-2"></div>
         </div>
       </div>
-
-      {#      <div class="max-w-5xl">#}
-      {#        <p>Download the building data from EUBUCCO v0.1 as:</p>#}
-      {#        <ul class="list-disc">#}
-      {#          <li>Geopackage - footprint geometries + building attributes</li>#}
-      {#          <li>CSV - building attributes only (height, type, and age)</li>#}
-      {#        </ul>#}
-      {#        <a href="https://doi.org/10.5281/zenodo.6524780"><img#}
-      {#                src="https://zenodo.org/badge/DOI/10.5281/zenodo.6524780.svg" alt="DOI"></a>#}
-      {#      </div>#}
     </div>
+
     <div class="container mx-auto px-4 py-4 w-full">
-
-      {#      <div class="grid lg:grid-cols-2 gap-8">#}
-      {#        <div><h1>Info</h1>#}
-      {#          <p>Here, you can download the data from EUBUCCO v0.1.</p>#}
-      {##}
-      {#          <p>You can select full country datasets using the dropdown menu. You can also get all countries and download#}
-      {#            links#}
-      {#            in a json if you want to download multiple files programmatically <a href="{{ countries_api_link }}"#}
-      {#                                                                                 class="link">here</a>.</p>#}
-      {##}
-      {#          <p>You can select either to download the full data with attributes and building footprint geometries as a#}
-      {#            .gpkg,#}
-      {#            or#}
-      {#            the attributes only as a .csv.#}
-      {##}
-      {#          <p>The coordinate reference system used for all geometries is EPSG:3035.</p>#}
-      {##}
-      {#          <p>You find additional information about the License and some small example data below.</p>#}
-      {##}
-      {#        </div>#}
-      {#        <div><h1>License</h1>#}
-      {#          <p>This database is composed of files under different licenses. The majority of the data (95+%) is licensed#}
-      {#            under#}
-      {#            Open#}
-      {#            Data Commons Open Database License 1.0 (ODbL).#}
-      {#          <p>Two datasets are available on this repository under different#}
-      {#            licenses. Their license is added to their respective file names. One input dataset has a share-alike#}
-      {#            requirement#}
-      {#            but#}
-      {#            which is not ODbL, namely Prague, licensed under CC-BY-SA. The file name is#}
-      {#            v0_1-CZE_11-OTHER-LICENSE-CC-BY-SA.zip.</p>#}
-      {#          <p>One input dataset had a non-commercial use requirement, namely Abruzzo, licensed under CC-BY-NC. The file#}
-      {#            name#}
-      {#            is#}
-      {#            v0_1-ITA_1-OTHER-LICENSE-CC-BY-NC.zip.</p></div>#}
-      {#      </div>#}
-      {#      <div class="lg:hidden"><h1>Version</h1></div>#}
-      {#      <p>Current version: v0.1 (release date: XXX)#}
-      {#        Zenodo concept DOI: XXX#}
-      {#        Zenodo version-specific DOI: XXX“</p>#}
-
-      {#      </div>#}
       <h2 class="text-center pt-16">Examples</h2>
 
       <div class="container mx-auto px-4 py-4 w-full">
         <div class="overflow-x-auto">
           <table class="table lg:table-fixed table-zebra w-full">
-            <!-- head -->
             <thead>
-            <tr>
-              <th>City</th>
-              <th>GPKG</th>
-              <th>CSV</th>
-            </tr>
+              <tr>
+                <th>City</th>
+                <th>GPKG</th>
+                <th>CSV</th>
+              </tr>
             </thead>
             <tbody>
-            <!-- rows -->
-            {% for example in examples %}
-              <tr>
-                <td>{{ example.city | capfirst }}</td>
-                <td><a href="{{ example.gpkg_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download
-                  full gpkg
-                  ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)</a></td>
-                <td><a href="{{ example.csv_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download
-                  csv
-                  ({{ example.csv_size_in_mb |floatformat:1 }}
-                  Mb)</a></td>
-              </tr>
-            {% endfor %}
+              {% for example in examples %}
+                <tr>
+                  <td>{{ example.city | capfirst }}</td>
+                  <td>
+                    <a href="{{ example.gpkg_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">
+                      Download full gpkg ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)
+                    </a>
+                  </td>
+                  <td>
+                    <a href="{{ example.csv_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">
+                      Download csv ({{ example.csv_size_in_mb |floatformat:1 }} Mb)
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
+
         <div class="container mx-auto px-4 py-4 w-full">
           <h2 class="pt-20 text-center">Additional Files</h2>
         </div>
-        <div class="overflow-x-auto">
 
-          <table class="table lg:table-fixed table-zebra w-full ">
-            <!-- head -->
+        <div class="overflow-x-auto">
+          <table class="table lg:table-fixed table-zebra w-full">
             <thead>
-            <tr>
-              <th>Name</th>
-              <th>Download</th>
-              <th>Info</th>
-            </tr>
+              <tr>
+                <th>Name</th>
+                <th>Download</th>
+                <th>Info</th>
+              </tr>
             </thead>
             <tbody>
-            <!-- rows -->
-            {% for file in additional_files %}
-              <tr>
-                <td>{{ file.name }}</td>
-                <td><a href="{{ file.download_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">Download
-                  file
-                  ({{ file.size_in_mb |floatformat:2 }} Mb)</a></td>
-                <td>
-                  <div class="overflow-y-auto">{{ file.info }}</div>
-                </td>
-              </tr>
-            {% endfor %}
+              {% for file in additional_files %}
+                <tr>
+                  <td>{{ file.name }}</td>
+                  <td>
+                    <a href="{{ file.download_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">
+                      Download file ({{ file.size_in_mb |floatformat:2 }} Mb)
+                    </a>
+                  </td>
+                  <td><div class="overflow-y-auto">{{ file.info }}</div></td>
+                </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
     </div>
-  </article>
 
+  </article>
+</div>
 
   {#  <div class="container mx-auto px-4 py-4 w-full">#}
   {#    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">#}
@@ -222,6 +193,7 @@
     let countries;
     let selectedCountry;
     let nutsPartitions = [];
+    let selectedNutsId = "";
     const countryIso2 = {
       "Austria": "AT",
       "Belgium": "BE",
@@ -254,74 +226,14 @@
     };
 
 
-    let API_URL = "{{ API_URL }}"
-
-    let polygon = new Wkt.Wkt();
-    var polylines = [];
-    var polylineRenderer;
-    var myDump;
-
-    let mapFilter = [
-      'invert:100%',
-      'hue-rotate:180deg',
-      'brightness:95%',
-      'contrast:90%',
-    ];
-
-
-    var EPSG3857 = proj4.defs('EPSG:4326');
-    "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs";
-    var EPSG3035 = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs";
-
-
-    {#SETTING UP THE MAP#}
-    var map = L.map('map').setView([50, 6], 4);
-    {#choose a map from http://leaflet-extras.github.io/leaflet-providers/preview/#}
-    {#https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}#}
-    polylineRenderer = L.canvas({padding: 0.5});
-    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      className: 'map-tiles'
-    }).addTo(map);
-
-    {#HELPER FUNCTIONS#}
-
-    function convertCoordinates(polygon) {
-      let convertedCoordinates = []
-      let polygon_geojson = polygon.toJson()
-      polygon_geojson.coordinates[0].forEach(function (item, index) {
-        convertedCoordinates.push(proj4(EPSG3035, EPSG3857, item).reverse())
-      });
-      return convertedCoordinates
-    }
-
-    function resetMapPolygons() {
-      polylines.forEach(function (polyline, index) {
-        polyline.remove()
-      })
-      polylines = []
-    }
-
-    function updateMapPolygons(wkt_polygon_list, zoom, reset = true) {
-      let latlang;
-
-      if (reset) {
-        resetMapPolygons()
-      }
-      wkt_polygon_list.forEach(function (wkt_polygon, index) {
-        polygon.read(wkt_polygon)
-        latlang = convertCoordinates(polygon)
-        polylines.push(L.polyline(latlang, {renderer: polylineRenderer}).addTo(map));
-      });
-      if (latlang) {
-        map.flyTo(latlang[0], zoom)
-      }
-    }
-
-    {#NUTS DOWNLOAD LOGIC#}
+    const API_URL = "{{ API_URL }}";
+    const NUTS_PM_TILES_URL = "{{ NUTS_PM_TILES_URL|default:'' }}";
+    let mapInstance = null;
+    let applyFilters = () => {};
     const nutsInput = document.getElementById("nutsInput");
     const nutsOptions = document.getElementById("nutsOptions");
 
+    {# NUTS partition fetch #}
     const loadNutsPartitions = async () => {
       const APIResponse = await fetch(`${API_URL}datalake/nuts?version=v0_1`);
       nutsPartitions = await APIResponse.json();
@@ -345,17 +257,28 @@
       const candidate = (nutsInput.value || "").trim().toUpperCase();
       if (!candidate) {
         container.innerHTML = `<p class="text-center lg:text-left">Select a NUTS code (0–3) to see matching downloads.</p>`;
+        selectedNutsId = "";
+        updateSelectionLayer();
+        applyFilters();
         return;
       }
-      const matches = nutsPartitions.filter(part => part.nuts_id.toUpperCase().includes(candidate));
+      const matches = nutsPartitions.filter(part => part.nuts_id.toUpperCase().startsWith(candidate));
       if (matches.length === 0) {
         container.innerHTML = `<p class="text-error">No NUTS3 partitions match <span class="font-bold">${candidate}</span>.</p>`;
+        selectedNutsId = candidate;
+        updateSelectionLayer();
+        applyFilters();
         return;
       }
       const totalFiles = matches.reduce((sum, part) => sum + part.files.length, 0);
       const version = matches[0].version;
       const s3Glob = `s3://eubucco/buildings/${version}/nuts_id=${candidate}*/`;
+      selectedNutsId = candidate;
+      updateSelectionLayer();
+      applyFilters();
       let html = `<p>Found <span class="font-bold">${matches.length}</span> NUTS3 partition(s) (${totalFiles} file(s)) matching <span class="font-bold">${candidate}</span>.</p>`;
+      const bundleUrl = `${API_URL}datalake/nuts/${version}/${candidate}/bundle`;
+      html += `<p><a class="btn btn-sm btn-primary" href="${bundleUrl}" referrerpolicy="strict-origin-when-cross-origin">Download all as ZIP</a></p>`;
       html += `<p class="break-all">S3 glob for DuckDB/Polars: <code class="badge badge-outline badge-lg">${s3Glob}*.parquet</code></p>`;
       html += `<ul class="list-disc pl-4 space-y-1">`;
       matches.slice(0, 12).forEach(part => {
@@ -372,7 +295,7 @@
 
     const onNutsChange = () => renderNutsResults();
 
-    {#UPDATE VIA API FUNCTIONS#}
+    {# Country dropdown #}
     const updateCountries = async () => {
       const APIResponse = await fetch(`${API_URL}countries`);
       countries = await APIResponse.json();
@@ -386,11 +309,6 @@
 
     const onSelectCountry = async () => {
       selectedCountry = countries.filter(country => country.id === parseInt(countryDropdown.options[countryDropdown.selectedIndex].value))[0]
-      if (selectedCountry.convex_hull !== null) {
-        updateMapPolygons([selectedCountry.convex_hull], 4)
-      } else {
-        resetMapPolygons()
-      }
       var download_link_csv = document.getElementById("downloadCountryLinkCSV");
       if (selectedCountry.csv === null) {
         download_link_csv.setAttribute("disabled", "disabled")
@@ -422,9 +340,146 @@
       renderNutsResults();
     }
 
+    {# MAPLIBRE + PMTILES #}
+    const initMap = () => {
+      if (!NUTS_PM_TILES_URL) {
+        console.warn("NUTS tiles URL not configured");
+        document.getElementById("nutsResults").innerHTML = `<p class="text-error">NUTS tiles not configured (set NUTS_PM_TILES_URL).</p>`;
+        return;
+      }
+      if (!window.maplibregl) {
+        console.warn("MapLibre GL JS library not loaded");
+        document.getElementById("nutsResults").innerHTML = `<p class="text-error">MapLibre library not loaded.</p>`;
+        return;
+      }
+      if (!window.pmtiles) {
+        console.warn("PMTiles library not loaded (check script tag and network)");
+        document.getElementById("nutsResults").innerHTML = `<p class="text-error">PMTiles library not loaded.</p>`;
+        return;
+      }
+      const protocol = new window.pmtiles.Protocol();
+      maplibregl.addProtocol("pmtiles", protocol.tile);
+      const pmtilesUrl = NUTS_PM_TILES_URL.startsWith("pmtiles://") ? NUTS_PM_TILES_URL : `pmtiles://${NUTS_PM_TILES_URL}`;
+
+      const map = new maplibregl.Map({
+        container: 'map',
+        style: {
+          version: 8,
+          sources: {
+            nuts: {
+              type: 'vector',
+              url: pmtilesUrl,
+            },
+          },
+          layers: [
+            {
+              id: 'background',
+              type: 'background',
+              paint: {'background-color': '#0b1221'}
+            },
+            {
+              id: 'nuts-fill',
+              type: 'fill',
+              source: 'nuts',
+              'source-layer': 'nuts',
+              paint: {
+                'fill-color': [
+                  'case',
+                  ['==', ['get', 'nuts_level'], 0], '#4f46e5',
+                  ['==', ['get', 'nuts_level'], 1], '#22c55e',
+                  ['==', ['get', 'nuts_level'], 2], '#f97316',
+                  '#0ea5e9'
+                ],
+                'fill-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.05, 5, 0.12, 7, 0.2, 9, 0.32]
+              },
+              filter: ['<=', ['get', 'nuts_level'], 3]
+            },
+            {
+              id: 'nuts-outline',
+              type: 'line',
+              source: 'nuts',
+              'source-layer': 'nuts',
+              paint: {
+                'line-color': '#94a3b8',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.1, 6, 0.4, 9, 0.8]
+              },
+              filter: ['<=', ['get', 'nuts_level'], 3]
+            },
+            {
+              id: 'nuts-selected',
+              type: 'line',
+              source: 'nuts',
+              'source-layer': 'nuts',
+              paint: {'line-color': '#e11d48', 'line-width': 2.5},
+              filter: ['==', ['get', 'nuts_id'], '']
+            }
+          ]
+        },
+        center: [10, 55],
+        zoom: 3.2,
+        maxZoom: 10,
+        minZoom: 2.8,
+        attributionControl: true,
+      });
+      mapInstance = map;
+      window._mapInstance = map;
+      map.on('error', (e) => {
+        console.error("Map error", e);
+        document.getElementById("nutsResults").innerHTML = `<p class="text-error">Map error: ${e?.error?.message || 'see console'}</p>`;
+      });
+
+      const updateFilterForZoom = () => {
+        const z = map.getZoom();
+        // When a NUTS is selected, show only its children (and keep NUTS0)
+        if (selectedNutsId) {
+          const targetLevel = Math.min(selectedNutsId.length - 1, 3); // nuts_level matches length-2
+          const nextLevel = Math.min(targetLevel + 1, 3);
+          const prefix = selectedNutsId;
+          const prefixFilter = ['==', ['slice', ['get', 'nuts_id'], 0, prefix.length], prefix];
+          const childrenFilter = ['all', ['==', ['get', 'nuts_level'], nextLevel], prefixFilter];
+          const selectedFilter = ['all', ['==', ['get', 'nuts_id'], selectedNutsId]];
+          const filter = ['any', ['==', ['get', 'nuts_level'], 0], childrenFilter, selectedFilter];
+          map.setFilter('nuts-fill', filter);
+          map.setFilter('nuts-outline', filter);
+          return;
+        }
+        // Default: zoom-based visibility, keep NUTS0 always visible
+        const maxLevel = z >= 6 ? 3 : z >= 5 ? 2 : z >= 3.5 ? 1 : 0;
+        const filter = ['any', ['==', ['get', 'nuts_level'], 0], ['<=', ['get', 'nuts_level'], maxLevel]];
+        map.setFilter('nuts-fill', filter);
+        map.setFilter('nuts-outline', filter);
+      };
+
+      map.on('zoomend', updateFilterForZoom);
+      map.on('load', () => {
+        updateFilterForZoom();
+        updateSelectionLayer();
+      });
+      applyFilters = updateFilterForZoom;
+
+      map.on('click', 'nuts-fill', (e) => {
+        if (!e.features || e.features.length === 0) return;
+        // pick the most detailed feature clicked
+        const feature = e.features.sort((a, b) => b.properties.nuts_level - a.properties.nuts_level)[0];
+        selectedNutsId = feature.properties.nuts_id;
+        nutsInput.value = selectedNutsId;
+        renderNutsResults();
+      });
+    }
+
+    const updateSelectionLayer = () => {
+      if (!mapInstance) return;
+      try {
+        mapInstance.setFilter('nuts-selected', ['==', ['get', 'nuts_id'], selectedNutsId || '']);
+      } catch (e) {
+        // layer not ready yet
+      }
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('countryDropdown').addEventListener('change', onSelectCountry);
       nutsInput.addEventListener('input', onNutsChange);
+      initMap();
       renderNutsResults();
     });
 

@@ -34,6 +34,7 @@ def index(request):
 
     context = {
         "API_URL": os.environ.get("API_URL"),
+        "NUTS_PM_TILES_URL": os.environ.get("NUTS_PM_TILES_URL", ""),
         "examples": examples,
         "additional_files": additional_files,
         "countries_api_link": f'{os.environ.get("API_URL")}countries',

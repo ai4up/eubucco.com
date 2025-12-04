@@ -47,6 +47,9 @@ here: [Getting Up and Running Locally With Docker](https://cookiecutter-django.r
       python manage.py shell -c "from eubucco.ingest.tasks import stage_existing_parquet; stage_existing_parquet(version_tag='v0_1')"
     ```
 - Public endpoint for presigned links: set `MINIO_PUBLIC_ENDPOINT` (default in local.yml is `http://localhost:9000`) so browser downloads don’t point at the internal `minio:9000` host.
+- NUTS vector tiles for the map UI: place `nuts.pmtiles` in `./tiles/` before `docker compose up`; the `minio-setup` job uploads it to MinIO and the UI reads it from `${NUTS_PM_TILES_URL}` (defaults to `${MINIO_PUBLIC_ENDPOINT}/nuts.pmtiles`).
+  Make sure the URL includes the bucket, e.g. `http://localhost:9000/eubucco/nuts.pmtiles` (local.yml sets this by default).
+  If you also place `pmtiles.js` in `./tiles/`, it will be uploaded and served from MinIO (set `PMTILES_JS_URL` or rely on the default), avoiding external CDNs.
 - API discovery: `GET http://localhost:8001/v0.1/datalake/nuts` lists available partitions; `GET http://localhost:8001/v0.1/datalake/nuts/<version>/<nuts_id>` returns presigned links for one partition.
 - DuckDB example for a local subset:
     ```bash
