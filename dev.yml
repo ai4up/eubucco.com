@@ -4,6 +4,7 @@ volumes:
   production_postgres_data: {}
   production_postgres_data_backups: {}
   production_traefik: {}
+  production_minio_data: {}
 
 services:
   dev-django:
@@ -12,6 +13,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - minio
     command: /start
     restart: unless-stopped
     volumes:
@@ -43,6 +45,14 @@ services:
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      MINIO_ENDPOINT: $MINIO_ENDPOINT
+      MINIO_PUBLIC_ENDPOINT: $MINIO_PUBLIC_ENDPOINT
+      MINIO_BUCKET: $MINIO_BUCKET
+      MINIO_REGION: $MINIO_REGION
+      MINIO_ACCESS_KEY: $MINIO_ACCESS_KEY
+      MINIO_SECRET_KEY: $MINIO_SECRET_KEY
+      MINIO_USE_SSL: $MINIO_USE_SSL
+      NUTS_PM_TILES_URL: $NUTS_PM_TILES_URL
 
     labels:
       - "traefik.enable=true"
@@ -66,6 +76,7 @@ services:
     command: /start-api
     depends_on:
       - postgres
+      - minio
     restart: unless-stopped
     volumes:
       - /home/app/eubucco/csvs:/app/csvs
@@ -96,6 +107,13 @@ services:
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      MINIO_ENDPOINT: $MINIO_ENDPOINT
+      MINIO_PUBLIC_ENDPOINT: $MINIO_PUBLIC_ENDPOINT
+      MINIO_BUCKET: $MINIO_BUCKET
+      MINIO_REGION: $MINIO_REGION
+      MINIO_ACCESS_KEY: $MINIO_ACCESS_KEY
+      MINIO_SECRET_KEY: $MINIO_SECRET_KEY
+      MINIO_USE_SSL: $MINIO_USE_SSL
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dev-api.entrypoints=http"
@@ -257,6 +275,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - minio
     volumes:
       - /home/app/eubucco/csvs:/app/csvs
     environment:
@@ -292,6 +311,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - minio
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -369,6 +389,57 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.dev-flower-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    container_name: eubucco_dev_minio
+    environment:
+      MINIO_ROOT_USER: $MINIO_ROOT_USER
+      MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD
+    command: server /data --console-address ":9001"
+    volumes:
+      - production_minio_data:/data
+      - /home/app/eubucco/tiles:/tiles:ro
+    networks:
+      - default
+      - proxy
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dev-minio.entrypoints=http"
+      - "traefik.http.routers.dev-minio.rule=Host(`s3.eubucco.com`)"
+      - "traefik.http.middlewares.dev-minio-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.dev-minio.middlewares=dev-minio-https-redirect"
+      - "traefik.http.routers.dev-minio-secure.entrypoints=https"
+      - "traefik.http.routers.dev-minio-secure.rule=Host(`s3.eubucco.com`)"
+      - "traefik.http.routers.dev-minio-secure.tls=true"
+      - "traefik.http.routers.dev-minio-secure.tls.certresolver=http"
+      - "traefik.http.routers.dev-minio-secure.service=dev-minio"
+      - "traefik.http.services.dev-minio.loadbalancer.server.port=9000"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.dev-minio-secure.middlewares=secHeaders@file"
+
+  minio-setup:
+    image: minio/mc:RELEASE.2024-05-09T17-04-24Z
+    container_name: eubucco_dev_minio_setup
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: $MINIO_ROOT_USER
+      MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD
+      MINIO_BUCKET: $MINIO_BUCKET
+      NUTS_PM_TILES_OBJECT: $NUTS_PM_TILES_OBJECT
+    entrypoint: |
+      /bin/sh -c "
+      until (/usr/bin/mc alias set localminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}); do echo 'waiting for minio...' && sleep 1; done;
+      /usr/bin/mc mb -p localminio/${MINIO_BUCKET};
+      /usr/bin/mc anonymous set download localminio/${MINIO_BUCKET};
+      if [ -f /tiles/nuts.pmtiles ]; then /usr/bin/mc cp /tiles/nuts.pmtiles localminio/${MINIO_BUCKET}/${NUTS_PM_TILES_OBJECT}; fi;
+      "
+    volumes:
+      - /home/app/eubucco/tiles:/tiles:ro
 
 networks:
   default:

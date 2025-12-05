@@ -221,7 +221,8 @@
 <script type="module">
   let countries = [];
   let selectedCountry = null;
-  let nutsPartitions = [];
+  let nutsPartitions = [];   // v0.2 only
+  let v01Files = [];         // v0.1 flat file listing
   let selectedNutsId = "";
   let applyFilters = () => {};
 
@@ -233,6 +234,7 @@
   const countryDropdown = document.getElementById("countryDropdown");
   const nutsInput = document.getElementById("nutsInput");
   const nutsOptions = document.getElementById("nutsOptions");
+  const orSeparator = document.getElementById("orSeparator");
 
   let datasetVersion = versionSelect?.value || "v0.2";
   let mapInstance = null;
@@ -273,22 +275,33 @@
     Object.entries(countryIso2).map(([name, iso]) => [iso, name])
   );
 
-  /* ---------- API helpers ---------- */
-
   const getApiBase = () => {
     if (API_URL && !API_URL.includes("0.0.0.0")) {
       return API_URL.endsWith("/") ? API_URL : `${API_URL}/`;
     }
     const host = window.location.hostname || "localhost";
-    // FastAPI versioned base (v0.1 API)
     return `${window.location.protocol}//${host}:8001/v0.1/`;
   };
 
-  /* ---------- NUTS partitions ---------- */
+  /* ---------- NUTS partitions + v0.1 files ---------- */
 
-  const loadNutsPartitions = async () => {
+  const loadNutsOrFiles = async () => {
     const baseApi = getApiBase();
     try {
+      if (datasetVersion === "v0.1") {
+        // Use simple file endpoint for v0.1
+        const resp = await fetch(`${baseApi}datalake/files/v0.1`);
+        if (!resp.ok) {
+          console.error("Failed to load v0.1 files", resp.status, resp.statusText);
+          v01Files = [];
+        } else {
+          const data = await resp.json();
+          v01Files = Array.isArray(data.files) ? data.files : [];
+        }
+        return;
+      }
+
+      // v0.2: use NUTS partitions
       const resp = await fetch(`${baseApi}datalake/nuts?version=${datasetVersion}`);
       if (!resp.ok) {
         console.error("Failed to load nuts partitions", resp.status, resp.statusText);
@@ -298,13 +311,13 @@
         if (!Array.isArray(nutsPartitions)) nutsPartitions = [];
       }
       populateNutsOptions();
-      if (datasetVersion === "v0.1") {
-        // For v0.1 we just show all partitions
-        renderNutsResults();
-      }
     } catch (e) {
-      console.error("Failed to load nuts partitions", e);
-      nutsPartitions = [];
+      console.error("Failed to load data", e);
+      if (datasetVersion === "v0.1") {
+        v01Files = [];
+      } else {
+        nutsPartitions = [];
+      }
     }
   };
 
@@ -371,51 +384,50 @@
       parquetZipBtn.onclick = null;
     }
 
-    // v0.1: show all available files, no search, no hierarchy logic
+    // v0.1: use flat file endpoint result (v01Files)
     if (datasetVersion === "v0.1") {
-      if (!Array.isArray(nutsPartitions) || nutsPartitions.length === 0) {
+      if (!Array.isArray(v01Files) || v01Files.length === 0) {
         tableBody.innerHTML =
           '<tr><td colspan="4" class="text-center">No data available for v0.1.</td></tr>';
         return;
       }
 
-      const extractCode = fileKey => {
-        const base = fileKey.split("/").pop();
-        return base.split(".")[0];
-      };
+      // Group by ISO code derived from filename
+      const groups = {}; // { CY: { parquet, gpkg, csv } }
+
+      v01Files.forEach(file => {
+        const key = file.key.split("/").pop(); // e.g. CY.csv.zip
+        const base = key.split(".")[0];        // CY
+        const iso = base.toUpperCase();
+
+        if (!groups[iso]) {
+          groups[iso] = { parquet: "—", gpkg: "—", csv: "—" };
+        }
+
+        const sizeMb = Math.round(file.size_bytes / 1e6);
+        const link = `<a class="link" href="${file.presigned_url}"
+                         referrerpolicy="strict-origin-when-cross-origin">
+                         Download (${sizeMb} MB)
+                       </a>`;
+
+        if (file.key.endsWith(".parquet") || file.key.endsWith(".parquet.zip")) {
+          groups[iso].parquet = link;
+        } else if (file.key.includes(".gpkg")) {
+          groups[iso].gpkg = link;
+        } else if (file.key.includes(".csv")) {
+          groups[iso].csv = link;
+        }
+      });
 
       let rows = "";
-
-      nutsPartitions.forEach(part => {
-        // Collect file links by type
-        let parquetLink = "—";
-        let gpkgLink = "—";
-        let csvLink = "—";
-        const rawCode = extractCode(part.files[0].key);
-        const countryName = iso2ToCountry[rawCode] || rawCode;
-
-        part.files.forEach(file => {
-          const sizeMb = Math.round(file.size_bytes / 1e6);
-          const link = `<a class="link" href="${file.presigned_url}"
-                            referrerpolicy="strict-origin-when-cross-origin">
-                            Download (${sizeMb} MB)
-                        </a>`;
-
-          if (file.key.endsWith(".parquet")) {
-            parquetLink = link;
-          } else if (file.key.includes(".gpkg")) {
-            gpkgLink = link;
-          } else if (file.key.includes(".csv")) {
-            csvLink = link;
-          }
-        });
-
+      Object.entries(groups).forEach(([iso, cols]) => {
+        const countryName = iso2ToCountry[iso] || iso;
         rows += `
           <tr>
             <td>${countryName}</td>
-            <td>${parquetLink}</td>
-            <td>${gpkgLink}</td>
-            <td>${csvLink}</td>
+            <td>${cols.parquet}</td>
+            <td>${cols.gpkg}</td>
+            <td>${cols.csv}</td>
           </tr>
         `;
       });
@@ -503,7 +515,7 @@
     tableBody.innerHTML = rows;
 
     const version = matches[0].version;
-    const bundleUrl = `${getApiBase()}datalake/nuts/${version}/${candidate}/bundle`;
+    const bundleUrl = `${getApiBase()}nuts/${version}/${candidate}/bundle`;
 
     if (parquetZipBtn) {
       parquetZipBtn.disabled = false;
@@ -687,8 +699,6 @@
     if (datasetVersion === "v0.1") {
       // Hide country + NUTS controls (only version select matters)
       if (searchControls) {
-        // keep version select visible but we don't overcomplicate:
-        // simplest: leave controls visible, but disable country + nuts
         countryDropdown.classList.add("hidden");
         nutsInput.classList.add("hidden");
         orSeparator.classList.add("hidden");
@@ -701,7 +711,7 @@
     }
   };
 
-  const onVersionChange = () => {
+  const onVersionChange = async () => {
     datasetVersion = versionSelect.value;
     selectedCountry = null;
     selectedNutsId = "";
@@ -709,7 +719,7 @@
     if (countryDropdown) countryDropdown.selectedIndex = 0;
 
     updateUiForVersion();
-    loadNutsPartitions();
+    await loadNutsOrFiles();
     renderNutsResults();
     applyFilters();
   };
@@ -718,7 +728,7 @@
 
   window.addEventListener("resize", alignDownloadsBottomBar);
 
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
     setTimeout(alignDownloadsBottomBar, 50);
 
     versionSelect.addEventListener("change", onVersionChange);
@@ -729,8 +739,8 @@
     updateUiForVersion();
 
     initMap();
-    updateCountries();
-    loadNutsPartitions();
+    await updateCountries();
+    await loadNutsOrFiles();
     renderNutsResults();
   });
 </script>
