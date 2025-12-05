@@ -10,40 +10,45 @@
   body {
     overflow: hidden !important;
   }
-  
-  #map { 
+
+  #map {
     width: 100%;
     height: 100%;
   }
-  
+
   @media (min-width: 768px) {
     .main-container {
       flex-direction: row;
       height: var(--content-height);
       overflow: hidden;
     }
-    
+
     .map-column {
       width: 50%;
       flex-shrink: 0;
       height: 100%;
     }
-    
+
     .map-column > div {
       height: 100%;
     }
-    
+
     .article-column {
       width: 50%;
       height: 100%;
       overflow-y: auto;
     }
   }
-  
+
   @media (max-width: 767px) {
     .map-column > div {
       height: 20rem;
     }
+  }
+
+  #downloadsBottomBar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* default fallback */
   }
 </style>
 
@@ -58,432 +63,675 @@
 
   <!-- RIGHT COLUMN: ARTICLE -->
   <article class="article-column w-full">
-    <div class="container mx-auto pt-4 px-4 w-full">
+    <div class="container mx-auto pt-6 px-4 w-full max-w-5xl">
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="grid grid-rows-2 grid-flow-col">
-          <div class="text-center pb-2"></div>
-          <div class="flex gap-4">
-            <select class="select select-primary flex-none w-24">
-              <option>v0.1</option>
+      <div class="text-center text-lg font-semibold mb-3">
+        Select a region or enter a NUTS code to download data.
+      </div>
+
+      <div id="errorBanner" class="hidden alert alert-error shadow-sm text-sm my-4">
+        <span id="errorBannerText"></span>
+      </div>
+
+      <div class="flex flex-col items-center gap-4">
+        <div id="searchControls" class="flex flex-wrap justify-center gap-5 w-full">
+          <div>
+            <!-- Dataset version selector -->
+            <select id="versionSelect" class="select select-primary w-28 text-base">
+              <option value="v0.2" selected>v0.2</option>
+              <option value="v0.1">v0.1</option>
             </select>
-            <select id="countryDropdown" class="select select-primary flex-auto min-w-fit">
+          </div>
+
+          <div>
+            <select id="countryDropdown" class="select select-primary min-w-[12rem] text-base">
               <option disabled selected>Select Country</option>
             </select>
           </div>
+
+          <div id="orSeparator" class="flex items-center text-gray-400 font-semibold select-none mx-1 md:mx-2">
+            — OR —
+          </div>
+
+          <div>
+            <input
+              list="nutsOptions"
+              id="nutsInput"
+              class="input input-primary text-base min-w-[14rem]"
+              placeholder="Search NUTS code (e.g. DE, DE1, DE12, DE123)"
+            >
+            <datalist id="nutsOptions"></datalist>
+          </div>
         </div>
 
-        <div class="grid grid-rows-2 grid-flow-col">
-          <div class="text-center pb-2">Full file with geometries & attributes</div>
-          <a id="downloadCountryLinkPKG" href="" class="btn btn-primary" disabled="disabled">Download GPKG</a>
-        </div>
-
-        <div class="grid grid-rows-2 grid-flow-col">
-          <div class="text-center pb-2">Attributes without geometries</div>
-          <a id="downloadCountryLinkCSV" href="" class="btn btn-primary" disabled="disabled">Download CSV</a>
-        </div>
+        <div id="downloadSummary" class="text-sm text-gray-400"></div>
       </div>
 
-      <p class="text-center">
-        For details about the license, API and metadata, refer to our 
-        <a class="link" href="{% url 'docs' %}">Docs</a>.
-        The data is also archived on 
-        <a class="link" href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>.
-      </p>
-
-      <div class="divider my-8">Or download by NUTS region</div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="grid grid-rows-2 grid-flow-col lg:col-span-1">
-          <div class="text-center pb-2">NUTS (0–3)</div>
-          <input list="nutsOptions" id="nutsInput"
-                 class="input input-primary w-full"
-                 placeholder="e.g. DE, DE1, DE12, DE123">
-          <datalist id="nutsOptions"></datalist>
-          <p class="text-sm text-center lg:text-left pt-2">
-            Type to fuzzy-search; country choice prefilters.
-          </p>
-        </div>
-
-        <div class="grid grid-rows-2 grid-flow-col lg:col-span-2">
-          <div class="text-center pb-2">Matching downloads</div>
-          <div id="nutsResults" class="text-sm space-y-2"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="container mx-auto px-4 py-4 w-full">
-      <h2 class="text-center pt-16">Examples</h2>
-
-      <div class="container mx-auto px-4 py-4 w-full">
-        <div class="overflow-x-auto">
-          <table class="table lg:table-fixed table-zebra w-full">
+      <div class="relative mt-6">
+        <!-- Scrollable table wrapper -->
+        <div class="overflow-x-auto max-h-96" id="downloadsWrapper">
+          <table
+            id="downloadsTable"
+            class="table table-compact lg:table-fixed table-zebra w-full rounded-box text-sm"
+          >
             <thead>
               <tr>
-                <th>City</th>
+                <th>Region</th>
+                <th>Parquet</th>
                 <th>GPKG</th>
                 <th>CSV</th>
               </tr>
             </thead>
-            <tbody>
-              {% for example in examples %}
-                <tr>
-                  <td>{{ example.city | capfirst }}</td>
-                  <td>
-                    <a href="{{ example.gpkg_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">
-                      Download full gpkg ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)
-                    </a>
-                  </td>
-                  <td>
-                    <a href="{{ example.csv_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">
-                      Download csv ({{ example.csv_size_in_mb |floatformat:1 }} Mb)
-                    </a>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="container mx-auto px-4 py-4 w-full">
-          <h2 class="pt-20 text-center">Additional Files</h2>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="table lg:table-fixed table-zebra w-full">
-            <thead>
+            <tbody id="downloadsBody">
               <tr>
-                <th>Name</th>
-                <th>Download</th>
-                <th>Info</th>
+                <td colspan="4" class="text-center">
+                  Select a version, country, or NUTS code to see downloads.
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {% for file in additional_files %}
-                <tr>
-                  <td>{{ file.name }}</td>
-                  <td>
-                    <a href="{{ file.download_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">
-                      Download file ({{ file.size_in_mb |floatformat:2 }} Mb)
-                    </a>
-                  </td>
-                  <td><div class="overflow-y-auto">{{ file.info }}</div></td>
-                </tr>
-              {% endfor %}
             </tbody>
           </table>
+        </div>
+
+        <!-- Fixed bottom bar aligned with table columns -->
+        <div id="downloadsBottomBar" class="sticky bottom-0 p-1 grid items-center gap-3 mt-1">
+          <div></div>
+          <button id="btnParquet" class="btn btn-xs btn-outline mx-auto">Zip Parquet</button>
+          <button id="btnGpkg" class="btn btn-xs btn-outline mx-auto">GPKG</button>
+          <button id="btnCsv" class="btn btn-xs btn-outline mx-auto">CSV</button>
         </div>
       </div>
     </div>
 
+    <!-- Examples + additional files (unchanged) -->
+    <div class="container mx-auto px-4 py-4 w-full">
+
+      <div class="container mx-auto px-4 py-4 w-full">
+        <h2 class="pt-20 text-center">Examples</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="table lg:table-fixed table-zebra w-full">
+          <thead>
+            <tr>
+              <th>City</th>
+              <th>GPKG</th>
+              <th>CSV</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for example in examples %}
+              <tr>
+                <td>{{ example.city | capfirst }}</td>
+                <td>
+                  <a href="{{ example.gpkg_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">
+                    Download full gpkg ({{ example.gpkg_size_in_mb |floatformat:1 }} Mb)
+                  </a>
+                </td>
+                <td>
+                  <a href="{{ example.csv_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">
+                    Download csv ({{ example.csv_size_in_mb |floatformat:1 }} Mb)
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="container mx-auto px-4 py-4 w-full">
+        <h2 class="pt-20 text-center">Additional Files</h2>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="table lg:table-fixed table-zebra w-full">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Download</th>
+              <th>Info</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for file in additional_files %}
+              <tr>
+                <td>{{ file.name }}</td>
+                <td>
+                  <a href="{{ file.download_link }}" referrerpolicy="strict-origin-when-cross-origin" class="link">
+                    Download file ({{ file.size_in_mb |floatformat:2 }} Mb)
+                  </a>
+                </td>
+                <td><div class="overflow-y-auto">{{ file.info }}</div></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-4 w-full">
+      <p class="text-center mt-4">
+        For details about the license, API and metadata, refer to our
+        <a class="link" href="{% url 'docs' %}">Docs</a>.
+        The data is also archived on
+        <a class="link" href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>.
+      </p>
+    </div>
   </article>
 </div>
 
-  {#  <div class="container mx-auto px-4 py-4 w-full">#}
-  {#    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">#}
-  {#      {% for example in examples %}#}
-  {#        <h1>{{ example }}</h1>#}
-  {#        <a id="downloadCountryLink" href="" class="btn">Download csv</a>#}
-  {#        <a id="downloadCountryLink" href="" class="btn">Download pkg</a>#}
-  {#      {% endfor %}#}
-  {#    </div>#}
-  {#  </div>#}
+<script type="module">
+  let countries = [];
+  let selectedCountry = null;
+  let nutsPartitions = [];
+  let selectedNutsId = "";
+  let applyFilters = () => {};
 
-  <script type="module">
-    let countries;
-    let selectedCountry;
-    let nutsPartitions = [];
-    let selectedNutsId = "";
-    const countryIso2 = {
-      "Austria": "AT",
-      "Belgium": "BE",
-      "Bulgaria": "BG",
-      "Croatia": "HR",
-      "Cyprus": "CY",
-      "Czech Republic": "CZ",
-      "Germany": "DE",
-      "Denmark": "DK",
-      "Estonia": "EE",
-      "Spain": "ES",
-      "Finland": "FI",
-      "France": "FR",
-      "Greece": "EL",
-      "Hungary": "HU",
-      "Ireland": "IE",
-      "Italy": "IT",
-      "Lithuania": "LT",
-      "Luxembourg": "LU",
-      "Latvia": "LV",
-      "Malta": "MT",
-      "Netherlands": "NL",
-      "Poland": "PL",
-      "Portugal": "PT",
-      "Romania": "RO",
-      "Sweden": "SE",
-      "Slovenia": "SI",
-      "Slovakia": "SK",
-      "Switzerland": "CH",
-    };
+  const API_URL = "{{ API_URL }}";
+  const NUTS_PM_TILES_URL = "{{ NUTS_PM_TILES_URL|default:'' }}";
 
+  const versionSelect = document.getElementById("versionSelect");
+  const searchControls = document.getElementById("searchControls");
+  const countryDropdown = document.getElementById("countryDropdown");
+  const nutsInput = document.getElementById("nutsInput");
+  const nutsOptions = document.getElementById("nutsOptions");
 
-    const API_URL = "{{ API_URL }}";
-    const NUTS_PM_TILES_URL = "{{ NUTS_PM_TILES_URL|default:'' }}";
-    let mapInstance = null;
-    let applyFilters = () => {};
-    const nutsInput = document.getElementById("nutsInput");
-    const nutsOptions = document.getElementById("nutsOptions");
+  let datasetVersion = versionSelect?.value || "v0.2";
+  let mapInstance = null;
 
-    {# NUTS partition fetch #}
-    const loadNutsPartitions = async () => {
-      const APIResponse = await fetch(`${API_URL}datalake/nuts?version=v0_1`);
-      nutsPartitions = await APIResponse.json();
+  const countryIso2 = {
+    "Austria": "AT",
+    "Belgium": "BE",
+    "Bulgaria": "BG",
+    "Croatia": "HR",
+    "Cyprus": "CY",
+    "Czech Republic": "CZ",
+    "Germany": "DE",
+    "Denmark": "DK",
+    "Estonia": "EE",
+    "Spain": "ES",
+    "Finland": "FI",
+    "France": "FR",
+    "Greece": "EL",
+    "Hungary": "HU",
+    "Ireland": "IE",
+    "Italy": "IT",
+    "Lithuania": "LT",
+    "Luxembourg": "LU",
+    "Latvia": "LV",
+    "Malta": "MT",
+    "Netherlands": "NL",
+    "Poland": "PL",
+    "Portugal": "PT",
+    "Romania": "RO",
+    "Sweden": "SE",
+    "Slovenia": "SI",
+    "Slovakia": "SK",
+    "Switzerland": "CH",
+  };
+
+  /* ---------- Helpers ---------- */
+  const iso2ToCountry = Object.fromEntries(
+    Object.entries(countryIso2).map(([name, iso]) => [iso, name])
+  );
+
+  /* ---------- API helpers ---------- */
+
+  const getApiBase = () => {
+    if (API_URL && !API_URL.includes("0.0.0.0")) {
+      return API_URL.endsWith("/") ? API_URL : `${API_URL}/`;
+    }
+    const host = window.location.hostname || "localhost";
+    // FastAPI versioned base (v0.1 API)
+    return `${window.location.protocol}//${host}:8001/v0.1/`;
+  };
+
+  /* ---------- NUTS partitions ---------- */
+
+  const loadNutsPartitions = async () => {
+    const baseApi = getApiBase();
+    try {
+      const resp = await fetch(`${baseApi}datalake/nuts?version=${datasetVersion}`);
+      if (!resp.ok) {
+        console.error("Failed to load nuts partitions", resp.status, resp.statusText);
+        nutsPartitions = [];
+      } else {
+        nutsPartitions = await resp.json();
+        if (!Array.isArray(nutsPartitions)) nutsPartitions = [];
+      }
       populateNutsOptions();
+      if (datasetVersion === "v0.1") {
+        // For v0.1 we just show all partitions
+        renderNutsResults();
+      }
+    } catch (e) {
+      console.error("Failed to load nuts partitions", e);
+      nutsPartitions = [];
     }
+  };
 
-    const populateNutsOptions = (countryPrefix = "") => {
-      const prefix = countryPrefix ? countryPrefix.toUpperCase() : "";
-      const codes = new Set();
-      nutsPartitions.forEach(part => {
-        if (!prefix || part.nuts_id.startsWith(prefix)) {
-          codes.add(part.nuts_id);
-        }
+  const populateNutsOptions = () => {
+    const codes = new Set();
+    nutsPartitions.forEach(part => codes.add(part.nuts_id));
+
+    nutsOptions.innerHTML = "";
+    Array.from(codes)
+      .sort()
+      .forEach(code => {
+        nutsOptions.innerHTML += `<option value="${code}">`;
       });
-      nutsOptions.innerHTML = "";
-      Array.from(codes).sort().forEach(code => nutsOptions.innerHTML += `<option value="${code}">`);
-    }
+  };
 
-    const renderNutsResults = () => {
-      const container = document.getElementById("nutsResults");
-      const candidate = (nutsInput.value || "").trim().toUpperCase();
-      if (!candidate) {
-        container.innerHTML = `<p class="text-center lg:text-left">Select a NUTS code (0–3) to see matching downloads.</p>`;
-        selectedNutsId = "";
-        updateSelectionLayer();
-        applyFilters();
-        return;
-      }
-      const matches = nutsPartitions.filter(part => part.nuts_id.toUpperCase().startsWith(candidate));
-      if (matches.length === 0) {
-        container.innerHTML = `<p class="text-error">No NUTS3 partitions match <span class="font-bold">${candidate}</span>.</p>`;
-        selectedNutsId = candidate;
-        updateSelectionLayer();
-        applyFilters();
-        return;
-      }
-      const totalFiles = matches.reduce((sum, part) => sum + part.files.length, 0);
-      const version = matches[0].version;
-      const s3Glob = `s3://eubucco/buildings/${version}/nuts_id=${candidate}*/`;
-      selectedNutsId = candidate;
-      updateSelectionLayer();
-      applyFilters();
-      let html = `<p>Found <span class="font-bold">${matches.length}</span> NUTS3 partition(s) (${totalFiles} file(s)) matching <span class="font-bold">${candidate}</span>.</p>`;
-      const bundleUrl = `${API_URL}datalake/nuts/${version}/${candidate}/bundle`;
-      html += `<p><a class="btn btn-sm btn-primary" href="${bundleUrl}" referrerpolicy="strict-origin-when-cross-origin">Download all as ZIP</a></p>`;
-      html += `<p class="break-all">S3 glob for DuckDB/Polars: <code class="badge badge-outline badge-lg">${s3Glob}*.parquet</code></p>`;
-      html += `<ul class="list-disc pl-4 space-y-1">`;
-      matches.slice(0, 12).forEach(part => {
-        const file = part.files[0];
-        const sizeMb = Math.round(file.size_bytes / 1e6);
-        html += `<li>${part.nuts_id} — <a class="link" href="${file.presigned_url}" referrerpolicy="strict-origin-when-cross-origin">Download (${sizeMb} MB)</a></li>`;
-      });
-      if (matches.length > 12) {
-        html += `<li>…and ${matches.length - 12} more partitions. Use the S3 glob above to fetch all.</li>`;
-      }
-      html += `</ul>`;
-      container.innerHTML = html;
-    }
+  /* ---------- Countries ---------- */
 
-    const onNutsChange = () => renderNutsResults();
-
-    {# Country dropdown #}
-    const updateCountries = async () => {
-      const APIResponse = await fetch(`${API_URL}countries`);
-      countries = await APIResponse.json();
-      countries.sort((a, b) => a.name.localeCompare(b.name))
-      countryDropdown.innerHTML = '<option disabled selected>Select Country</option>'
-      Object.entries(countries).forEach(
-        ([key, country]) => countryDropdown.innerHTML += `<option value=${country.id}> ${country.name}</option>`
-      );
-    };
-
-
-    const onSelectCountry = async () => {
-      selectedCountry = countries.filter(country => country.id === parseInt(countryDropdown.options[countryDropdown.selectedIndex].value))[0]
-      var download_link_csv = document.getElementById("downloadCountryLinkCSV");
-      if (selectedCountry.csv === null) {
-        download_link_csv.setAttribute("disabled", "disabled")
-        download_link_csv.innerHTML = `Not available`
-        download_link_csv.removeAttribute('href');
+  const updateCountries = async () => {
+    const baseApi = getApiBase();
+    try {
+      const resp = await fetch(`${baseApi}countries`);
+      if (!resp.ok) {
+        console.error("Failed to load countries", resp.status, resp.statusText);
+        countries = [];
       } else {
-        download_link_csv.setAttribute("href", selectedCountry.csv.download_link)
-        download_link_csv.setAttribute("referrerpolicy", "strict-origin-when-cross-origin")
-        download_link_csv.innerHTML = `Download attributes-only CSV (${Math.round(selectedCountry.csv.size_in_mb)} MB)`
-        download_link_csv.removeAttribute('disabled');
+        countries = await resp.json();
+        if (!Array.isArray(countries)) {
+          countries = [];
+        } else {
+          countries.sort((a, b) => a.name.localeCompare(b.name));
+          countryDropdown.innerHTML = '<option disabled selected>Select Country</option>';
+          countries.forEach(country => {
+            countryDropdown.innerHTML += `<option value="${country.id}">${country.name}</option>`;
+          });
+        }
       }
+    } catch (e) {
+      console.error("Failed to load countries", e);
+      countries = [];
+    }
+  };
 
-      var download_link_gpkg = document.getElementById("downloadCountryLinkPKG");
-      if (selectedCountry.gpkg === null) {
-        download_link_gpkg.setAttribute("disabled", "disabled")
-        download_link_gpkg.innerHTML = `Not available`
-        download_link_gpkg.removeAttribute('href');
-      } else {
-        download_link_gpkg.setAttribute("href", selectedCountry.gpkg.download_link)
-        download_link_gpkg.setAttribute("referrerpolicy", "strict-origin-when-cross-origin")
-        download_link_gpkg.innerHTML = `Download full GPKG (${Math.round(selectedCountry.gpkg.size_in_mb)} MB)`
-        download_link_gpkg.removeAttribute('disabled');
-      }
+  const onSelectCountry = () => {
+    const selectedId = parseInt(countryDropdown.value, 10);
+    selectedCountry = countries.find(country => country.id === selectedId) || null;
 
-      // Prefilter NUTS options using country->ISO2 mapping when available
-      const iso2 = countryIso2[selectedCountry.name] || "";
-      populateNutsOptions(iso2);
-      nutsInput.value = iso2;
-      renderNutsResults();
+    const iso2 = selectedCountry ? (countryIso2[selectedCountry.name] || "") : "";
+    selectedNutsId = iso2;
+    updateSelectionLayer();
+    applyFilters();
+    renderNutsResults();
+  };
+
+  /* ---------- Rendering table ---------- */
+
+  const renderNutsResults = () => {
+    const tableBody = document.getElementById("downloadsBody");
+    const parquetZipBtn = document.getElementById("btnParquet");
+
+    if (!tableBody) return;
+
+    if (parquetZipBtn) {
+      parquetZipBtn.disabled = true;
+      parquetZipBtn.onclick = null;
     }
 
-    {# MAPLIBRE + PMTILES #}
-    const initMap = () => {
-      if (!NUTS_PM_TILES_URL) {
-        console.warn("NUTS tiles URL not configured");
-        document.getElementById("nutsResults").innerHTML = `<p class="text-error">NUTS tiles not configured (set NUTS_PM_TILES_URL).</p>`;
+    // v0.1: show all available files, no search, no hierarchy logic
+    if (datasetVersion === "v0.1") {
+      if (!Array.isArray(nutsPartitions) || nutsPartitions.length === 0) {
+        tableBody.innerHTML =
+          '<tr><td colspan="4" class="text-center">No data available for v0.1.</td></tr>';
         return;
       }
-      if (!window.maplibregl) {
-        console.warn("MapLibre GL JS library not loaded");
-        document.getElementById("nutsResults").innerHTML = `<p class="text-error">MapLibre library not loaded.</p>`;
-        return;
-      }
-      if (!window.pmtiles) {
-        console.warn("PMTiles library not loaded (check script tag and network)");
-        document.getElementById("nutsResults").innerHTML = `<p class="text-error">PMTiles library not loaded.</p>`;
-        return;
-      }
-      const protocol = new window.pmtiles.Protocol();
-      maplibregl.addProtocol("pmtiles", protocol.tile);
-      const pmtilesUrl = NUTS_PM_TILES_URL.startsWith("pmtiles://") ? NUTS_PM_TILES_URL : `pmtiles://${NUTS_PM_TILES_URL}`;
 
-      const map = new maplibregl.Map({
-        container: 'map',
-        style: {
-          version: 8,
-          sources: {
-            nuts: {
-              type: 'vector',
-              url: pmtilesUrl,
-            },
-          },
-          layers: [
-            {
-              id: 'background',
-              type: 'background',
-              paint: {'background-color': '#0b1221'}
-            },
-            {
-              id: 'nuts-fill',
-              type: 'fill',
-              source: 'nuts',
-              'source-layer': 'nuts',
-              paint: {
-                'fill-color': [
-                  'case',
-                  ['==', ['get', 'nuts_level'], 0], '#4f46e5',
-                  ['==', ['get', 'nuts_level'], 1], '#22c55e',
-                  ['==', ['get', 'nuts_level'], 2], '#f97316',
-                  '#0ea5e9'
-                ],
-                'fill-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.05, 5, 0.12, 7, 0.2, 9, 0.32]
-              },
-              filter: ['<=', ['get', 'nuts_level'], 3]
-            },
-            {
-              id: 'nuts-outline',
-              type: 'line',
-              source: 'nuts',
-              'source-layer': 'nuts',
-              paint: {
-                'line-color': '#94a3b8',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.1, 6, 0.4, 9, 0.8]
-              },
-              filter: ['<=', ['get', 'nuts_level'], 3]
-            },
-            {
-              id: 'nuts-selected',
-              type: 'line',
-              source: 'nuts',
-              'source-layer': 'nuts',
-              paint: {'line-color': '#e11d48', 'line-width': 2.5},
-              filter: ['==', ['get', 'nuts_id'], '']
-            }
-          ]
-        },
-        center: [10, 55],
-        zoom: 3.2,
-        maxZoom: 10,
-        minZoom: 2.8,
-        attributionControl: true,
-      });
-      mapInstance = map;
-      window._mapInstance = map;
-      map.on('error', (e) => {
-        console.error("Map error", e);
-        document.getElementById("nutsResults").innerHTML = `<p class="text-error">Map error: ${e?.error?.message || 'see console'}</p>`;
-      });
-
-      const updateFilterForZoom = () => {
-        const z = map.getZoom();
-        // When a NUTS is selected, show only its children (and keep NUTS0)
-        if (selectedNutsId) {
-          const targetLevel = Math.min(selectedNutsId.length - 1, 3); // nuts_level matches length-2
-          const nextLevel = Math.min(targetLevel + 1, 3);
-          const prefix = selectedNutsId;
-          const prefixFilter = ['==', ['slice', ['get', 'nuts_id'], 0, prefix.length], prefix];
-          const childrenFilter = ['all', ['==', ['get', 'nuts_level'], nextLevel], prefixFilter];
-          const selectedFilter = ['all', ['==', ['get', 'nuts_id'], selectedNutsId]];
-          const filter = ['any', ['==', ['get', 'nuts_level'], 0], childrenFilter, selectedFilter];
-          map.setFilter('nuts-fill', filter);
-          map.setFilter('nuts-outline', filter);
-          return;
-        }
-        // Default: zoom-based visibility, keep NUTS0 always visible
-        const maxLevel = z >= 6 ? 3 : z >= 5 ? 2 : z >= 3.5 ? 1 : 0;
-        const filter = ['any', ['==', ['get', 'nuts_level'], 0], ['<=', ['get', 'nuts_level'], maxLevel]];
-        map.setFilter('nuts-fill', filter);
-        map.setFilter('nuts-outline', filter);
+      const extractCode = fileKey => {
+        const base = fileKey.split("/").pop();
+        return base.split(".")[0];
       };
 
-      map.on('zoomend', updateFilterForZoom);
-      map.on('load', () => {
-        updateFilterForZoom();
-        updateSelectionLayer();
-      });
-      applyFilters = updateFilterForZoom;
+      let rows = "";
 
-      map.on('click', 'nuts-fill', (e) => {
-        if (!e.features || e.features.length === 0) return;
-        // pick the most detailed feature clicked
-        const feature = e.features.sort((a, b) => b.properties.nuts_level - a.properties.nuts_level)[0];
-        selectedNutsId = feature.properties.nuts_id;
-        nutsInput.value = selectedNutsId;
-        renderNutsResults();
+      nutsPartitions.forEach(part => {
+        // Collect file links by type
+        let parquetLink = "—";
+        let gpkgLink = "—";
+        let csvLink = "—";
+        const rawCode = extractCode(part.files[0].key);
+        const countryName = iso2ToCountry[rawCode] || rawCode;
+
+        part.files.forEach(file => {
+          const sizeMb = Math.round(file.size_bytes / 1e6);
+          const link = `<a class="link" href="${file.presigned_url}"
+                            referrerpolicy="strict-origin-when-cross-origin">
+                            Download (${sizeMb} MB)
+                        </a>`;
+
+          if (file.key.endsWith(".parquet")) {
+            parquetLink = link;
+          } else if (file.key.includes(".gpkg")) {
+            gpkgLink = link;
+          } else if (file.key.includes(".csv")) {
+            csvLink = link;
+          }
+        });
+
+        rows += `
+          <tr>
+            <td>${countryName}</td>
+            <td>${parquetLink}</td>
+            <td>${gpkgLink}</td>
+            <td>${csvLink}</td>
+          </tr>
+        `;
       });
+
+      tableBody.innerHTML = rows;
+      return;
     }
 
-    const updateSelectionLayer = () => {
-      if (!mapInstance) return;
-      try {
-        mapInstance.setFilter('nuts-selected', ['==', ['get', 'nuts_id'], selectedNutsId || '']);
-      } catch (e) {
-        // layer not ready yet
+    // v0.2: country + NUTS search logic
+    const candidate = (nutsInput.value || "").trim().toUpperCase();
+
+    // If no NUTS search: show selected country (if any)
+    if (!candidate) {
+      if (selectedCountry) {
+        const gpkgCell = selectedCountry.gpkg
+          ? `<a class="link" href="${selectedCountry.gpkg.download_link}"
+                 referrerpolicy="strict-origin-when-cross-origin">
+                 Download (${Math.round(selectedCountry.gpkg.size_in_mb)} MB)
+             </a>`
+          : "—";
+        const csvCell = selectedCountry.csv
+          ? `<a class="link" href="${selectedCountry.csv.download_link}"
+                 referrerpolicy="strict-origin-when-cross-origin">
+                 Download (${Math.round(selectedCountry.csv.size_in_mb)} MB)
+             </a>`
+          : "—";
+
+        tableBody.innerHTML = `<tr>
+          <td>${selectedCountry.name}</td>
+          <td>—</td>
+          <td>${gpkgCell}</td>
+          <td>${csvCell}</td>
+        </tr>`;
+      } else {
+        tableBody.innerHTML =
+          '<tr><td colspan="4" class="text-center">Select a country or NUTS code to see downloads.</td></tr>';
       }
+      selectedNutsId = selectedNutsId || "";
+      updateSelectionLayer();
+      applyFilters();
+      return;
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById('countryDropdown').addEventListener('change', onSelectCountry);
-      nutsInput.addEventListener('input', onNutsChange);
-      initMap();
-      renderNutsResults();
+    if (!Array.isArray(nutsPartitions) || nutsPartitions.length === 0) {
+      tableBody.innerHTML =
+        '<tr><td colspan="4" class="text-error text-center">No partitions available.</td></tr>';
+      updateSelectionLayer();
+      applyFilters();
+      return;
+    }
+
+    const matches = nutsPartitions.filter(
+      part => (part.nuts_id || "").toUpperCase().startsWith(candidate),
+    );
+
+    if (matches.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="4" class="text-error text-center">
+        No partitions match ${candidate}.
+      </td></tr>`;
+      selectedNutsId = "";
+      updateSelectionLayer();
+      applyFilters();
+      return;
+    }
+
+    selectedNutsId = candidate;
+    updateSelectionLayer();
+    applyFilters();
+
+    let rows = "";
+    matches.forEach(part => {
+      const file = part.files.find(f => f.key.endsWith(".parquet")) || part.files[0];
+      const sizeMb = Math.round(file.size_bytes / 1e6);
+      rows += `<tr>
+        <td>${part.nuts_id}</td>
+        <td><a class="link" href="${file.presigned_url}"
+               referrerpolicy="strict-origin-when-cross-origin">
+               Download (${sizeMb} MB)
+        </a></td>
+        <td class="text-center">—</td>
+        <td class="text-center">—</td>
+      </tr>`;
     });
 
-    updateCountries()
-    loadNutsPartitions()
-  </script>
+    tableBody.innerHTML = rows;
+
+    const version = matches[0].version;
+    const bundleUrl = `${getApiBase()}datalake/nuts/${version}/${candidate}/bundle`;
+
+    if (parquetZipBtn) {
+      parquetZipBtn.disabled = false;
+      parquetZipBtn.onclick = () => {
+        window.location.href = bundleUrl;
+      };
+    }
+  };
+
+  const onNutsChange = () => renderNutsResults();
+
+  /* ---------- Map / NUTS highlighting ---------- */
+
+  const initMap = () => {
+    if (!NUTS_PM_TILES_URL || !window.maplibregl || !window.pmtiles) {
+      console.warn("Map configuration missing or libraries not loaded.");
+      return;
+    }
+
+    const protocol = new window.pmtiles.Protocol();
+    maplibregl.addProtocol("pmtiles", protocol.tile);
+
+    const pmtilesUrl = NUTS_PM_TILES_URL.startsWith("pmtiles://")
+      ? NUTS_PM_TILES_URL
+      : `pmtiles://${NUTS_PM_TILES_URL}`;
+
+    const map = new maplibregl.Map({
+      container: "map",
+      style: {
+        version: 8,
+        sources: {
+          nuts: { type: "vector", url: pmtilesUrl },
+        },
+        layers: [
+          {
+            id: "background",
+            type: "background",
+            paint: { "background-color": "#0b1221" },
+          },
+          {
+            id: "nuts-fill",
+            type: "fill",
+            source: "nuts",
+            "source-layer": "nuts",
+            paint: {
+              "fill-color": [
+                "case",
+                ["==", ["get", "nuts_level"], 0],
+                "#4f46e5",
+                ["==", ["get", "nuts_level"], 1],
+                "#22c55e",
+                ["==", ["get", "nuts_level"], 2],
+                "#f97316",
+                "#0ea5e9",
+              ],
+              "fill-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0.05, 5, 0.12, 7, 0.2, 9, 0.32],
+            },
+            filter: ["<=", ["get", "nuts_level"], 3],
+          },
+          {
+            id: "nuts-outline",
+            type: "line",
+            source: "nuts",
+            "source-layer": "nuts",
+            paint: {
+              "line-color": "#94a3b8",
+              "line-width": ["interpolate", ["linear"], ["zoom"], 0, 0.1, 6, 0.4, 9, 0.8],
+            },
+            filter: ["<=", ["get", "nuts_level"], 3],
+          },
+          {
+            id: "nuts-selected",
+            type: "line",
+            source: "nuts",
+            "source-layer": "nuts",
+            paint: { "line-color": "#e11d48", "line-width": 2.5 },
+            filter: ["==", ["get", "nuts_id"], ""],
+          },
+        ],
+      },
+      center: [10, 55],
+      zoom: 3.2,
+      maxZoom: 10,
+      minZoom: 2.8,
+      attributionControl: true,
+    });
+
+    mapInstance = map;
+    window._mapInstance = map;
+
+    const updateFilterForZoom = () => {
+      const run = () => {
+        const z = map.getZoom();
+
+        if (selectedNutsId) {
+          const targetLevel = Math.min(selectedNutsId.length - 1, 3);
+          const nextLevel = Math.min(targetLevel + 1, 3);
+          const prefix = selectedNutsId;
+
+          const prefixFilter = ["==", ["slice", ["get", "nuts_id"], 0, prefix.length], prefix];
+          const childrenFilter = ["all", ["==", ["get", "nuts_level"], nextLevel], prefixFilter];
+          const selectedFilter = ["all", ["==", ["get", "nuts_id"], selectedNutsId]];
+
+          const filter = ["any", ["==", ["get", "nuts_level"], 0], childrenFilter, selectedFilter];
+          map.setFilter("nuts-fill", filter);
+          map.setFilter("nuts-outline", filter);
+          map.setFilter("nuts-selected", ["==", ["get", "nuts_id"], selectedNutsId]);
+          return;
+        }
+
+        const maxLevel = z >= 6 ? 3 : z >= 5 ? 2 : z >= 3.5 ? 1 : 0;
+        const filter = ["any", ["==", ["get", "nuts_level"], 0], ["<=", ["get", "nuts_level"], maxLevel]];
+        map.setFilter("nuts-fill", filter);
+        map.setFilter("nuts-outline", filter);
+        map.setFilter("nuts-selected", ["==", ["get", "nuts_id"], ""]);
+      };
+
+      if (!map.isStyleLoaded()) {
+        map.once("idle", run);
+      } else {
+        run();
+      }
+    };
+
+    map.on("zoomend", updateFilterForZoom);
+    map.on("load", () => {
+      updateFilterForZoom();
+      updateSelectionLayer();
+    });
+    applyFilters = updateFilterForZoom;
+
+    map.on("click", e => {
+      if (datasetVersion !== "v0.2") {
+        // Map selection only meaningful for v0.2
+        return;
+      }
+      const feats = map.queryRenderedFeatures(e.point, { layers: ["nuts-fill"] });
+      if (!feats || feats.length === 0) {
+        selectedNutsId = "";
+        nutsInput.value = "";
+        applyFilters();
+        renderNutsResults();
+        return;
+      }
+      const feature = feats.sort((a, b) => b.properties.nuts_level - a.properties.nuts_level)[0];
+      selectedNutsId = feature.properties.nuts_id;
+      nutsInput.value = selectedNutsId;
+      map.setFilter("nuts-selected", ["==", ["get", "nuts_id"], selectedNutsId]);
+      applyFilters();
+      renderNutsResults();
+    });
+  };
+
+  const updateSelectionLayer = () => {
+    if (!mapInstance) return;
+    try {
+      mapInstance.setFilter("nuts-selected", ["==", ["get", "nuts_id"], selectedNutsId || ""]);
+    } catch (e) {
+      // layer not ready yet
+    }
+  };
+
+  /* ---------- Bottom bar alignment ---------- */
+
+  function alignDownloadsBottomBar() {
+    const table = document.getElementById("downloadsTable");
+    const bar = document.getElementById("downloadsBottomBar");
+    if (!table || !bar) return;
+
+    const firstRow = table.querySelector("thead tr");
+    if (!firstRow) return;
+
+    const cells = Array.from(firstRow.children);
+    const widths = cells.map(th => th.getBoundingClientRect().width + "px");
+    bar.style.gridTemplateColumns = widths.join(" ");
+  }
+
+  /* ---------- Version switching ---------- */
+
+  const updateUiForVersion = () => {
+    if (datasetVersion === "v0.1") {
+      // Hide country + NUTS controls (only version select matters)
+      if (searchControls) {
+        // keep version select visible but we don't overcomplicate:
+        // simplest: leave controls visible, but disable country + nuts
+        countryDropdown.classList.add("hidden");
+        nutsInput.classList.add("hidden");
+        orSeparator.classList.add("hidden");
+        nutsOptions.innerHTML = "";
+      }
+    } else {
+      countryDropdown.classList.remove("hidden");
+      nutsInput.classList.remove("hidden");
+      orSeparator.classList.remove("hidden");
+    }
+  };
+
+  const onVersionChange = () => {
+    datasetVersion = versionSelect.value;
+    selectedCountry = null;
+    selectedNutsId = "";
+    nutsInput.value = "";
+    if (countryDropdown) countryDropdown.selectedIndex = 0;
+
+    updateUiForVersion();
+    loadNutsPartitions();
+    renderNutsResults();
+    applyFilters();
+  };
+
+  /* ---------- Bootstrap ---------- */
+
+  window.addEventListener("resize", alignDownloadsBottomBar);
+
+  document.addEventListener("DOMContentLoaded", () => {
+    setTimeout(alignDownloadsBottomBar, 50);
+
+    versionSelect.addEventListener("change", onVersionChange);
+    countryDropdown.addEventListener("change", onSelectCountry);
+    nutsInput.addEventListener("input", onNutsChange);
+
+    datasetVersion = versionSelect.value;
+    updateUiForVersion();
+
+    initMap();
+    updateCountries();
+    loadNutsPartitions();
+    renderNutsResults();
+  });
+</script>
 {% endblock %}

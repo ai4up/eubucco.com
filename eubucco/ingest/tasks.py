@@ -3,12 +3,14 @@ import shutil
 import tempfile
 import zipfile
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
+from collections.abc import Iterable
 
 import geopandas as gpd
 import pandas as pd
 
 from config import celery_app
+from eubucco.datalake.constants import DATASET_PREFIX
 from eubucco.datalake.minio_client import (
     MinioSettings,
     build_client,
@@ -16,7 +18,6 @@ from eubucco.datalake.minio_client import (
     public_s3_uri,
     upload_file,
 )
-from eubucco.datalake.constants import DATASET_PREFIX
 from eubucco.ingest.util import (
     match_building_type,
     match_gadm_info,
@@ -29,7 +30,6 @@ CSV_PATH = Path("csvs/buildings")
 ADMIN_CODE_MATCHES_NO_VERSION = Path("csvs/util/admin-codes-matches_no_version.csv")
 PARQUET_CACHE = Path(".cache/parquet-buildings")
 NUTS_LOOKUP_PATH = Path("csvs/util/nuts_lookup.csv")
-RAW_PARQUET_DIR = Path("csvs/buildings_parquet")
 
 PARQUET_CACHE.mkdir(parents=True, exist_ok=True)
 
@@ -81,7 +81,10 @@ def _iter_chunks(gpkg_path: Path, chunk_size: int) -> Iterable[gpd.GeoDataFrame]
 def _derive_nuts(df: pd.DataFrame, nuts_lookup: Optional[pd.DataFrame]) -> pd.DataFrame:
     if nuts_lookup is not None:
         merged = df.merge(
-            nuts_lookup, on=["country", "region", "city"], how="left", suffixes=("", "_lkp")
+            nuts_lookup,
+            on=["country", "region", "city"],
+            how="left",
+            suffixes=("", "_lkp"),
         )
         df["nuts_id"] = merged["nuts_id"]
         df["nuts_level"] = merged["nuts_level"]
@@ -130,7 +133,9 @@ def _prepare_chunk(
     return df[ordered_columns]
 
 
-def _write_partition(df: pd.DataFrame, dataset_root: Path, counters: dict[str, int]) -> None:
+def _write_partition(
+    df: pd.DataFrame, dataset_root: Path, counters: dict[str, int]
+) -> None:
     grouped = df.groupby("nuts_id")
     for nuts_id, df_partition in grouped:
         dest_dir = dataset_root / f"nuts_id={nuts_id}"
@@ -141,13 +146,17 @@ def _write_partition(df: pd.DataFrame, dataset_root: Path, counters: dict[str, i
         counters[nuts_id] = file_index + 1
 
 
-def _upload_dataset(dataset_root: Path, dataset_prefix: str, settings: MinioSettings) -> None:
+def _upload_dataset(
+    dataset_root: Path, dataset_prefix: str, settings: MinioSettings
+) -> None:
     client, settings = build_client(settings=settings)
     ensure_bucket(client, settings)
     for parquet_file in dataset_root.rglob("*.parquet"):
         relative_key = parquet_file.relative_to(dataset_root).as_posix()
         object_key = f"{dataset_prefix}/{relative_key}"
-        logging.info("Uploading %s to %s", parquet_file, public_s3_uri(settings, object_key))
+        logging.info(
+            "Uploading %s to %s", parquet_file, public_s3_uri(settings, object_key)
+        )
         upload_file(client, settings, object_key, str(parquet_file))
 
 
@@ -171,10 +180,11 @@ def _build_chunk_iterator(
     soft_time_limit=60 * 60 * 24 * 3,
     hard_time_limit=(60 * 60 * 24 * 3) + 10,
 )
-def publish_parquet_partitions(version_override: Optional[str] = None, chunk_size: int = 50_000):
+def publish_parquet_partitions(
+    version_override: Optional[str] = None, chunk_size: int = 50_000
+):
     """
-    Convert the source GPKG building data into Parquet, partitioned by NUTS,
-    and upload the partitions to the configured MinIO bucket.
+    Convert source GPKG building data into Parquet, partitioned by NUTS, and upload to MinIO.
     """
     df_code_matches = _load_admin_code_matches()
     nuts_lookup = _load_nuts_lookup()
@@ -183,7 +193,9 @@ def publish_parquet_partitions(version_override: Optional[str] = None, chunk_siz
     for zipped_gpkg_path in CSV_PATH.rglob("*.gpkg.zip"):
         version_tag = version_override or str(zipped_gpkg_path.name).split("-")[0]
         try:
-            resolved_version = version_enum.version_from_path(f"{version_tag}-placeholder")
+            resolved_version = version_enum.version_from_path(
+                f"{version_tag}-placeholder"
+            )
             version_value = int(resolved_version)
         except Exception:
             logging.warning("Unknown version tag %s, persisting as-is", version_tag)
@@ -193,7 +205,11 @@ def publish_parquet_partitions(version_override: Optional[str] = None, chunk_siz
         shutil.rmtree(parquet_root, ignore_errors=True)
         partition_counters: dict[str, int] = {}
 
-        logging.info("Building parquet dataset for %s (version %s)", zipped_gpkg_path, version_tag)
+        logging.info(
+            "Building parquet dataset for %s (version %s)",
+            zipped_gpkg_path,
+            version_tag,
+        )
         extraction_dir = _extract_gpkg(zipped_gpkg_path)
         try:
             gpkg_files = list(Path(extraction_dir).rglob("*.gpkg"))
@@ -218,32 +234,3 @@ def publish_parquet_partitions(version_override: Optional[str] = None, chunk_siz
 @celery_app.task(soft_time_limit=60 * 5, hard_time_limit=(60 * 5) + 5)
 def republish_latest_dataset():
     publish_parquet_partitions.delay()
-
-
-@celery_app.task(soft_time_limit=60 * 60, hard_time_limit=(60 * 60) + 5)
-def stage_existing_parquet(
-    version_tag: str = "v0_1",
-    source_dir: str = RAW_PARQUET_DIR,
-):
-    """
-    Upload pre-built NUTS3 Parquet files (one file per NUTS3 code) to MinIO using the
-    `s3://<bucket>/buildings/<version>/nuts_id=<NUTS3>/...` layout.
-    """
-    client, settings = build_client()
-    ensure_bucket(client, settings)
-    base = Path(source_dir)
-    if not base.exists():
-        raise FileNotFoundError(f"Parquet source dir not found: {base}")
-
-    uploaded = 0
-    for parquet_path in base.rglob("*.parquet"):
-        nuts_id = parquet_path.stem
-        object_key = f"{DATASET_PREFIX}/{version_tag}/nuts_id={nuts_id}/{parquet_path.name}"
-        logging.info("Uploading %s -> %s", parquet_path, public_s3_uri(settings, object_key))
-        upload_file(client, settings, object_key, str(parquet_path))
-        uploaded += 1
-
-    if uploaded == 0:
-        logging.warning("No parquet files found under %s", base)
-    else:
-        logging.info("Uploaded %s parquet files for version %s", uploaded, version_tag)
