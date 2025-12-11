@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Iterable, Optional, Tuple
+from typing import Optional, Tuple
 from urllib.parse import urlparse
 
 from minio import Minio
@@ -22,6 +22,7 @@ class MinioSettings:
     access_key: str = os.environ.get("MINIO_ACCESS_KEY", "minioadmin")
     secret_key: str = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
     secure: bool = _as_bool(os.environ.get("MINIO_USE_SSL"), default=False)
+    public_secure: bool = _as_bool(os.environ.get("MINIO_PUBLIC_USE_SSL"), default=True)
     region: str = os.environ.get("MINIO_REGION", "eu")
 
 
@@ -35,7 +36,8 @@ def settings_from_django() -> MinioSettings:
             public_endpoint=getattr(django_settings, "MINIO_PUBLIC_ENDPOINT", None)
             or getattr(django_settings, "MINIO_ENDPOINT", None)
             or MinioSettings.endpoint,
-            bucket=getattr(django_settings, "MINIO_BUCKET", None) or MinioSettings.bucket,
+            bucket=getattr(django_settings, "MINIO_BUCKET", None)
+            or MinioSettings.bucket,
             access_key=getattr(django_settings, "MINIO_ACCESS_KEY", None)
             or MinioSettings.access_key,
             secret_key=getattr(django_settings, "MINIO_SECRET_KEY", None)
@@ -43,6 +45,9 @@ def settings_from_django() -> MinioSettings:
             secure=getattr(django_settings, "MINIO_USE_SSL", None)
             if hasattr(django_settings, "MINIO_USE_SSL")
             else MinioSettings.secure,
+            public_secure=getattr(django_settings, "MINIO_PUBLIC_USE_SSL", None)
+            if hasattr(django_settings, "MINIO_PUBLIC_USE_SSL")
+            else MinioSettings.public_secure,
             region=getattr(django_settings, "MINIO_REGION", None)
             or MinioSettings.region,
         )
@@ -50,17 +55,22 @@ def settings_from_django() -> MinioSettings:
         return MinioSettings()
 
 
-def _normalize_endpoint(endpoint: str, secure: bool) -> Tuple[str, bool]:
+def _normalize_endpoint(endpoint: str, secure: bool) -> tuple[str, bool]:
     """
     MinIO python client expects a host:port without the schema. Allow both formats.
     """
     if "://" not in endpoint:
         return endpoint, secure
     parsed = urlparse(endpoint)
-    return parsed.netloc or parsed.path, secure if secure is not None else parsed.scheme == "https"
+    return (
+        parsed.netloc or parsed.path,
+        secure if secure is not None else parsed.scheme == "https",
+    )
 
 
-def build_client(settings: Optional[MinioSettings] = None) -> Tuple[Minio, MinioSettings]:
+def build_client(
+    settings: Optional[MinioSettings] = None,
+) -> tuple[Minio, MinioSettings]:
     settings = settings or settings_from_django()
     endpoint, secure = _normalize_endpoint(settings.endpoint, settings.secure)
     client = Minio(
@@ -79,7 +89,8 @@ def build_presign_client(settings: MinioSettings) -> Minio:
     matches the URL the browser will hit.
     """
     endpoint, secure = _normalize_endpoint(
-        settings.public_endpoint or settings.endpoint, settings.secure
+        settings.public_endpoint,
+        settings.public_secure,
     )
     return Minio(
         endpoint,
@@ -100,7 +111,9 @@ def ensure_bucket(client: Minio, settings: MinioSettings) -> None:
             raise
 
 
-def upload_file(client: Minio, settings: MinioSettings, object_name: str, file_path: str) -> None:
+def upload_file(
+    client: Minio, settings: MinioSettings, object_name: str, file_path: str
+) -> None:
     client.fput_object(settings.bucket, object_name, file_path)
 
 
@@ -111,7 +124,9 @@ def presign_get_url(
     expiry: timedelta = timedelta(hours=1),
 ) -> str:
     public_client = build_presign_client(settings)
-    return public_client.presigned_get_object(settings.bucket, object_name, expires=expiry)
+    return public_client.presigned_get_object(
+        settings.bucket, object_name, expires=expiry
+    )
 
 
 def list_objects(client: Minio, settings: MinioSettings, prefix: str = ""):

@@ -55,6 +55,7 @@ MINIO_REGION = env("MINIO_REGION", default="eu")
 MINIO_ACCESS_KEY = env("MINIO_ACCESS_KEY", default="minioadmin")
 MINIO_SECRET_KEY = env("MINIO_SECRET_KEY", default="minioadmin")
 MINIO_USE_SSL = env.bool("MINIO_USE_SSL", default=False)
+MINIO_PUBLIC_USE_SSL = env.bool("MINIO_PUBLIC_USE_SSL", default=True)
 
 # URLS
 # ------------------------------------------------------------------------------
