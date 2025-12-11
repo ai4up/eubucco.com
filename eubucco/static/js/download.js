@@ -5,9 +5,14 @@ let v01Files = [];
 let selectedNutsId = "";
 let applyFilters = () => {};
 
-const cfg = JSON.parse(document.getElementById("downloadConfig").textContent);
+const cfgElement = document.getElementById("downloadConfig");
+if (!cfgElement) {
+  console.error("downloadConfig element not found");
+}
+const cfg = cfgElement ? JSON.parse(cfgElement.textContent) : {};
 const API_URL = cfg.apiUrl;
 const NUTS_URL = cfg.nutsUrl;
+const currentVersion = cfg.version || "v0.2";
 const versionSelect = document.getElementById("versionSelect");
 const searchControls = document.getElementById("searchControls");
 const countryDropdown = document.getElementById("countryDropdown");
@@ -15,7 +20,6 @@ const nutsInput = document.getElementById("nutsInput");
 const nutsOptions = document.getElementById("nutsOptions");
 const orSeparator = document.getElementById("orSeparator");
 
-let datasetVersion = versionSelect?.value || "v0.2";
 let mapInstance = null;
 
 const countryIso2 = {
@@ -67,7 +71,7 @@ const getApiBase = () => {
 const loadNutsOrFiles = async () => {
   const baseApi = getApiBase();
   try {
-    if (datasetVersion === "v0.1") {
+    if (currentVersion === "v0.1") {
       const resp = await fetch(`${baseApi}datalake/files/v0.1`);
       if (!resp.ok) {
         console.error("Failed to load v0.1 files", resp.status, resp.statusText);
@@ -79,7 +83,7 @@ const loadNutsOrFiles = async () => {
       return;
     }
 
-    const resp = await fetch(`${baseApi}datalake/nuts?version=${datasetVersion}`);
+    const resp = await fetch(`${baseApi}datalake/nuts?version=${currentVersion}`);
     if (!resp.ok) {
       console.error("Failed to load nuts partitions", resp.status, resp.statusText);
       nutsPartitions = [];
@@ -90,7 +94,7 @@ const loadNutsOrFiles = async () => {
     populateNutsOptions();
   } catch (e) {
     console.error("Failed to load data", e);
-    if (datasetVersion === "v0.1") {
+    if (currentVersion === "v0.1") {
       v01Files = [];
     } else {
       nutsPartitions = [];
@@ -99,6 +103,8 @@ const loadNutsOrFiles = async () => {
 };
 
 const populateNutsOptions = () => {
+  if (!nutsOptions) return;
+
   const codes = new Set();
   nutsPartitions.forEach(part => codes.add(part.nuts_id));
 
@@ -113,6 +119,8 @@ const populateNutsOptions = () => {
 /* ---------- Countries ---------- */
 
 const updateCountries = async () => {
+  if (!countryDropdown) return;
+
   const baseApi = getApiBase();
   try {
     const resp = await fetch(`${baseApi}countries`);
@@ -161,7 +169,7 @@ const renderNutsResults = () => {
     parquetZipBtn.onclick = null;
   }
 
-  if (datasetVersion === "v0.1") {
+  if (currentVersion === "v0.1") {
     if (!Array.isArray(v01Files) || v01Files.length === 0) {
       tableBody.innerHTML =
         '<tr><td colspan="4" class="text-center">No data available for v0.1.</td></tr>';
@@ -211,7 +219,7 @@ const renderNutsResults = () => {
     return;
   }
 
-  const candidate = (nutsInput.value || "").trim().toUpperCase();
+  const candidate = nutsInput ? (nutsInput.value || "").trim().toUpperCase() : "";
 
   if (!candidate) {
     if (selectedCountry) {
@@ -308,6 +316,12 @@ const initMap = () => {
     return;
   }
 
+  const mapContainer = document.getElementById("map");
+  if (!mapContainer) {
+    console.warn("Map container not found in DOM.");
+    return;
+  }
+
   const protocol = new window.pmtiles.Protocol();
   maplibregl.addProtocol("pmtiles", protocol.tile);
 
@@ -396,8 +410,9 @@ const initMap = () => {
   applyFilters = updateFilters;
 
   map.on("click", e => {
-    if (datasetVersion !== "v0.2") return;
-    
+    if (currentVersion !== "v0.2") return;
+    if (!nutsInput) return;
+
     const feats = map.queryRenderedFeatures(e.point, { layers: ["nuts-fill"] });
     if (!feats || feats.length === 0) {
       selectedNutsId = "";
@@ -436,32 +451,10 @@ function alignDownloadsBottomBar() {
 
 /* ---------- Version switching ---------- */
 
-const updateUiForVersion = () => {
-  if (datasetVersion === "v0.1") {
-    if (searchControls) {
-      countryDropdown.classList.add("hidden");
-      nutsInput.classList.add("hidden");
-      orSeparator.classList.add("hidden");
-      nutsOptions.innerHTML = "";
-    }
-  } else {
-    countryDropdown.classList.remove("hidden");
-    nutsInput.classList.remove("hidden");
-    orSeparator.classList.remove("hidden");
-  }
-};
-
-const onVersionChange = async () => {
-  datasetVersion = versionSelect.value;
-  selectedCountry = null;
-  selectedNutsId = "";
-  nutsInput.value = "";
-  if (countryDropdown) countryDropdown.selectedIndex = 0;
-
-  updateUiForVersion();
-  await loadNutsOrFiles();
-  renderNutsResults();
-  applyFilters();
+const onVersionChange = () => {
+  const newVersion = versionSelect.value;
+  // Navigate to the new URL with the selected version
+  window.location.href = `/data/${newVersion}`;
 };
 
 /* ---------- Bootstrap ---------- */
@@ -471,12 +464,17 @@ window.addEventListener("resize", alignDownloadsBottomBar);
 document.addEventListener("DOMContentLoaded", async () => {
   setTimeout(alignDownloadsBottomBar, 50);
 
-  versionSelect.addEventListener("change", onVersionChange);
-  countryDropdown.addEventListener("change", onSelectCountry);
-  nutsInput.addEventListener("input", onNutsChange);
+  if (versionSelect) {
+    versionSelect.addEventListener("change", onVersionChange);
+  }
 
-  datasetVersion = versionSelect.value;
-  updateUiForVersion();
+  if (countryDropdown) {
+    countryDropdown.addEventListener("change", onSelectCountry);
+  }
+
+  if (nutsInput) {
+    nutsInput.addEventListener("input", onNutsChange);
+  }
 
   initMap();
   await updateCountries();
