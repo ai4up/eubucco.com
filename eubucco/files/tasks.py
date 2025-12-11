@@ -22,23 +22,25 @@ DIRS = [
 ]
 
 
-def ingest_file(path_str: str, file_type: FileType) -> File:
+def ingest_file(path_str: str, file_type: FileType, version: str) -> File:
     path = Path(path_str)
     file = File.objects.filter(path=path_str).first()
+
     if file:
         logging.debug("File already in db, updating")
         file.size_in_mb = get_file_size(path_str)
         file.name = path.name
         file.type = FileType(file_type)
+        file.version = version
         file.save()
         return file
 
-    logging.info(f"Detected new file at {path}")
     file = File(
         name=path.name,
         size_in_mb=get_file_size(path_str),
         path=str(path),
         type=FileType(file_type),
+        version=version,
     )
     file.save()
     return file
@@ -47,13 +49,19 @@ def ingest_file(path_str: str, file_type: FileType) -> File:
 @celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
 def scan_files():
     logging.info("Starting files scan task")
-    for dir, file_type in DIRS:
-        logging.debug(f"Ingesting {dir}")
-        pathlist = Path(dir)
-        for path in pathlist.glob("*"):
-            if not path.name.startswith("."):
-                ingest_file(path_str=str(path), file_type=file_type)
+    for base_dir, file_type in DIRS:
+        base = Path(base_dir)
 
+        for version_dir in base.iterdir():
+            if not version_dir.is_dir() or version_dir.name.startswith("."):
+                continue
+
+            version = version_dir.name
+            logging.debug(f"Ingesting {version_dir} (version={version})")
+            for path in version_dir.glob("*"):
+                if path.name.startswith("."):
+                    continue
+                ingest_file(str(path), file_type, version)
 
 @celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
 def start_example_ingestion_tasks():

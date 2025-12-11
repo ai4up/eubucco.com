@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3.2.0/dist/pmtiles.js"></script>
+
+<style>
+  body { overflow: hidden !important; }
+  #map { width: 100%; height: 100%; }
+
+  @media (min-width: 768px) {
+    .main-container { flex-direction: row; height: var(--content-height); overflow: hidden; }
+    .map-column { width: 50%; flex-shrink: 0; height: 100%; }
+    .map-column > div { height: 100%; }
+    .article-column { width: 50%; height: 100%; overflow-y: auto; }
+  }
+
+  @media (max-width: 767px) {
+    .map-column > div { height: 20rem; }
+  }
+
+  #downloadsBottomBar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+</style>
+
+<div class="main-container w-full flex flex-col gap-6">
+
+  <!-- LEFT: MAP -->
+  <div class="map-column w-full">
+    <div><div id="map"></div></div>
+  </div>
+
+  <!-- RIGHT: CONTENT -->
+  <article class="article-column w-full">
+    <div class="container mx-auto pt-6 px-4 w-full max-w-5xl">
+
+      <!-- Page title -->
+      <div class="text-center text-lg font-semibold mb-3">
+        EUBUCCO Dataset — Downloads
+      </div>
+
+      <!-- Dynamic error banner -->
+      <div id="errorBanner" class="hidden alert alert-error shadow-sm text-sm my-4">
+        <span id="errorBannerText"></span>
+      </div>
+
+      <!-- VERSION-SPECIFIC CONTROLS -->
+      {% block version_specific_controls %}{% endblock %}
+
+      <!-- DOWNLOAD TABLE -->
+      {% block version_specific_table %}{% endblock %}
+    </div>
+
+    <!-- Examples -->
+    <div class="container mx-auto px-4 py-4 w-full">
+      <h2 class="pt-20 text-center">Examples</h2>
+      {% include "data/partials/examples_table.html" %}
+    </div>
+
+    <!-- Additional Files -->
+    <div class="container mx-auto px-4 py-4 w-full">
+      <h2 class="pt-20 text-center">Additional Files</h2>
+      {% include "data/partials/additional_table.html" %}
+    </div>
+
+    <div class="container mx-auto px-4 py-4 w-full text-center">
+      For metadata, license, and API details see the
+      <a class="link" href="{% url 'docs' %}">Docs</a>.  
+      Data is archived on  
+      <a class="link" href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>.
+    </div>
+  </article>
+</div>
+
+<script id="downloadConfig" type="application/json">
+{
+  "apiUrl": "{{ API_URL }}",
+  "nutsUrl": "{{ NUTS_PM_TILES_URL }}"
+}
+</script>
+
+<script type="module" src="{% static 'js/download.js' %}"></script>
+
+{% endblock %}

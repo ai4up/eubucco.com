@@ -1,0 +1,18 @@
+<table class="table table-zebra w-full text-sm">
+  <thead>
+    <tr><th>Name</th><th>Download</th><th>Info</th></tr>
+  </thead>
+  <tbody>
+    {% for f in files %}
+      <tr>
+        <td>{{ f.name }}</td>
+        <td>
+          <a href="{{ f.download_link }}" class="link">
+            Download ({{ f.size_in_mb|floatformat:2 }} Mb)
+          </a>
+        </td>
+        <td>{{ f.info }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
