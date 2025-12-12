@@ -50,7 +50,7 @@ def data_versioned(request, version):
 
     context = {
         "API_URL": os.environ.get("API_URL"),
-        "NUTS_PM_TILES_URL": os.environ.get("NUTS_PM_TILES_URL", ""),
+        "nuts_pm_tiles_url": f"{os.environ.get('MINIO_PUBLIC_ENDPOINT')}/{os.environ.get('MINIO_BUCKET')}/{os.environ.get('NUTS_PM_TILES_OBJECT')}",
         "version": version,
         "available_versions": AVAILABLE_VERSIONS,
         "examples": examples,
