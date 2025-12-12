@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 from pathlib import Path
 from time import sleep
 
@@ -22,7 +23,7 @@ DIRS = [
 ]
 
 
-def ingest_file(path_str: str, file_type: FileType, version: str) -> File:
+def ingest_file(path_str: str, file_type: FileType, version: str, info: str) -> File:
     path = Path(path_str)
     file = File.objects.filter(path=path_str).first()
 
@@ -32,6 +33,7 @@ def ingest_file(path_str: str, file_type: FileType, version: str) -> File:
         file.name = path.name
         file.type = FileType(file_type)
         file.version = version
+        file.info = info
         file.save()
         return file
 
@@ -41,12 +43,27 @@ def ingest_file(path_str: str, file_type: FileType, version: str) -> File:
         path=str(path),
         type=FileType(file_type),
         version=version,
+        info=info,
     )
     file.save()
     return file
 
 
-@celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
+def load_metadata(version_dir: Path) -> dict:
+    """Loads metadata.json if present. Returns {} if not found or invalid."""
+    meta_path = version_dir / "metadata.json"
+    if not meta_path.exists():
+        logging.warning(f"No metadata.json in {version_dir}")
+        return {}
+
+    try:
+        return json.loads(meta_path.read_text())
+    except Exception as e:
+        logging.warning(f"Could not parse metadata.json in {version_dir}: {e}")
+        return {}
+
+
+@celery_app.task(soft_time_limit=60, hard_time_limit=61)
 def scan_files():
     logging.info("Starting files scan task")
     for base_dir, file_type in DIRS:
@@ -57,23 +74,25 @@ def scan_files():
                 continue
 
             version = version_dir.name
-            logging.debug(f"Ingesting {version_dir} (version={version})")
-            for path in version_dir.glob("*"):
-                if path.name.startswith("."):
-                    continue
-                ingest_file(str(path), file_type, version)
+            logging.debug(f"Scanning {version_dir} (version={version})")
 
-@celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
+            metadata = load_metadata(version_dir)
+            for path in version_dir.glob("*"):
+                if path.name.startswith(".") or path.name == "metadata.json":
+                    continue
+
+                info = metadata.get(path.name, {}).get("description", "")
+                ingest_file(str(path), file_type, version, info)
+
+
+@celery_app.task(soft_time_limit=60, hard_time_limit=61)
 def start_example_ingestion_tasks():
     sleep(10)
     scan_files.delay()
 
 
-# @synchronize(key='eubucco.ingest.tasks.main', masters={r}, auto_release_time=20, blocking=True, timeout=1)
 def main():
-    """In dev mode django and the watcher are started. We use this main function to start
-    the ingestion tasks only once with the lock applied here!"""
-
+    """Ensure ingestion runs only once using Redis-based locking."""
     lock = Redlock(key="eubucco.examples.files.main", masters={r}, auto_release_time=20)
     if lock.acquire(blocking=False):
         start_example_ingestion_tasks.delay()
