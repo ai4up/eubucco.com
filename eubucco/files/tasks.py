@@ -18,8 +18,8 @@ r = redis.Redis(
 )
 
 DIRS = [
-    ("csvs/examples", FileType.EXAMPLE),
-    ("csvs/additional", FileType.ADDITIONAL),
+    ("data/examples", FileType.EXAMPLE),
+    ("data/additional", FileType.ADDITIONAL),
 ]
 
 

@@ -30,12 +30,12 @@ from eubucco.ingest.util import (
 )
 from eubucco.utils import version_enum
 
-CSV_PATH = "csvs/buildings"
+CSV_PATH = "data/buildings"
 CACHE_PATH = ".cache"
-ADMIN_CODE_MATCHES = "csvs/util/admin-codes-matches-v0.1.csv"
-ADMIN_CODE_MATCHES_NO_VERSION = "csvs/util/admin-codes-matches_no_version.csv"
-GADM_CITY_GEO = "csvs/util/gadm_country_city_geom.gpkg"
-GADM_COUNTRY_GEO = "csvs/util/gadm_country_geom.gpkg"
+ADMIN_CODE_MATCHES = "data/util/admin-codes-matches-v0.1.csv"
+ADMIN_CODE_MATCHES_NO_VERSION = "data/util/admin-codes-matches_no_version.csv"
+GADM_CITY_GEO = "data/util/gadm_country_city_geom.gpkg"
+GADM_COUNTRY_GEO = "data/util/gadm_country_geom.gpkg"
 
 r = redis.Redis(
     host=os.environ["REDIS_URL"].split("//")[-1].split(":")[0],
@@ -83,7 +83,7 @@ def recursion_upack(extracted_path: str):
 
 def unpack_csv(zipped_csv_path: str) -> str:
     logging.info(f"Unpacking {zipped_csv_path}")
-    extracted_path = zipped_csv_path.replace("csvs", "cache").replace(".gpkg.zip", "")
+    extracted_path = zipped_csv_path.replace("data", "cache").replace(".gpkg.zip", "")
     logging.info(f"To location {extracted_path}")
     with zipfile.ZipFile(zipped_csv_path, "r") as zip_ref:
         zip_ref.extractall(extracted_path)

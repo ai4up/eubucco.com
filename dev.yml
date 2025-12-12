@@ -16,7 +16,7 @@ services:
     command: /start
     restart: unless-stopped
     volumes:
-      - /home/app/eubucco/csvs:/app/csvs
+      - /home/eubucco-data:/app/data
     networks:
       - default
       - proxy
@@ -78,7 +78,7 @@ services:
       - minio
     restart: unless-stopped
     volumes:
-      - /home/app/eubucco/csvs:/app/csvs
+      - /home/eubucco-data:/app/data
     networks:
       - proxy
       - default
@@ -205,7 +205,7 @@ services:
       - redis
       - minio
     volumes:
-      - /home/app/eubucco/csvs:/app/csvs
+      - /home/eubucco-data:/app/data
     environment:
       DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
       DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
@@ -371,7 +371,7 @@ services:
       if [ -f /tiles/nuts.pmtiles ]; then /usr/bin/mc cp /tiles/nuts.pmtiles localminio/$${MINIO_BUCKET}/$${NUTS_PM_TILES_OBJECT}; fi;
       "
     volumes:
-      - /home/app/eubucco/tiles:/tiles:ro
+      - /home/eubucco/tiles:/tiles:ro
 
 networks:
   default:

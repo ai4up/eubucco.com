@@ -5,5 +5,5 @@ set -o nounset
 
 useradd worker -u 999 || true
 
-#watchfiles celery.__main__.main --args '-A config.celery_app worker -l INFO --uid 999' --ignore-paths 'csvs'
+#watchfiles celery.__main__.main --args '-A config.celery_app worker -l INFO --uid 999' --ignore-paths 'data'
 exec celery -A config.celery_app worker -l INFO

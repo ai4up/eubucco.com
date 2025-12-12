@@ -12,7 +12,7 @@ from eubucco.datalake.minio_client import (
     upload_file,
 )
 
-RAW_FILES_DIR = Path("csvs/buildings")
+RAW_FILES_DIR = Path("data/buildings")
 
 
 def _upload_files(file_paths: Iterable[Path], prefix: str, settings: Optional[MinioSettings] = None):
@@ -30,7 +30,7 @@ def stage_existing_parquet(version_tag: str = "v0_1", source_dir: str = RAW_FILE
     """
     Upload per-NUTS parquet files to MinIO with partitioned keys:
     s3://<bucket>/buildings/<version>/nuts_id=<NUTS>/file.parquet
-    Expects files under csvs/buildings/<version>/.
+    Expects files under data/buildings/<version>/.
     """
     base = Path(source_dir) / version_tag
     if not base.exists():
@@ -58,7 +58,7 @@ def stage_flat_files(version_tag: str = "v0_1", source_dir: str = RAW_FILES_DIR)
     """
     Upload CSV/GPKG (and zipped variants) as-is to MinIO:
     s3://<bucket>/buildings/<version>/files/<filename>
-    Expects files under csvs/buildings/<version>/.
+    Expects files under data/buildings/<version>/.
     """
     base = Path(source_dir) / version_tag
     if not base.exists():
