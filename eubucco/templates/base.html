@@ -1,12 +1,27 @@
 {% load tailwind_tags %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="night" class="dark">
 <head>
   {% load static %}
   <title>EUBUCCO</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <script>
+    (function setInitialTheme() {
+      const themes = {light: "cmyk", dark: "night"};
+      const root = document.documentElement;
+      try {
+        const stored = localStorage.getItem("ui-theme");
+        const mode = stored === "light" || stored === "dark" ? stored : "dark";
+        root.dataset.theme = themes[mode];
+        root.classList.toggle("dark", mode === "dark");
+      } catch (err) {
+        root.dataset.theme = "night";
+        root.classList.add("dark");
+      }
+    })();
+  </script>
   <script defer data-domain="eubucco.com" src="https://analytics.eubucco.com/js/plausible.js"></script>
   <link rel="preload" href="/static/css/dist/styles.css" as="style">
   <link rel="stylesheet" href="/static/css/dist/styles.css">
@@ -83,6 +98,7 @@
   )
   appHeight()
 </script>
+<script defer src="{% static 'js/theme-toggle.js' %}"></script>
 
 {% block extra_js %}{% endblock %}
 </body>
