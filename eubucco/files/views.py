@@ -16,26 +16,26 @@ def _fetch_files_for_version(version):
     ]
 
 
-def _group_examples(files):
+def _grouped(files, ftype):
     grouped = {}
     for f in files:
-        if f.type != "EX":
+        if f.type != ftype:
             continue
 
-        city = f.name.split("-")[-1].split(".")[0]
-        entry = grouped.setdefault(city, {"city": city})
+        region = f.name.split("-")[-1].split(".")[0]
+        entry = grouped.setdefault(region, {"region": region})
 
         if f.name.endswith(".csv.zip"):
             entry["csv_link"] = f.download_link
-            entry["csv_size_in_mb"] = f.size_in_mb
+            entry["csv_size"] = f.size_in_mb
         else:
             entry["gpkg_link"] = f.download_link
-            entry["gpkg_size_in_mb"] = f.size_in_mb
+            entry["gpkg_size"] = f.size_in_mb
 
-    return sorted(grouped.values(), key=lambda x: x["city"])
+    return sorted(grouped.values(), key=lambda x: x["region"])
 
 
-def _group_additional(files):
+def _additional(files):
     return [f for f in files if f.type == "AD"]
 
 
@@ -45,16 +45,18 @@ def data_versioned(request, version):
         raise Http404("Unknown version")
 
     files = _fetch_files_for_version(version)
-    examples = _group_examples(files)
-    additional_files = _group_additional(files)
+    buildings = _grouped(files, "BU")
+    examples = _grouped(files, "EX")
+    additional = _additional(files)
 
     context = {
         "API_URL": os.environ.get("API_URL"),
         "nuts_pm_tiles_url": f"{os.environ.get('MINIO_PUBLIC_ENDPOINT')}/{os.environ.get('MINIO_BUCKET')}/{os.environ.get('NUTS_PM_TILES_OBJECT')}",
         "version": version,
         "available_versions": AVAILABLE_VERSIONS,
-        "examples": examples,
-        "additional_files": additional_files,
+        "building_files": buildings,
+        "examples_files": examples,
+        "additional_files": additional,
         "countries_api_link": f'{os.environ.get("API_URL")}countries',
     }
 

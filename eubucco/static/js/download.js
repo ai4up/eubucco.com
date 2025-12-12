@@ -163,57 +163,11 @@ const renderNutsResults = () => {
   const parquetZipBtn = document.getElementById("btnParquet");
 
   if (!tableBody) return;
+  if (currentVersion === "v0.1") return;
 
   if (parquetZipBtn) {
     parquetZipBtn.disabled = true;
     parquetZipBtn.onclick = null;
-  }
-
-  if (currentVersion === "v0.1") {
-    if (!Array.isArray(v01Files) || v01Files.length === 0) {
-      tableBody.innerHTML =
-        '<tr><td colspan="4" class="text-center">No data available for v0.1.</td></tr>';
-      return;
-    }
-
-    const groups = {};
-
-    v01Files.forEach(file => {
-      const key = file.key.split("/").pop();
-      const base = key.split(".")[0];
-      const iso = base.toUpperCase();
-
-      if (!groups[iso]) {
-        groups[iso] = { gpkg: "—", csv: "—" };
-      }
-
-      const sizeMb = Math.round(file.size_bytes / 1e6);
-      const link = `<a class="link" href="${file.presigned_url}"
-                        referrerpolicy="strict-origin-when-cross-origin">
-                        Download (${sizeMb} MB)
-                      </a>`;
-
-      if (file.key.includes(".gpkg")) {
-        groups[iso].gpkg = link;
-      } else if (file.key.includes(".csv")) {
-        groups[iso].csv = link;
-      }
-    });
-
-    let rows = "";
-    Object.entries(groups).forEach(([iso, cols]) => {
-      const countryName = iso2ToCountry[iso] || iso;
-      rows += `
-        <tr>
-          <td>${countryName}</td>
-          <td>${cols.gpkg}</td>
-          <td>${cols.csv}</td>
-        </tr>
-      `;
-    });
-
-    tableBody.innerHTML = rows;
-    return;
   }
 
   const candidate = nutsInput ? (nutsInput.value || "").trim().toUpperCase() : "";

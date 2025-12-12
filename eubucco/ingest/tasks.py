@@ -18,8 +18,7 @@ from pottery import Redlock
 
 from config import celery_app
 from eubucco.data.models import Building, City, Country, Region
-from eubucco.files.models import FileType
-from eubucco.files.tasks import ingest_file
+from eubucco.files.models import File
 from eubucco.ingest.models import IngestedGPKG
 from eubucco.ingest.util import (
     create_location,
@@ -132,14 +131,16 @@ def ingest_boundaries():
             country_str = capwords(country_boundaries.country_name)
             available_countries.append(country_boundaries["gadm_code"])
 
-            csv_file = ingest_file(zipped_csv_path, file_type=FileType.BUILDING)
-            gpkg_file = ingest_file(zipped_gpkg_path, file_type=FileType.BUILDING)
+            csv_file = File.objects.filter(path=zipped_csv_path).first()
+            gpkg_file = File.objects.filter(path=zipped_gpkg_path).first()
 
             country, _ = Country.objects.get_or_create(name=country_str)
             country.geometry = str(country_boundaries.geometry)
             country.convex_hull = str(country_boundaries.geometry.convex_hull)
-            country.csv = csv_file
-            country.gpkg = gpkg_file
+            if csv_file:
+                country.csv = csv_file
+            if gpkg_file:
+                country.gpkg = gpkg_file
             country.save()
 
     df = pd.read_csv(ADMIN_CODE_MATCHES)
@@ -198,13 +199,14 @@ def ingest_csv(zipped_gpkg_path: str):
 
             country, _ = Country.objects.get_or_create(name=country_str)
 
-            csv_file = ingest_file(
-                zipped_gpkg_path.replace("gpkg", "csv"), file_type=FileType.BUILDING
-            )
-            gpkg_file = ingest_file(zipped_gpkg_path, file_type=FileType.BUILDING)
+            csv_path = zipped_gpkg_path.replace("gpkg", "csv")
+            csv_file = File.objects.filter(path=csv_path).first()
+            gpkg_file = File.objects.filter(path=zipped_gpkg_path).first()
 
-            country.csv = csv_file
-            country.gpkg = gpkg_file
+            if csv_file:
+                country.csv = csv_file
+            if gpkg_file:
+                country.gpkg = gpkg_file
             country.save()
 
     pathlist = Path(extracted_path).rglob("*.gpkg")

@@ -3,20 +3,20 @@
     <tr><th>City</th><th>GPKG</th><th>CSV</th></tr>
   </thead>
   <tbody>
-    {% for ex in examples %}
+    {% for ex in example_files %}
       <tr>
-        <td>{{ ex.city|capfirst }}</td>
+        <td>{{ ex.region|capfirst }}</td>
         <td>
           {% if ex.gpkg_link %}
             <a href="{{ ex.gpkg_link }}" class="link">
-              Download ({{ ex.gpkg_size|floatformat:1 }} Mb)
+              Download ({{ ex.gpkg_size|floatformat:1 }} MB)
             </a>
           {% else %}—{% endif %}
         </td>
         <td>
           {% if ex.csv_link %}
             <a href="{{ ex.csv_link }}" class="link">
-              Download ({{ ex.csv_size|floatformat:1 }} Mb)
+              Download ({{ ex.csv_size|floatformat:1 }} MB)
             </a>
           {% else %}—{% endif %}
         </td>

@@ -19,8 +19,26 @@
     <thead>
       <tr><th>Country</th><th>GPKG</th><th>CSV</th></tr>
     </thead>
-    <tbody id="downloadsBody">
-      <tr><td colspan="4" class="text-center">Select a country.</td></tr>
+    <tbody>
+        {% for f in building_files %}
+        <tr>
+            <td>{{ f.region|capfirst }}</td>
+            <td>
+            {% if f.gpkg_link %}
+                <a href="{{ f.gpkg_link }}" class="link">
+                Download ({{ f.gpkg_size|floatformat:1 }} MB)
+                </a>
+            {% else %}—{% endif %}
+            </td>
+            <td>
+            {% if f.csv_link %}
+                <a href="{{ f.csv_link }}" class="link">
+                Download ({{ f.csv_size|floatformat:1 }} MB)
+                </a>
+            {% else %}—{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
     </tbody>
   </table>
 </div>

@@ -18,6 +18,7 @@ r = redis.Redis(
 )
 
 DIRS = [
+    ("data/buildings", FileType.BUILDING),
     ("data/examples", FileType.EXAMPLE),
     ("data/additional", FileType.ADDITIONAL),
 ]
