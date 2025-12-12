@@ -21,6 +21,7 @@ const nutsOptions = document.getElementById("nutsOptions");
 const orSeparator = document.getElementById("orSeparator");
 
 let mapInstance = null;
+let tooltip = null;
 
 const countryIso2 = {
   "Austria": "AT",
@@ -195,7 +196,7 @@ const renderNutsResults = () => {
       </tr>`;
     } else {
       tableBody.innerHTML =
-        '<tr><td colspan="4" class="text-center">Select a country or NUTS code to see downloads.</td></tr>';
+        '<tr><td colspan="5" class="text-center">Select a country or NUTS code to see downloads.</td></tr>';
     }
     selectedNutsId = selectedNutsId || "";
     updateSelectionLayer();
@@ -205,7 +206,7 @@ const renderNutsResults = () => {
 
   if (!Array.isArray(nutsPartitions) || nutsPartitions.length === 0) {
     tableBody.innerHTML =
-      '<tr><td colspan="4" class="text-error text-center">No partitions available.</td></tr>';
+      '<tr><td colspan="5" class="text-error text-center">No partitions available.</td></tr>';
     updateSelectionLayer();
     applyFilters();
     return;
@@ -216,7 +217,7 @@ const renderNutsResults = () => {
   );
 
   if (matches.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="4" class="text-error text-center">
+    tableBody.innerHTML = `<tr><td colspan="5" class="text-error text-center">
       No partitions match ${candidate}.
     </td></tr>`;
     selectedNutsId = "";
@@ -233,8 +234,10 @@ const renderNutsResults = () => {
   matches.forEach(part => {
     const file = part.files.find(f => f.key.endsWith(".parquet")) || part.files[0];
     const sizeMb = Math.round(file.size_bytes / 1e6);
+    const nutsName = part.nuts_name || "—";
     rows += `<tr>
       <td>${part.nuts_id}</td>
+      <td>${nutsName}</td>
       <td><a class="link" href="${file.presigned_url}"
               referrerpolicy="strict-origin-when-cross-origin">
               Download (${sizeMb} MB)
@@ -259,6 +262,48 @@ const renderNutsResults = () => {
 
 const onNutsChange = () => renderNutsResults();
 
+/* ---------- Map tooltip ---------- */
+
+const createTooltip = () => {
+  const el = document.createElement('div');
+  el.className = 'map-tooltip';
+  el.style.cssText = `
+    position: absolute;
+    background: rgba(15, 23, 42, 0.95);
+    color: #f1f5f9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    max-width: 300px;
+    white-space: nowrap;
+  `;
+  document.body.appendChild(el);
+  return el;
+};
+
+const showTooltip = (e, feature) => {
+  if (!tooltip) return;
+  
+  const nutsId = feature.properties.nuts_id || '';
+  const nutsName = feature.properties.nuts_name || 'Unknown region';
+  
+  tooltip.innerHTML = `<strong>${nutsId}</strong><br>${nutsName}`;
+  tooltip.style.display = 'block';
+  tooltip.style.left = e.pageX + 10 + 'px';
+  tooltip.style.top = e.pageY + 10 + 'px';
+};
+
+const hideTooltip = () => {
+  if (tooltip) {
+    tooltip.style.display = 'none';
+  }
+};
+
 /* ---------- Map / NUTS highlighting ---------- */
 
 const initMap = () => {
@@ -272,6 +317,9 @@ const initMap = () => {
     console.warn("Map container not found in DOM.");
     return;
   }
+
+  // Create tooltip
+  tooltip = createTooltip();
 
   const protocol = new window.pmtiles.Protocol();
   maplibregl.addProtocol("pmtiles", protocol.tile);
@@ -359,6 +407,23 @@ const initMap = () => {
 
   map.on("load", updateFilters);
   applyFilters = updateFilters;
+
+  // Hover tooltip
+  map.on("mousemove", "nuts-fill", e => {
+    map.getCanvas().style.cursor = "pointer";
+    if (e.features && e.features.length > 0) {
+      // Sort by nuts_level descending to get the most specific region (highest level number)
+      const sortedFeatures = e.features.sort((a, b) => 
+        (b.properties.nuts_level || 0) - (a.properties.nuts_level || 0)
+      );
+      showTooltip(e.originalEvent, sortedFeatures[0]);
+    }
+  });
+
+  map.on("mouseleave", "nuts-fill", () => {
+    map.getCanvas().style.cursor = "";
+    hideTooltip();
+  });
 
   map.on("click", e => {
     if (currentVersion !== "v0.2") return;
