@@ -451,7 +451,7 @@ function alignDownloadsBottomBar() {
 const onVersionChange = () => {
   const newVersion = versionSelect.value;
   // Navigate to the new URL with the selected version
-  window.location.href = `/data/${newVersion}`;
+  window.location.href = `/files/${newVersion}`;
 };
 
 /* ---------- Bootstrap ---------- */
