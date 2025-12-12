@@ -1,8 +1,7 @@
 let countries = [];
-let selectedCountry = null;
+let selectedNutsId = "";
 let nutsPartitions = [];
 let v01Files = [];
-let selectedNutsId = "";
 let applyFilters = () => {};
 let nutsNames = {};
 
@@ -17,10 +16,10 @@ const NUTS_NAMES_URL = cfg.nutsNamesUrl;
 const currentVersion = cfg.version || "v0.2";
 const versionSelect = document.getElementById("versionSelect");
 const searchControls = document.getElementById("searchControls");
-const countryDropdown = document.getElementById("countryDropdown");
-const nutsInput = document.getElementById("nutsInput");
-const nutsOptions = document.getElementById("nutsOptions");
-const orSeparator = document.getElementById("orSeparator");
+const nutsCodeInput = document.getElementById("nutsCodeInput");
+const nutsCodeOptions = document.getElementById("nutsCodeOptions");
+const nutsNameInput = document.getElementById("nutsNameInput");
+const nutsNameOptions = document.getElementById("nutsNameOptions");
 
 let mapInstance = null;
 let tooltip = null;
@@ -60,16 +59,6 @@ const getNutsName = (nutsId) => {
   return nutsNames[nutsId] || 'Unknown region';
 };
 
-const getCountryIso2 = (countryName) => {
-  // Find the NUTS0 code for this country
-  for (const [code, name] of Object.entries(nutsNames)) {
-    if (code.length === 2 && name === countryName) {
-      return code;
-    }
-  }
-  return "";
-};
-
 /* ---------- NUTS partitions + v0.1 files ---------- */
 
 const loadNutsOrFiles = async () => {
@@ -95,7 +84,6 @@ const loadNutsOrFiles = async () => {
       nutsPartitions = await resp.json();
       if (!Array.isArray(nutsPartitions)) nutsPartitions = [];
     }
-    populateNutsOptions();
   } catch (e) {
     console.error("Failed to load data", e);
     if (currentVersion === "v0.1") {
@@ -106,58 +94,141 @@ const loadNutsOrFiles = async () => {
   }
 };
 
-const populateNutsOptions = () => {
-  if (!nutsOptions) return;
+/* ---------- Search functionality ---------- */
 
-  const codes = new Set();
-  nutsPartitions.forEach(part => codes.add(part.nuts_id));
-
-  nutsOptions.innerHTML = "";
-  Array.from(codes)
-    .sort()
-    .forEach(code => {
-      nutsOptions.innerHTML += `<option value="${code}">`;
-    });
-};
-
-/* ---------- Countries ---------- */
-
-const updateCountries = async () => {
-  if (!countryDropdown) return;
-
-  const baseApi = getApiBase();
-  try {
-    const resp = await fetch(`${baseApi}countries`);
-    if (!resp.ok) {
-      console.error("Failed to load countries", resp.status, resp.statusText);
-      countries = [];
-    } else {
-      countries = await resp.json();
-      if (!Array.isArray(countries)) {
-        countries = [];
-      } else {
-        countries.sort((a, b) => a.name.localeCompare(b.name));
-        countryDropdown.innerHTML = '<option disabled selected>Select Country</option>';
-        countries.forEach(country => {
-          countryDropdown.innerHTML += `<option value="${country.id}">${country.name}</option>`;
-        });
-      }
-    }
-  } catch (e) {
-    console.error("Failed to load countries", e);
-    countries = [];
+// Simple string similarity score (0-1)
+const calculateSimilarity = (str1, str2) => {
+  const s1 = str1.toLowerCase();
+  const s2 = str2.toLowerCase();
+  
+  // Exact match
+  if (s1 === s2) return 1.0;
+  
+  // Starts with (high priority)
+  if (s2.startsWith(s1)) return 0.9;
+  
+  // Contains (medium priority)
+  if (s2.includes(s1)) return 0.7;
+  
+  // Levenshtein-like: count matching characters
+  let matches = 0;
+  const len = Math.min(s1.length, s2.length);
+  for (let i = 0; i < len; i++) {
+    if (s1[i] === s2[i]) matches++;
   }
+  
+  return matches / Math.max(s1.length, s2.length) * 0.5;
 };
 
-const onSelectCountry = () => {
-  const selectedId = parseInt(countryDropdown.value, 10);
-  selectedCountry = countries.find(country => country.id === selectedId) || null;
+const getNutsLevel = (nutsId) => {
+  if (!nutsId) return 0;
+  return Math.min(nutsId.length - 1, 3);
+};
 
-  const iso2 = selectedCountry ? getCountryIso2(selectedCountry.name) : "";
-  selectedNutsId = iso2;
-  updateSelectionLayer();
-  applyFilters();
-  renderNutsResults();
+const formatSuggestion = (name, nutsId) => {
+  return `${name} [${nutsId}]`;
+};
+
+const findTopMatches = (searchText, maxResults = 8) => {
+  if (!searchText || searchText.length < 2) return [];
+  
+  const normalizedSearch = searchText.trim().toLowerCase();
+  const matches = [];
+  
+  for (const [code, name] of Object.entries(nutsNames)) {
+    const score = calculateSimilarity(normalizedSearch, name);
+    if (score > 0.3) {
+      matches.push({ code, name, score });
+    }
+  }
+  
+  // Sort by score descending, then by NUTS level (lower first), then by name
+  matches.sort((a, b) => {
+    if (Math.abs(a.score - b.score) < 0.01) {
+      const levelDiff = getNutsLevel(a.code) - getNutsLevel(b.code);
+      if (levelDiff !== 0) return levelDiff;
+      return a.name.localeCompare(b.name);
+    }
+    return b.score - a.score;
+  });
+  
+  return matches.slice(0, maxResults);
+};
+
+const updateNameSuggestions = (searchText) => {
+  if (!nutsNameOptions) return;
+  
+  const matches = findTopMatches(searchText);
+  
+  nutsNameOptions.innerHTML = '';
+  matches.forEach(match => {
+    const option = document.createElement('option');
+    option.value = formatSuggestion(match.name, match.code);
+    nutsNameOptions.appendChild(option);
+  });
+};
+
+const findNutsIdByInput = (inputValue) => {
+  if (!inputValue) return null;
+  
+    // Check if input matches our formatted suggestion pattern: "Name [CODE]"
+  const match = inputValue.match(/\[([A-Z0-9]+)\]$/);
+  if (match) {
+    return match[1]; // Extract the NUTS code
+  }
+  
+  // Otherwise try fuzzy search
+  const normalizedSearch = inputValue.trim().toLowerCase();
+  
+  // Exact match first
+  for (const [code, name] of Object.entries(nutsNames)) {
+    if (name.toLowerCase() === normalizedSearch) {
+      return code;
+    }
+  }
+  
+  // Try to find best match
+  const matches = findTopMatches(inputValue, 1);
+  return matches.length > 0 ? matches[0].code : null;
+};
+
+// Debounce function to avoid too many renders
+let searchTimeout = null;
+let suggestionTimeout = null;
+
+const onNutsCodeChange = () => {
+  // Clear the name input when typing in code input
+  if (nutsNameInput && nutsCodeInput && nutsCodeInput.value) {
+    nutsNameInput.value = '';
+  }
+  
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    renderNutsResults();
+  }, 300);
+};
+
+const onNutsNameChange = () => {
+  // Clear the code input when typing in name input
+  if (nutsCodeInput && nutsNameInput && nutsNameInput.value) {
+    nutsCodeInput.value = '';
+  }
+  
+  const searchText = nutsNameInput.value.trim();
+  
+  // Update suggestions dynamically
+  clearTimeout(suggestionTimeout);
+  if (searchText.length >= 2) {
+    suggestionTimeout = setTimeout(() => {
+      updateNameSuggestions(searchText);
+    }, 150);
+  }
+  
+  // Update results
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    renderNutsResults();
+  }, 300);
 };
 
 /* ---------- Rendering table ---------- */
@@ -174,34 +245,22 @@ const renderNutsResults = () => {
     parquetZipBtn.onclick = null;
   }
 
-  const candidate = nutsInput ? (nutsInput.value || "").trim().toUpperCase() : "";
-
-  if (!candidate) {
-    if (selectedCountry) {
-      const gpkgCell = selectedCountry.gpkg
-        ? `<a class="link" href="${selectedCountry.gpkg.download_link}"
-                referrerpolicy="strict-origin-when-cross-origin">
-                Download (${Math.round(selectedCountry.gpkg.size_in_mb)} MB)
-            </a>`
-        : "—";
-      const csvCell = selectedCountry.csv
-        ? `<a class="link" href="${selectedCountry.csv.download_link}"
-                referrerpolicy="strict-origin-when-cross-origin">
-                Download (${Math.round(selectedCountry.csv.size_in_mb)} MB)
-            </a>`
-        : "—";
-
-      tableBody.innerHTML = `<tr>
-        <td>${selectedCountry.name}</td>
-        <td>—</td>
-        <td>${gpkgCell}</td>
-        <td>${csvCell}</td>
-      </tr>`;
-    } else {
-      tableBody.innerHTML =
-        '<tr><td colspan="5" class="text-center">Select a country or NUTS code to see downloads.</td></tr>';
+  // Get search input from either code or name search
+  let candidateCode = "";
+  
+  if (nutsCodeInput && nutsCodeInput.value.trim()) {
+    candidateCode = nutsCodeInput.value.trim().toUpperCase();
+  } else if (nutsNameInput && nutsNameInput.value.trim()) {
+    const foundCode = findNutsIdByInput(nutsNameInput.value);
+    if (foundCode) {
+      candidateCode = foundCode.toUpperCase();
     }
-    selectedNutsId = selectedNutsId || "";
+  }
+
+  if (!candidateCode) {
+    tableBody.innerHTML =
+      '<tr><td colspan="5" class="text-center">Search by NUTS code or region name to see downloads.</td></tr>';
+    selectedNutsId = "";
     updateSelectionLayer();
     applyFilters();
     return;
@@ -209,19 +268,19 @@ const renderNutsResults = () => {
 
   if (!Array.isArray(nutsPartitions) || nutsPartitions.length === 0) {
     tableBody.innerHTML =
-      '<tr><td colspan="5" class="text-error text-center">No partitions available.</td></tr>';
+      '<tr><td colspan="5" class="text-error text-center">No data available.</td></tr>';
     updateSelectionLayer();
     applyFilters();
     return;
   }
 
   const matches = nutsPartitions.filter(
-    part => (part.nuts_id || "").toUpperCase().startsWith(candidate),
+    part => (part.nuts_id || "").toUpperCase().startsWith(candidateCode),
   );
 
   if (matches.length === 0) {
     tableBody.innerHTML = `<tr><td colspan="5" class="text-error text-center">
-      No partitions match ${candidate}.
+      No data found for "${candidateCode}".
     </td></tr>`;
     selectedNutsId = "";
     updateSelectionLayer();
@@ -229,7 +288,7 @@ const renderNutsResults = () => {
     return;
   }
 
-  selectedNutsId = candidate;
+  selectedNutsId = candidateCode;
   updateSelectionLayer();
   applyFilters();
 
@@ -253,7 +312,7 @@ const renderNutsResults = () => {
   tableBody.innerHTML = rows;
 
   const version = matches[0].version;
-  const bundleUrl = `${getApiBase()}datalake/nuts/${version}/${candidate}/bundle`;
+  const bundleUrl = `${getApiBase()}datalake/nuts/${version}/${candidateCode}/bundle`;
 
   if (parquetZipBtn) {
     parquetZipBtn.disabled = false;
@@ -262,8 +321,6 @@ const renderNutsResults = () => {
     };
   }
 };
-
-const onNutsChange = () => renderNutsResults();
 
 /* ---------- Map tooltip ---------- */
 
@@ -379,7 +436,7 @@ const initMap = () => {
     center: [10, 55],
     zoom: 3.2,
     maxZoom: 10,
-    minZoom: 2.8,
+    minZoom: 3,
     attributionControl: true,
   });
 
@@ -430,19 +487,23 @@ const initMap = () => {
 
   map.on("click", e => {
     if (currentVersion !== "v0.2") return;
-    if (!nutsInput) return;
+    if (!nutsCodeInput && !nutsNameInput) return;
 
     const feats = map.queryRenderedFeatures(e.point, { layers: ["nuts-fill"] });
     if (!feats || feats.length === 0) {
       selectedNutsId = "";
-      nutsInput.value = "";
+      if (nutsCodeInput) nutsCodeInput.value = "";
+      if (nutsNameInput) nutsNameInput.value = "";
       updateFilters();
       renderNutsResults();
       return;
     }
     const feature = feats.sort((a, b) => b.properties.nuts_level - a.properties.nuts_level)[0];
     selectedNutsId = feature.properties.nuts_id;
-    nutsInput.value = selectedNutsId;
+    if (nutsCodeInput) {
+      nutsCodeInput.value = selectedNutsId;
+      if (nutsNameInput) nutsNameInput.value = "";
+    }
     updateFilters();
     renderNutsResults();
   });
@@ -487,17 +548,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     versionSelect.addEventListener("change", onVersionChange);
   }
 
-  if (countryDropdown) {
-    countryDropdown.addEventListener("change", onSelectCountry);
+  if (nutsCodeInput) {
+    nutsCodeInput.addEventListener("input", onNutsCodeChange);
   }
 
-  if (nutsInput) {
-    nutsInput.addEventListener("input", onNutsChange);
+  if (nutsNameInput) {
+    nutsNameInput.addEventListener("input", onNutsNameChange);
   }
 
   initMap();
   await loadNutsNames();
-  await updateCountries();
   await loadNutsOrFiles();
   renderNutsResults();
 });

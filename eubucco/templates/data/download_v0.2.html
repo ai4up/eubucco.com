@@ -9,21 +9,16 @@
   </select>
 
   <div id="searchControls" class="flex flex-wrap justify-center gap-5 mt-3">
-
-    <select id="countryDropdown" class="select select-primary min-w-[12rem]">
-      <option disabled selected>Select Country</option>
-    </select>
-
+    <div>
+        <input type="text" id="nutsCodeInput" list="nutsCodeOptions" class="input input-primary min-w-[14rem]" placeholder="Search by NUTS code (e.g., DE, DE1, DE12)">
+        <datalist id="nutsCodeOptions"></datalist>
+    </div>
     <div id="orSeparator" class="flex items-center text-gray-400 font-semibold mx-2">
       — OR —
     </div>
-
     <div>
-      <input list="nutsOptions"
-             id="nutsInput"
-             class="input input-primary min-w-[14rem]"
-             placeholder="Search NUTS code (e.g. DE, DE1, DE12)">
-      <datalist id="nutsOptions"></datalist>
+        <input type="text" id="nutsNameInput" list="nutsNameOptions" class="input input-primary min-w-[14rem]" placeholder="Search by region name (e.g., Baden-Württemberg)">
+        <datalist id="nutsNameOptions"></datalist>
     </div>
   </div>
 </div>
