@@ -99,6 +99,7 @@ LOCAL_APPS = [
     "eubucco.dumps",
     "eubucco.ingest",
     "eubucco.files",
+    "eubucco.datalake",
     "eubucco.blog",
     "eubucco.analytics",
     "eubucco.tutorials",
