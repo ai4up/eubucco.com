@@ -1,9 +1,9 @@
 version: '3.2'
+name: eubucco
 
 volumes:
-  production_postgres_data: { }
-  production_postgres_data_backups: { }
-  production_traefik: { }
+  postgres_data: { }
+  postgres_data_backups: { }
 
 services:
   django:
@@ -62,7 +62,6 @@ services:
 
   api:
     image: eubucco/eubucco.com:production
-    container_name: eubucco_api
     command: /start-api
     depends_on:
       - postgres
@@ -114,7 +113,6 @@ services:
 
   docs:
     image: eubucco/eubucco.com:production
-    container_name: eubucco_docs
     command: /start-docs
     restart: unless-stopped
     networks:
@@ -212,8 +210,8 @@ services:
     image: eubucco/postgis:latest
     restart: unless-stopped
     volumes:
-      - production_postgres_data:/var/lib/postgresql/data:Z
-      - production_postgres_data_backups:/backups:z
+      - postgres_data:/var/lib/postgresql/data:Z
+      - postgres_data_backups:/backups:z
     networks:
       - default
     environment:
