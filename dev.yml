@@ -305,6 +305,9 @@ services:
     command: /start-celeryworker
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      - default
+      - dev-db
 
   celerybeat:
     image: eubucco/eubucco.com:dev
@@ -339,6 +342,9 @@ services:
     command: /start-celerybeat
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      - default
+      - dev-db
 
   dev-flower:
     image: eubucco/eubucco.com:dev
