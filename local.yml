@@ -78,7 +78,7 @@ services:
     image: eubucco_local_docs
     container_name: eubucco_local_docs
     ports:
-      - "9000:9000"
+      - "9090:9090"
     command: /start-docs
 
 
