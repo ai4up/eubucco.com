@@ -4,6 +4,7 @@ let nutsPartitions = [];
 let v01Files = [];
 let selectedNutsId = "";
 let applyFilters = () => {};
+let nutsNames = {};
 
 const cfgElement = document.getElementById("downloadConfig");
 if (!cfgElement) {
@@ -12,6 +13,7 @@ if (!cfgElement) {
 const cfg = cfgElement ? JSON.parse(cfgElement.textContent) : {};
 const API_URL = cfg.apiUrl;
 const NUTS_URL = cfg.nutsUrl;
+const NUTS_NAMES_URL = cfg.nutsNamesUrl;
 const currentVersion = cfg.version || "v0.2";
 const versionSelect = document.getElementById("versionSelect");
 const searchControls = document.getElementById("searchControls");
@@ -23,48 +25,49 @@ const orSeparator = document.getElementById("orSeparator");
 let mapInstance = null;
 let tooltip = null;
 
-const countryIso2 = {
-  "Austria": "AT",
-  "Belgium": "BE",
-  "Bulgaria": "BG",
-  "Croatia": "HR",
-  "Cyprus": "CY",
-  "Czech Republic": "CZ",
-  "Germany": "DE",
-  "Denmark": "DK",
-  "Estonia": "EE",
-  "Spain": "ES",
-  "Finland": "FI",
-  "France": "FR",
-  "Greece": "EL",
-  "Hungary": "HU",
-  "Ireland": "IE",
-  "Italy": "IT",
-  "Lithuania": "LT",
-  "Luxembourg": "LU",
-  "Latvia": "LV",
-  "Malta": "MT",
-  "Netherlands": "NL",
-  "Poland": "PL",
-  "Portugal": "PT",
-  "Romania": "RO",
-  "Sweden": "SE",
-  "Slovenia": "SI",
-  "Slovakia": "SK",
-  "Switzerland": "CH",
-};
-
-/* ---------- Helpers ---------- */
-const iso2ToCountry = Object.fromEntries(
-  Object.entries(countryIso2).map(([name, iso]) => [iso, name])
-);
-
 const getApiBase = () => {
   if (API_URL && !API_URL.includes("0.0.0.0")) {
     return API_URL.endsWith("/") ? API_URL : `${API_URL}/`;
   }
   const host = window.location.hostname || "localhost";
   return `${window.location.protocol}//${host}:8001/v1/`;
+};
+
+/* ---------- NUTS names mapping ---------- */
+
+const loadNutsNames = async () => {
+  if (!NUTS_NAMES_URL) {
+    console.error("NUTS names URL not configured");
+    nutsNames = {};
+    return;
+  }
+  
+  try {
+    const resp = await fetch(NUTS_NAMES_URL);
+    if (!resp.ok) {
+      console.error("Failed to load NUTS names", resp.status, resp.statusText);
+      nutsNames = {};
+    } else {
+      nutsNames = await resp.json();
+    }
+  } catch (e) {
+    console.error("Failed to load NUTS names", e);
+    nutsNames = {};
+  }
+};
+
+const getNutsName = (nutsId) => {
+  return nutsNames[nutsId] || 'Unknown region';
+};
+
+const getCountryIso2 = (countryName) => {
+  // Find the NUTS0 code for this country
+  for (const [code, name] of Object.entries(nutsNames)) {
+    if (code.length === 2 && name === countryName) {
+      return code;
+    }
+  }
+  return "";
 };
 
 /* ---------- NUTS partitions + v0.1 files ---------- */
@@ -150,7 +153,7 @@ const onSelectCountry = () => {
   const selectedId = parseInt(countryDropdown.value, 10);
   selectedCountry = countries.find(country => country.id === selectedId) || null;
 
-  const iso2 = selectedCountry ? (countryIso2[selectedCountry.name] || "") : "";
+  const iso2 = selectedCountry ? getCountryIso2(selectedCountry.name) : "";
   selectedNutsId = iso2;
   updateSelectionLayer();
   applyFilters();
@@ -234,7 +237,7 @@ const renderNutsResults = () => {
   matches.forEach(part => {
     const file = part.files.find(f => f.key.endsWith(".parquet")) || part.files[0];
     const sizeMb = Math.round(file.size_bytes / 1e6);
-    const nutsName = part.nuts_name || "—";
+    const nutsName = getNutsName(part.nuts_id);
     rows += `<tr>
       <td>${part.nuts_id}</td>
       <td>${nutsName}</td>
@@ -290,7 +293,7 @@ const showTooltip = (e, feature) => {
   if (!tooltip) return;
   
   const nutsId = feature.properties.nuts_id || '';
-  const nutsName = feature.properties.nuts_name || 'Unknown region';
+  const nutsName = getNutsName(nutsId);
   
   tooltip.innerHTML = `<strong>${nutsId}</strong><br>${nutsName}`;
   tooltip.style.display = 'block';
@@ -493,6 +496,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   initMap();
+  await loadNutsNames();
   await updateCountries();
   await loadNutsOrFiles();
   renderNutsResults();
