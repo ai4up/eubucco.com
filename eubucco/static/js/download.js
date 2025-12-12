@@ -63,7 +63,7 @@ const getApiBase = () => {
     return API_URL.endsWith("/") ? API_URL : `${API_URL}/`;
   }
   const host = window.location.hostname || "localhost";
-  return `${window.location.protocol}//${host}:8001/v0.1/`;
+  return `${window.location.protocol}//${host}:8001/v1/`;
 };
 
 /* ---------- NUTS partitions + v0.1 files ---------- */
