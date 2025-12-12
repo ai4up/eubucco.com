@@ -1,27 +1,27 @@
 version: '3'
+name: eubucco_local
 
 volumes:
-  eubucco_local_postgres_data: { }
-  eubucco_local_postgres_data_backups: { }
-  eubucco_local_data_dumps: { }
-  eubucco_local_minio_data: { }
+  postgres_data: { }
+  postgres_data_backups: { }
+  data_dumps: { }
+  minio_data: { }
 
 services:
   django: &django
     build:
       context: .
       dockerfile: ./compose/local/django/Dockerfile
-    image: eubucco_local_django
-    container_name: eubucco_local_django
+    image: django
     platform: linux/x86_64
+    volumes:
+      - .:/app:z
+      - data_dumps:/dumps
     depends_on:
       - postgres
       - redis
       - mailhog
       - minio
-    volumes:
-      - .:/app:z
-      - eubucco_local_data_dumps:/dumps
     env_file:
       - ./.envs/.local/.django
       - ./.envs/.local/.postgres
@@ -32,126 +32,128 @@ services:
 
   api:
     <<: *django
-    container_name: eubucco_local_api
+    volumes:
+      - ./data:/app/data
     depends_on:
       - postgres
       - minio
-    ports:
-      - "8001:8001"
     env_file:
       - ./.envs/.local/.django
       - ./.envs/.local/.postgres
       - ./.envs/.local/.minio
-    volumes:
-      - ./csvs:/app/csvs
+    ports:
+      - "8001:8001"
     command: /start-api
-
 
   postgres:
     build:
       context: .
       dockerfile: ./compose/production/postgres/Dockerfile
     image: eubucco_production_postgres
-    container_name: eubucco_local_postgres
     volumes:
-      - eubucco_local_postgres_data:/var/lib/postgresql/data:Z
-      - eubucco_local_postgres_data_backups:/backups:z
-      - eubucco_local_data_dumps:/dumps
-
-    ports:
-      - "5432:5432"
+      - postgres_data:/var/lib/postgresql/data:Z
+      - postgres_data_backups:/backups:z
+      - data_dumps:/dumps
     env_file:
       - ./.envs/.local/.postgres
+    ports:
+      - "5432:5432"
 
   pg_tileserv:
     image: pramsey/pg_tileserv:latest
-    container_name: eubucco_local_pg_tileserv
-    env_file:
-      - ./.envs/.local/.django
     depends_on:
       - postgres
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
     ports:
       - "7800:7800"
 
   docs:
     <<: *django
-    image: eubucco_local_docs
-    container_name: eubucco_local_docs
+    image: docs
     ports:
       - "9090:9090"
     command: /start-docs
 
-
   mailhog:
     image: mailhog/mailhog:v1.0.0
-    container_name: eubucco_local_mailhog
     ports:
       - "8025:8025"
 
   redis:
     image: redis:6
-    container_name: eubucco_local_redis
     ports:
       - "6379:6379"
 
   celeryworker:
     <<: *django
-    image: eubucco_local_celeryworker
-    container_name: eubucco_local_celeryworker
+    image: celeryworker
     depends_on:
       - redis
       - postgres
       - mailhog
       - minio
-    ports: [ ]
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+      - ./.envs/.local/.minio
+    ports: []
     command: /start-celeryworker
 
   celerybeat:
     <<: *django
-    image: eubucco_local_celerybeat
-    container_name: eubucco_local_celerybeat
+    image: celerybeat
     depends_on:
       - redis
       - postgres
       - mailhog
       - minio
-    ports: [ ]
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+      - ./.envs/.local/.minio
+    ports: []
     command: /start-celerybeat
 
   flower:
     <<: *django
-    image: eubucco_local_flower
-    container_name: eubucco_local_flower
+    image: flower
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
     ports:
       - "5555:5555"
     command: /start-flower
 
   tailwind:
     <<: *django
-    image: eubucco_local_tailwind
-    container_name: eubucco_local_tailwind
-    command: /start-tailwind
-    ports: [ ]
+    image: tailwind
     # Without tty, no stdin, and tailwind watcher aborts
     # https://github.com/tailwindlabs/tailwindcss/issues/5324
     tty: true
+    ports: []
+    command: /start-tailwind
 
   minio:
     image: minio/minio:RELEASE.2024-05-10T01-41-38Z
-    container_name: eubucco_local_minio
+    volumes:
+      - minio_data:/data
+      - ./tiles:/tiles:ro
     env_file:
       - ./.envs/.local/.minio
-    command: server /data --console-address ":9001"
-    volumes:
-      - eubucco_local_minio_data:/data
-      - ./tiles:/tiles:ro
     ports:
       - "9000:9000"
       - "9001:9001"
+    command: server /data --console-address ":9001"
 
   minio-setup:
     image: minio/mc:RELEASE.2024-05-09T17-04-24Z
-    container_name: eubucco_local_minio_setup
+    volumes:
+      - ./tiles:/tiles:ro
     depends_on:
       - minio
     env_file:
@@ -163,5 +165,3 @@ services:
       /usr/bin/mc anonymous set download localminio/$${MINIO_BUCKET};
       if [ -f /tiles/nuts.pmtiles ]; then /usr/bin/mc cp /tiles/nuts.pmtiles localminio/$${MINIO_BUCKET}/$${NUTS_PM_TILES_OBJECT}; fi;
       "
-    volumes:
-      - ./tiles:/tiles:ro
