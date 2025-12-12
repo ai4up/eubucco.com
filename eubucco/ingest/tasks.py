@@ -297,24 +297,24 @@ def create_polygon_for_country(country_id: int):
         logging.info(f"Polygons for {country.name} are done!")
 
 
-@celery_app.task(soft_time_limit=60 * 60 * 12, hard_time_limit=(60 * 60 * 12) + 1)
-def start_ingestion_tasks():
-    ingest_boundaries()
-    ingest_new_csvs.delay()
+# @celery_app.task(soft_time_limit=60 * 60 * 12, hard_time_limit=(60 * 60 * 12) + 1)
+# def start_ingestion_tasks():
+#     ingest_boundaries()
+#     ingest_new_csvs.delay()
 
 
-# @synchronize(key='eubucco.ingest.tasks.main', masters={r}, auto_release_time=20, blocking=True, timeout=1)
-def main():
-    """In dev mode django and the watcher are started. We use this main function to start
-    the ingestion tasks only once with the lock applied here!"""
+# # @synchronize(key='eubucco.ingest.tasks.main', masters={r}, auto_release_time=20, blocking=True, timeout=1)
+# def main():
+#     """In dev mode django and the watcher are started. We use this main function to start
+#     the ingestion tasks only once with the lock applied here!"""
 
-    lock = Redlock(key="eubucco.ingest.tasks.main", masters={r}, auto_release_time=20)
-    if lock.acquire(blocking=False):
-        start_ingestion_tasks.delay()
-        sleep(10)
-        lock.release()
-    else:
-        logging.debug("Ingestion is already running on other thread")
+#     lock = Redlock(key="eubucco.ingest.tasks.main", masters={r}, auto_release_time=20)
+#     if lock.acquire(blocking=False):
+#         start_ingestion_tasks.delay()
+#         sleep(10)
+#         lock.release()
+#     else:
+#         logging.debug("Ingestion is already running on other thread")
 
 
-main()
+# main()
