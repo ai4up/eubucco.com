@@ -408,18 +408,38 @@ services:
       - "9001:9001"
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      # ===================================
+      # S3 API on dev-s3.eubucco.com
+      # ===================================
       - "traefik.http.routers.dev-minio.entrypoints=http"
-      - "traefik.http.routers.dev-minio.rule=Host(`s3.eubucco.com`)"
+      - "traefik.http.routers.dev-minio.rule=Host(`dev-s3.eubucco.com`)"
       - "traefik.http.middlewares.dev-minio-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.dev-minio.middlewares=dev-minio-https-redirect"
       - "traefik.http.routers.dev-minio-secure.entrypoints=https"
-      - "traefik.http.routers.dev-minio-secure.rule=Host(`s3.eubucco.com`)"
+      - "traefik.http.routers.dev-minio-secure.rule=Host(`dev-s3.eubucco.com`)"
       - "traefik.http.routers.dev-minio-secure.tls=true"
       - "traefik.http.routers.dev-minio-secure.tls.certresolver=http"
+      - "traefik.http.routers.dev-minio-secure.middlewares=secHeaders@file"
       - "traefik.http.routers.dev-minio-secure.service=dev-minio"
       - "traefik.http.services.dev-minio.loadbalancer.server.port=9000"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.dev-minio-secure.middlewares=secHeaders@file"
+
+      # ===================================
+      # Console on dev-minio-console.eubucco.com
+      # ===================================
+      - "traefik.http.routers.dev-minio-console.entrypoints=http"
+      - "traefik.http.routers.dev-minio-console.rule=Host(`dev-minio-console.eubucco.com`)"
+      - "traefik.http.middlewares.dev-minio-console-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.dev-minio-console.middlewares=dev-minio-console-https-redirect"
+
+      - "traefik.http.routers.dev-minio-console-secure.entrypoints=https"
+      - "traefik.http.routers.dev-minio-console-secure.rule=Host(`dev-minio-console.eubucco.com`)"
+      - "traefik.http.routers.dev-minio-console-secure.tls=true"
+      - "traefik.http.routers.dev-minio-console-secure.tls.certresolver=http"
+      - "traefik.http.routers.dev-minio-console-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.dev-minio-console-secure.service=dev-minio-console"
+      - "traefik.http.services.dev-minio-console.loadbalancer.server.port=9001"
 
   minio-setup:
     image: minio/mc:RELEASE.2024-05-09T17-04-24Z
