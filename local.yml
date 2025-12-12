@@ -158,10 +158,10 @@ services:
       - ./.envs/.local/.minio
     entrypoint: |
       /bin/sh -c "
-      until (/usr/bin/mc alias set localminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}); do echo 'waiting for minio...' && sleep 1; done;
-      /usr/bin/mc mb -p localminio/${MINIO_BUCKET};
-      /usr/bin/mc anonymous set download localminio/${MINIO_BUCKET};
-      if [ -f /tiles/nuts.pmtiles ]; then /usr/bin/mc cp /tiles/nuts.pmtiles localminio/${MINIO_BUCKET}/${NUTS_PM_TILES_OBJECT}; fi;
+      until (/usr/bin/mc alias set localminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}); do echo 'waiting for minio...' && sleep 1; done;
+      /usr/bin/mc mb -p localminio/$${MINIO_BUCKET};
+      /usr/bin/mc anonymous set download localminio/$${MINIO_BUCKET};
+      if [ -f /tiles/nuts.pmtiles ]; then /usr/bin/mc cp /tiles/nuts.pmtiles localminio/$${MINIO_BUCKET}/$${NUTS_PM_TILES_OBJECT}; fi;
       "
     volumes:
       - ./tiles:/tiles:ro
