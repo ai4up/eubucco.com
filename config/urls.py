@@ -29,6 +29,7 @@ urlpatterns = [
     path("users/", include("eubucco.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
     # Your stuff: custom urls includes go here
+    path("files/", include("eubucco.files.urls")),
     path("data/", include("eubucco.data.urls")),
     path("blog/", include("eubucco.blog.urls")),
     path("dumps/", include("eubucco.dumps.urls")),
