@@ -311,7 +311,7 @@ services:
       MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD
     command: server /data --console-address ":9001"
     volumes:
-      - production_minio_data:/data
+      - minio_data:/data
       - /home/app/eubucco/tiles:/tiles:ro
     networks:
       - default
