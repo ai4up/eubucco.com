@@ -184,7 +184,7 @@ const renderNutsResults = () => {
       const iso = base.toUpperCase();
 
       if (!groups[iso]) {
-        groups[iso] = { parquet: "—", gpkg: "—", csv: "—" };
+        groups[iso] = { gpkg: "—", csv: "—" };
       }
 
       const sizeMb = Math.round(file.size_bytes / 1e6);
@@ -193,9 +193,7 @@ const renderNutsResults = () => {
                         Download (${sizeMb} MB)
                       </a>`;
 
-      if (file.key.endsWith(".parquet") || file.key.endsWith(".parquet.zip")) {
-        groups[iso].parquet = link;
-      } else if (file.key.includes(".gpkg")) {
+      if (file.key.includes(".gpkg")) {
         groups[iso].gpkg = link;
       } else if (file.key.includes(".csv")) {
         groups[iso].csv = link;
@@ -208,7 +206,6 @@ const renderNutsResults = () => {
       rows += `
         <tr>
           <td>${countryName}</td>
-          <td>${cols.parquet}</td>
           <td>${cols.gpkg}</td>
           <td>${cols.csv}</td>
         </tr>

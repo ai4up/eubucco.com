@@ -34,7 +34,7 @@
   <div class="overflow-x-auto max-h-96">
     <table id="downloadsTable" class="table table-compact table-zebra w-full rounded-box text-sm">
       <thead>
-        <tr><th>Region</th><th>Parquet</th><th>GPKG</th><th>CSV</th></tr>
+        <tr><th>Region</th><th>Parquet</th><th>GPKG</th><th>Metadata</th></tr>
       </thead>
       <tbody id="downloadsBody">
         <tr>
@@ -48,9 +48,9 @@
 
   <div id="downloadsBottomBar" class="sticky bottom-0 p-1 grid gap-3 mt-1">
     <div></div>
-    <button id="btnParquet" class="btn btn-xs btn-outline mx-auto">Zip Parquet</button>
-    <button id="btnGpkg"   class="btn btn-xs btn-outline mx-auto">GPKG</button>
-    <button id="btnCsv"    class="btn btn-xs btn-outline mx-auto">CSV</button>
+    <button id="btnParquet" class="btn btn-xs btn-outline mx-auto">Download all Parquets</button>
+    <button id="btnGpkg" class="btn btn-xs btn-outline mx-auto">Download all GPKG</button>
+    <button id="btnMetadata" class="btn btn-xs btn-outline mx-auto">Download all Metadata</button>
   </div>
 </div>
 {% endblock %}
