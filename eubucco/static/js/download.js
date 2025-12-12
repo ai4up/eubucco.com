@@ -293,7 +293,7 @@ const renderNutsResults = () => {
   tableBody.innerHTML = rows;
 
   const version = matches[0].version;
-  const bundleUrl = `${getApiBase()}nuts/${version}/${candidate}/bundle`;
+  const bundleUrl = `${getApiBase()}datalake/nuts/${version}/${candidate}/bundle`;
 
   if (parquetZipBtn) {
     parquetZipBtn.disabled = false;
