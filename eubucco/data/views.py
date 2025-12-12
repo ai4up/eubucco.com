@@ -3,7 +3,7 @@ import os
 from django.shortcuts import render, Http404
 from django.views.decorators.cache import cache_page
 
-from eubucco.api.v0_1.files import FileInfoResponse
+from eubucco.api.v1.files import FileInfoResponse
 from eubucco.files.models import File
 
 AVAILABLE_VERSIONS = ["v0.2", "v0.1"]

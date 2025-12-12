@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, validator
 
-from eubucco.api.v0_1.files import FileInfoResponse
+from eubucco.api.v1.files import FileInfoResponse
 from eubucco.data.models import Country
 
 router = APIRouter()

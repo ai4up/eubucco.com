@@ -4,8 +4,8 @@ from fastapi import APIRouter
 from fastapi.openapi.models import Schema
 from pydantic import validator
 
-from eubucco.api.v0_1.buildings import BuildingResponse
-from eubucco.api.v0_1.cities import CityResponse
+from eubucco.api.v1.buildings import BuildingResponse
+from eubucco.api.v1.cities import CityResponse
 from eubucco.data.models import Building, City, Region
 
 router = APIRouter()

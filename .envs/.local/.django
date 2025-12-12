@@ -16,7 +16,7 @@ CELERY_FLOWER_PASSWORD=H06vbFESinE2t7oPsp9weBbLU8FgsJK8DyInmx3M0NnjyxfV9k4kOiOrM
 DATABASE_URL=postgres://NvWkXLveTsmzpuuhXdewHwavJFSsSoVa:vf8LaPN8IQvWDuvMKIGj2Paf1JqxkJziiNBWBUgQB6MHGuTrd9waXyPtVI1PIRRu@postgres:5432/eubucco
 CELERY_BROKER_URL=redis://redis:6379/0
 
-API_URL=http://0.0.0.0:8001/v0.1/
+API_URL=http://0.0.0.0:8001/v1/
 DEVELOPMENT=True
 
 
