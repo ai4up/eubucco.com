@@ -20,39 +20,10 @@ services:
     networks:
       - default
       - proxy
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
-      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
-      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
-      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
-      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
-      WEB_CONCURRENCY: $WEB_CONCURRENCY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      DOMAIN: $DOMAIN
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      TILE_URL: $TILE_URL
-      DOCS_URL: $DOCS_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      MINIO_ENDPOINT: $MINIO_ENDPOINT
-      MINIO_PUBLIC_ENDPOINT: $MINIO_PUBLIC_ENDPOINT
-      MINIO_BUCKET: $MINIO_BUCKET
-      MINIO_REGION: $MINIO_REGION
-      MINIO_ACCESS_KEY: $MINIO_ACCESS_KEY
-      MINIO_SECRET_KEY: $MINIO_SECRET_KEY
-      MINIO_USE_SSL: $MINIO_USE_SSL
-      NUTS_PM_TILES_OBJECT: $NUTS_PM_TILES_OBJECT
-
+    env_file:
+      - .envs/.dev/.django
+      - .envs/.dev/.postgres
+      - .envs/.dev/.minio
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dev-django.entrypoints=http"
@@ -82,23 +53,10 @@ services:
     networks:
       - proxy
       - default
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      MINIO_ENDPOINT: $MINIO_ENDPOINT
-      MINIO_PUBLIC_ENDPOINT: $MINIO_PUBLIC_ENDPOINT
-      MINIO_BUCKET: $MINIO_BUCKET
-      MINIO_REGION: $MINIO_REGION
-      MINIO_ACCESS_KEY: $MINIO_ACCESS_KEY
-      MINIO_SECRET_KEY: $MINIO_SECRET_KEY
-      MINIO_USE_SSL: $MINIO_USE_SSL
+    env_file:
+      - .envs/.dev/.django
+      - .envs/.dev/.postgres
+      - .envs/.dev/.minio
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dev-api.entrypoints=http"
@@ -123,8 +81,9 @@ services:
     networks:
       - proxy
       - default
-    environment:
-      DOCS_URL: $DOCS_URL
+    env_file:
+      - .envs/.dev/.django
+      - .envs/.dev/.postgres
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dev-docs.entrypoints=http"
@@ -149,13 +108,8 @@ services:
     networks:
       - proxy
       - default
-    environment:
-      DATABASE_URL: $DATABASE_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    env_file:
+      - .envs/.dev/.postgres
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dev-pg_tileserv.entrypoints=http"
@@ -184,12 +138,8 @@ services:
       - dev-db
     ports:
       - "127.0.0.1:5432:5432"
-    environment:
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    env_file:
+      - .envs/.dev/.postgres
 
   redis:
     image: redis:6
@@ -204,27 +154,12 @@ services:
       - postgres
       - redis
       - minio
+    env_file:
+      - .envs/.dev/.django
+      - .envs/.dev/.postgres
+      - .envs/.dev/.minio
     volumes:
       - /home/eubucco-data:/app/data
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      DATABASE_URL: $DATABASE_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      MINIO_ENDPOINT: $MINIO_ENDPOINT
-      MINIO_PUBLIC_ENDPOINT: $MINIO_PUBLIC_ENDPOINT
-      MINIO_BUCKET: $MINIO_BUCKET
-      MINIO_REGION: $MINIO_REGION
-      MINIO_ACCESS_KEY: $MINIO_ACCESS_KEY
-      MINIO_SECRET_KEY: $MINIO_SECRET_KEY
-      MINIO_USE_SSL: $MINIO_USE_SSL
     command: /start-celeryworker
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
@@ -238,26 +173,10 @@ services:
       - postgres
       - redis
       - minio
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      DATABASE_URL: $DATABASE_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      MINIO_ENDPOINT: $MINIO_ENDPOINT
-      MINIO_PUBLIC_ENDPOINT: $MINIO_PUBLIC_ENDPOINT
-      MINIO_BUCKET: $MINIO_BUCKET
-      MINIO_REGION: $MINIO_REGION
-      MINIO_ACCESS_KEY: $MINIO_ACCESS_KEY
-      MINIO_SECRET_KEY: $MINIO_SECRET_KEY
-      MINIO_USE_SSL: $MINIO_USE_SSL
-    command: /start-celerybeat
+    env_file:
+      - .envs/.dev/.django
+      - .envs/.dev/.postgres
+      - .envs/.dev/.minio
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     networks:
@@ -273,20 +192,9 @@ services:
     networks:
       - proxy
       - default
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      DATABASE_URL: $DATABASE_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    env_file:
+      - .envs/.dev/.django
+      - .envs/.dev/.postgres
     command: /start-flower
     labels:
       - "traefik.enable=true"
@@ -306,9 +214,8 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2024-05-10T01-41-38Z
-    environment:
-      MINIO_ROOT_USER: $MINIO_ROOT_USER
-      MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD
+    env_file:
+      - .envs/.dev/.minio
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
@@ -358,11 +265,8 @@ services:
     image: minio/mc:RELEASE.2024-05-09T17-04-24Z
     depends_on:
       - minio
-    environment:
-      MINIO_ROOT_USER: $MINIO_ROOT_USER
-      MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD
-      MINIO_BUCKET: $MINIO_BUCKET
-      NUTS_PM_TILES_OBJECT: $NUTS_PM_TILES_OBJECT
+    env_file:
+      - .envs/.dev/.minio
     entrypoint: |
       /bin/sh -c "
       until (/usr/bin/mc alias set localminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}); do echo 'waiting for minio...' && sleep 1; done;
