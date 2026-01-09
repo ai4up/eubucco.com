@@ -70,11 +70,10 @@ services:
       - "7800:7800"
 
   docs:
-    <<: *django
-    image: docs
+    image: eubucco/eubucco-docs:latest
+    restart: unless-stopped
     ports:
-      - "9090:9090"
-    command: /start-docs
+      - "9091:80"
 
   mailhog:
     image: mailhog/mailhog:v1.0.0
