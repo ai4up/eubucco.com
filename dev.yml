@@ -113,9 +113,8 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   dev-docs:
-    image: eubucco/eubucco.com:dev
+    image: eubucco/eubucco-docs:latest
     container_name: eubucco_dev_docs
-    command: /start-docs
     restart: unless-stopped
     networks:
       - proxy
@@ -155,7 +154,7 @@ services:
       - "traefik.http.routers.dev-docs-secure.tls=true"
       - "traefik.http.routers.dev-docs-secure.tls.certresolver=http"
       - "traefik.http.routers.dev-docs-secure.service=dev-docs"
-      - "traefik.http.services.dev-docs.loadbalancer.server.port=8000"
+      - "traefik.http.services.dev-docs.loadbalancer.server.port=80"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.dev-docs-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"

@@ -69,13 +69,10 @@ services:
       - "7800:7800"
 
   docs:
-    <<: *django
-    image: eubucco_local_docs
-    container_name: eubucco_local_docs
+    image: eubucco/eubucco-docs:latest
+    restart: unless-stopped
     ports:
-      - "9000:9000"
-    command: /start-docs
-
+      - "9091:80"
 
   mailhog:
     image: mailhog/mailhog:v1.0.0
