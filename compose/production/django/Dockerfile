@@ -1,123 +1,95 @@
 ARG PYTHON_VERSION=3.9-slim-bullseye
 
+# Define an alias for the specific python version used in this file.
+FROM python:${PYTHON_VERSION} AS python
 
-
-# define an alias for the specfic python version used in this file.
-FROM python:${PYTHON_VERSION} as python
-
-# Python build stage
-FROM python as python-build-stage
+# --- Python build stage ---
+FROM python AS python-build-stage
 
 ARG BUILD_ENVIRONMENT=production
 
 # Install apt packages
 RUN apt-get update && apt-get install --no-install-recommends -y \
-  # dependencies for building Python packages
   build-essential \
-  # psycopg2 dependencies
   libpq-dev
 
 # Requirements are installed here to ensure they will be cached.
 COPY ./requirements .
 
 # Create Python Dependency and Sub-Dependency Wheels.
-RUN pip wheel --wheel-dir /usr/src/app/wheels  \
+RUN pip wheel --wheel-dir /usr/src/app/wheels \
   -r ${BUILD_ENVIRONMENT}.txt
 
 
-# Python 'run' stage
-FROM python as python-run-stage
+# --- Python 'run' stage ---
+FROM python AS python-run-stage
 
 ARG BUILD_ENVIRONMENT=production
 ARG APP_HOME=/app
 
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV BUILD_ENV ${BUILD_ENVIRONMENT}
+# Fixed legacy ENV formatting
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV BUILD_ENV=${BUILD_ENVIRONMENT}
 
 WORKDIR ${APP_HOME}
 
+# Create django user/group and initialize required directories with correct permissions
 RUN addgroup --system django \
-    && adduser --system --ingroup django django
+    && adduser --system --ingroup django django \
+    && mkdir -p ${APP_HOME}/staticfiles ${APP_HOME}/media ${APP_HOME}/.cache \
+    && chown -R django:django ${APP_HOME}
 
-
-# Install required system dependencies
+# Consolidated system dependencies, GIS tools, and Node.js 20 (LTS)
 RUN apt-get update && apt-get install --no-install-recommends -y \
-  # psycopg2 dependencies
   libpq-dev \
-  # Translations dependencies
   gettext \
-  # cleaning up unused files
-  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-  && rm -rf /var/lib/apt/lists/*
-
- # gdal proj install
-RUN apt-get update \
-    && apt-get -y install netcat gcc postgresql \
-    && apt-get clean
-
-RUN apt-get update \
-    && apt-get install -y binutils libproj-dev gdal-bin python3-gdal proj-bin
-
-
-# install npm for tailwind
-RUN apt-get update \
-  && apt-get install -y build-essential curl \
-  && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+  netcat \
+  gcc \
+  postgresql \
+  binutils \
+  libproj-dev \
+  gdal-bin \
+  python3-gdal \
+  proj-bin \
+  ca-certificates \
+  curl \
+  gnupg \
+  # Modern NodeSource installation (Fixes GPG error)
+  && mkdir -p /etc/apt/keyrings \
+  && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+  && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+  && apt-get update \
   && apt-get install -y nodejs --no-install-recommends \
+  # Cleanup layers
+  && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
   && rm -rf /var/lib/apt/lists/* /usr/share/doc /usr/share/man \
   && apt-get clean
 
+# Copy python dependency wheels from build stage
+COPY --from=python-build-stage /usr/src/app/wheels /wheels/
 
-# All absolute dir copies ignore workdir instruction. All relative dir copies are wrt to the workdir instruction
-# copy python dependency wheels from python-build-stage
-COPY --from=python-build-stage /usr/src/app/wheels  /wheels/
-
-# use wheels to install python dependencies
+# Use wheels to install python dependencies
 RUN pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
   && rm -rf /wheels/
 
-
+# Copy scripts and fix line endings/permissions
 COPY --chown=django:django ./compose/production/django/entrypoint /entrypoint
-RUN sed -i 's/\r$//g' /entrypoint
-RUN chmod +x /entrypoint
-
-
 COPY --chown=django:django ./compose/production/django/start /start
-RUN sed -i 's/\r$//g' /start
-RUN chmod +x /start
-
-
 COPY --chown=django:django ./compose/production/django/docs/start /start-docs
-RUN sed -i 's/\r$//g' /start-docs
-RUN chmod +x /start-docs
-
-
 COPY --chown=django:django ./compose/production/django/celery/worker/start /start-celeryworker
-RUN sed -i 's/\r$//g' /start-celeryworker
-RUN chmod +x /start-celeryworker
-
-
 COPY --chown=django:django ./compose/production/django/celery/beat/start /start-celerybeat
-RUN sed -i 's/\r$//g' /start-celerybeat
-RUN chmod +x /start-celerybeat
-
-
 COPY --chown=django:django ./compose/production/django/api/start /start-api
-RUN sed -i 's/\r$//g' /start-api
-RUN chmod +x /start-api
+COPY --chown=django:django ./compose/production/django/celery/flower/start /start-flower
 
+RUN sed -i 's/\r$//g' /entrypoint /start /start-docs /start-celeryworker /start-celerybeat /start-api /start-flower \
+    && chmod +x /entrypoint /start /start-docs /start-celeryworker /start-celerybeat /start-api /start-flower
 
-COPY ./compose/production/django/celery/flower/start /start-flower
-RUN sed -i 's/\r$//g' /start-flower
-RUN chmod +x /start-flower
-
-
-# copy application code to WORKDIR
+# Copy application code to WORKDIR
 COPY --chown=django:django . ${APP_HOME}
 
-# make django owner of the WORKDIR directory as well.
-RUN chown django:django ${APP_HOME}
+# Final ownership check to ensure the django user can write to /app
+RUN chown -R django:django ${APP_HOME}
 
 EXPOSE 5000
 
