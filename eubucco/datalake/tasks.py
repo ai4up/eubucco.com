@@ -14,7 +14,7 @@ from eubucco.datalake.minio_client import (
     upload_file,
 )
 
-RAW_FILES_DIR = Path("data/buildings")
+RAW_FILES_DIR = Path("data/s3")
 
 r = redis.Redis(
     host=os.environ["REDIS_URL"].split("//")[-1].split(":")[0],
@@ -27,7 +27,7 @@ def ingest_parquet_files(version_tag: str = "v0.2", source_dir: str = RAW_FILES_
     """
     Upload per-NUTS parquet files to MinIO with partitioned keys:
     s3://<bucket>/buildings/<version>/nuts_id=<NUTS>/file.parquet
-    Expects files under data/buildings/<version>/.
+    Expects files under data/s3/<version>/.
     """
     base = Path(source_dir) / version_tag
     if not base.exists():
