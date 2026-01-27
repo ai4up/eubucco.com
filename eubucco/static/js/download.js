@@ -410,7 +410,7 @@ const initMap = () => {
             "fill-color": "#4f46e5",
             "fill-opacity": 0.12,
           },
-          filter: ["<=", ["get", "nuts_level"], 3],
+          filter: ["<=", ["get", "nuts_level"], 2],
         },
         {
           id: "nuts-outline",
@@ -421,7 +421,7 @@ const initMap = () => {
             "line-color": "#94a3b8",
             "line-width": 0.4,
           },
-          filter: ["<=", ["get", "nuts_level"], 3],
+          filter: ["<=", ["get", "nuts_level"], 2],
         },
         {
           id: "nuts-selected",
@@ -447,7 +447,7 @@ const initMap = () => {
 
     if (selectedNutsId) {
       const currentLevel = getNutsLevel(selectedNutsId);
-      const nextLevel = Math.min(currentLevel + 1, 3);
+      const nextLevel = Math.min(currentLevel + 1, 2);
       const prefix = selectedNutsId;
 
       // Filter for children: Must be at exactly nextLevel AND start with the parent ID
