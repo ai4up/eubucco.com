@@ -40,7 +40,7 @@ const loadNutsNames = async () => {
     nutsNames = {};
     return;
   }
-  
+
   try {
     const resp = await fetch(NUTS_NAMES_URL);
     if (!resp.ok) {
@@ -100,29 +100,29 @@ const loadNutsOrFiles = async () => {
 const calculateSimilarity = (str1, str2) => {
   const s1 = str1.toLowerCase();
   const s2 = str2.toLowerCase();
-  
+
   // Exact match
   if (s1 === s2) return 1.0;
-  
+
   // Starts with (high priority)
   if (s2.startsWith(s1)) return 0.9;
-  
+
   // Contains (medium priority)
   if (s2.includes(s1)) return 0.7;
-  
+
   // Levenshtein-like: count matching characters
   let matches = 0;
   const len = Math.min(s1.length, s2.length);
   for (let i = 0; i < len; i++) {
     if (s1[i] === s2[i]) matches++;
   }
-  
+
   return matches / Math.max(s1.length, s2.length) * 0.5;
 };
 
 const getNutsLevel = (nutsId) => {
   if (!nutsId) return 0;
-  return Math.min(nutsId.length - 1, 3);
+  return Math.min(nutsId.length - 2, 3);
 };
 
 const formatSuggestion = (name, nutsId) => {
@@ -131,17 +131,17 @@ const formatSuggestion = (name, nutsId) => {
 
 const findTopMatches = (searchText, maxResults = 8) => {
   if (!searchText || searchText.length < 2) return [];
-  
+
   const normalizedSearch = searchText.trim().toLowerCase();
   const matches = [];
-  
+
   for (const [code, name] of Object.entries(nutsNames)) {
     const score = calculateSimilarity(normalizedSearch, name);
     if (score > 0.3) {
       matches.push({ code, name, score });
     }
   }
-  
+
   // Sort by score descending, then by NUTS level (lower first), then by name
   matches.sort((a, b) => {
     if (Math.abs(a.score - b.score) < 0.01) {
@@ -151,15 +151,15 @@ const findTopMatches = (searchText, maxResults = 8) => {
     }
     return b.score - a.score;
   });
-  
+
   return matches.slice(0, maxResults);
 };
 
 const updateNameSuggestions = (searchText) => {
   if (!nutsNameOptions) return;
-  
+
   const matches = findTopMatches(searchText);
-  
+
   nutsNameOptions.innerHTML = '';
   matches.forEach(match => {
     const option = document.createElement('option');
@@ -170,23 +170,23 @@ const updateNameSuggestions = (searchText) => {
 
 const findNutsIdByInput = (inputValue) => {
   if (!inputValue) return null;
-  
+
     // Check if input matches our formatted suggestion pattern: "Name [CODE]"
   const match = inputValue.match(/\[([A-Z0-9]+)\]$/);
   if (match) {
     return match[1]; // Extract the NUTS code
   }
-  
+
   // Otherwise try fuzzy search
   const normalizedSearch = inputValue.trim().toLowerCase();
-  
+
   // Exact match first
   for (const [code, name] of Object.entries(nutsNames)) {
     if (name.toLowerCase() === normalizedSearch) {
       return code;
     }
   }
-  
+
   // Try to find best match
   const matches = findTopMatches(inputValue, 1);
   return matches.length > 0 ? matches[0].code : null;
@@ -201,7 +201,7 @@ const onNutsCodeChange = () => {
   if (nutsNameInput && nutsCodeInput && nutsCodeInput.value) {
     nutsNameInput.value = '';
   }
-  
+
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     renderNutsResults();
@@ -213,9 +213,9 @@ const onNutsNameChange = () => {
   if (nutsCodeInput && nutsNameInput && nutsNameInput.value) {
     nutsCodeInput.value = '';
   }
-  
+
   const searchText = nutsNameInput.value.trim();
-  
+
   // Update suggestions dynamically
   clearTimeout(suggestionTimeout);
   if (searchText.length >= 2) {
@@ -223,7 +223,7 @@ const onNutsNameChange = () => {
       updateNameSuggestions(searchText);
     }, 150);
   }
-  
+
   // Update results
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
@@ -247,7 +247,7 @@ const renderNutsResults = () => {
 
   // Get search input from either code or name search
   let candidateCode = "";
-  
+
   if (nutsCodeInput && nutsCodeInput.value.trim()) {
     candidateCode = nutsCodeInput.value.trim().toUpperCase();
   } else if (nutsNameInput && nutsNameInput.value.trim()) {
@@ -348,10 +348,10 @@ const createTooltip = () => {
 
 const showTooltip = (e, feature) => {
   if (!tooltip) return;
-  
+
   const nutsId = feature.properties.nuts_id || '';
   const nutsName = getNutsName(nutsId);
-  
+
   tooltip.innerHTML = `<strong>${nutsId}</strong><br>${nutsName}`;
   tooltip.style.display = 'block';
   tooltip.style.left = e.pageX + 10 + 'px';
@@ -446,19 +446,28 @@ const initMap = () => {
     if (!mapInstance || !mapInstance.isStyleLoaded()) return;
 
     if (selectedNutsId) {
-      const targetLevel = Math.min(selectedNutsId.length - 1, 3);
-      const nextLevel = Math.min(targetLevel + 1, 3);
+      const currentLevel = getNutsLevel(selectedNutsId);
+      const nextLevel = Math.min(currentLevel + 1, 3);
       const prefix = selectedNutsId;
 
-      const prefixFilter = ["==", ["slice", ["get", "nuts_id"], 0, prefix.length], prefix];
-      const childrenFilter = ["all", ["==", ["get", "nuts_level"], nextLevel], prefixFilter];
-      const selectedFilter = ["all", ["==", ["get", "nuts_id"], selectedNutsId]];
+      // Filter for children: Must be at exactly nextLevel AND start with the parent ID
+      const childrenFilter = [
+        "all",
+        ["==", ["get", "nuts_level"], nextLevel],
+        ["==", ["slice", ["get", "nuts_id"], 0, prefix.length], prefix]
+      ];
 
+      // Keep the parent (selected) visible too
+      const selectedFilter = ["==", ["get", "nuts_id"], selectedNutsId];
+
+      // Combine: Always show Level 0 (for context) + the specific children + the selection
       const filter = ["any", ["==", ["get", "nuts_level"], 0], childrenFilter, selectedFilter];
+
       mapInstance.setFilter("nuts-fill", filter);
       mapInstance.setFilter("nuts-outline", filter);
       mapInstance.setFilter("nuts-selected", ["==", ["get", "nuts_id"], selectedNutsId]);
     } else {
+      // Default state: Only show Countries
       mapInstance.setFilter("nuts-fill", ["==", ["get", "nuts_level"], 0]);
       mapInstance.setFilter("nuts-outline", ["==", ["get", "nuts_level"], 0]);
       mapInstance.setFilter("nuts-selected", ["==", ["get", "nuts_id"], ""]);
@@ -473,7 +482,7 @@ const initMap = () => {
     map.getCanvas().style.cursor = "pointer";
     if (e.features && e.features.length > 0) {
       // Sort by nuts_level descending to get the most specific region (highest level number)
-      const sortedFeatures = e.features.sort((a, b) => 
+      const sortedFeatures = e.features.sort((a, b) =>
         (b.properties.nuts_level || 0) - (a.properties.nuts_level || 0)
       );
       showTooltip(e.originalEvent, sortedFeatures[0]);
