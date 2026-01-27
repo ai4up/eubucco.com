@@ -81,10 +81,6 @@ COPY ./compose/local/django/start /start
 RUN sed -i 's/\r$//g' /start
 RUN chmod +x /start
 
-COPY ./compose/local/docs/start /start-docs
-RUN sed -i 's/\r$//g' /start-docs
-RUN chmod +x /start-docs
-
 COPY ./compose/local/django/api/start /start-api
 RUN sed -i 's/\r$//g' /start-api
 RUN chmod +x /start-api
