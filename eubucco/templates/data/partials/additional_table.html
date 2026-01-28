@@ -1,4 +1,4 @@
-<table class="table table-zebra w-full text-sm">
+<table class="table table-compact table-zebra w-full rounded-box text-sm">
   <thead>
     <tr><th>Name</th><th>Download</th><th>Info</th></tr>
   </thead>
@@ -8,7 +8,7 @@
         <td>{{ f.name }}</td>
         <td>
           <a href="{{ f.download_link }}" class="link">
-            Download ({{ f.size_in_mb|floatformat:2 }} MB)
+            {{ f.size_in_mb|floatformat:2 }} MB
           </a>
         </td>
         <td>{{ f.info }}</td>

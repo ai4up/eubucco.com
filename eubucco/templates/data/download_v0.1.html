@@ -26,14 +26,14 @@
             <td>
             {% if f.gpkg_link %}
                 <a href="{{ f.gpkg_link }}" class="link">
-                Download ({{ f.gpkg_size|floatformat:1 }} MB)
+                {{ f.gpkg_size|floatformat:1 }} MB
                 </a>
             {% else %}—{% endif %}
             </td>
             <td>
             {% if f.csv_link %}
                 <a href="{{ f.csv_link }}" class="link">
-                Download ({{ f.csv_size|floatformat:1 }} MB)
+                {{ f.csv_size|floatformat:1 }} MB
                 </a>
             {% else %}—{% endif %}
             </td>
