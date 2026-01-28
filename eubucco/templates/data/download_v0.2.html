@@ -28,25 +28,25 @@
 <div class="mt-8 border-base-content/10 rounded-lg bg-base-100">
   <div class="overflow-x-auto overflow-y-auto max-h-[500px] relative custom-scrollbar">
     <table id="downloadsTable" class="table table-compact w-full table-fixed text-sm border-separate border-spacing-0">
-      
+
       <thead>
         <tr class="sticky top-0 z-40">
-          <th class="w-[15%] bg-base-200 border-b border-base-content/10 rounded-none">NUTS ID</th>
-          <th class="w-[30%] bg-base-200 border-b border-base-content/10">Name</th>
-          
-          <th class="w-[18%] bg-base-200 border-b border-base-content/10 text-center">
+          <th class="w-[15%] bg-base-200 border-b border-base-content/10 py-3">NUTS ID</th>
+          <th class="w-[30%] bg-base-200 border-b border-base-content/10 py-3">Name</th>
+
+          <th class="w-[18%] bg-base-200 border-b border-base-content/10 py-3 text-center">
             <span class="tooltip tooltip-bottom inline-flex items-center gap-1 cursor-help normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="RECOMMENDED: Strict typing, rich metadata, and high compression.">
               Parquet <span class="badge badge-success badge-xs">!</span>
             </span>
           </th>
 
-          <th class="w-[18%] bg-base-200 border-b border-base-content/10 text-center">
+          <th class="w-[18%] bg-base-200 border-b border-base-content/10 py-3 text-center">
             <span class="tooltip tooltip-bottom inline-flex items-center gap-1 cursor-help normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="EXPERIMENTAL: Converted from Parquet. Minor typing discrepancies expected.">
               GPKG <span class="badge badge-warning badge-xs">⚠</span>
             </span>
           </th>
-          
-          <th class="w-[19%] bg-base-200 border-b border-base-content/10 text-center">
+
+          <th class="w-[19%] bg-base-200 border-b border-base-content/10 py-3 text-center">
             <span class="tooltip tooltip-bottom inline-flex items-center gap-1 cursor-help normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="EXPERIMENTAL: Converted from Parquet. Minor typing discrepancies expected. Shortened column names. Individual files may exceed 2GB legacy cap.">
               SHP <span class="badge badge-warning badge-xs">⚠</span>
             </span>
@@ -64,8 +64,8 @@
 
       <tfoot class="sticky bottom-0 z-30 bg-base-100 border-t border-base-content/20">
         <tr class="bg-base-100">
-          <td colspan="2" class="py-4 px-4 font-bold text-[10px] uppercase tracking-widest opacity-50">
-            Bundle results:
+          <td colspan="2" class="py-3 font-bold text-[10px] uppercase tracking-widest">
+            {% comment %} Bundle results: {% endcomment %}
           </td>
           <td class="text-center py-3">
             <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all results as Parquet (.zip)">
@@ -93,12 +93,12 @@
   .tooltip:before, .tooltip:after {
     z-index: 50 !important;
   }
-  
+
   /* Modern minimal scrollbar */
   .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { 
-    background: hsl(var(--bc) / 0.2); 
-    border-radius: 10px; 
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--bc) / 0.2);
+    border-radius: 10px;
   }
 
   /* Tooltip width management */
