@@ -52,11 +52,15 @@
       {% block version_specific_table %}{% endblock %}
     </div>
 
+    <div class="container mx-auto px-4 py-4 w-full text-center text-sm">
+      For advanced data access options including Python, SQL, and CLI tooling see the <a class="link" href="{% url 'docs' %}">Docs</a>.
+    </div>
+
     <!-- Examples -->
-    <div class="container mx-auto px-4 py-4 w-full">
+    {% comment %} <div class="container mx-auto px-4 py-4 w-full">
       <h2 class="pt-20 text-center">Examples</h2>
       {% include "data/partials/examples_table.html" %}
-    </div>
+    </div> {% endcomment %}
 
     <!-- Additional Files -->
     <div class="container mx-auto px-4 py-4 w-full">
@@ -64,11 +68,9 @@
       {% include "data/partials/additional_table.html" %}
     </div>
 
-    <div class="container mx-auto px-4 py-4 w-full text-center">
-      For metadata, license, and API details see the
+    <div class="container mx-auto px-4 py-4 w-full text-center text-sm">
+      For data schema, metadata, and license details see the
       <a class="link" href="{% url 'docs' %}">Docs</a>.
-      Data is archived on
-      <a class="link" href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>.
     </div>
   </article>
 </div>
