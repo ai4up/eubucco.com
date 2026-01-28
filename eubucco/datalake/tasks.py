@@ -56,13 +56,13 @@ def process_single_nuts(version_tag: str, file_path: str):
     nuts_id = source.stem
     client, settings = build_client()
 
-    parquet_key = f"{DATASET_NAME}/{version_tag}/parquet/nuts_id={nuts_id}/{source.name}"
+    parquet_key = f"{version_tag}/{DATASET_NAME}/parquet/nuts_id={nuts_id}/{source.name}"
     logging.info(f"Uploading raw parquet: {parquet_key}")
     upload_file(client, settings, parquet_key, str(source))
 
     gdf = gpd.read_parquet(source)
     for fmt_name, (converter, ext) in SPATIAL_FORMATS.items():
-        object_key = f"{DATASET_NAME}/{version_tag}/{fmt_name}/nuts_id={nuts_id}/{nuts_id}{ext}"
+        object_key = f"{version_tag}/{DATASET_NAME}/{fmt_name}/nuts_id={nuts_id}/{nuts_id}{ext}"
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             base_output = Path(tmp_dir) / f"{nuts_id}{ext}"

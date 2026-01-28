@@ -76,7 +76,7 @@ const loadNutsOrFiles = async () => {
       return;
     }
 
-    const resp = await fetch(`${baseApi}datalake/nuts?version=${currentVersion}`);
+    const resp = await fetch(`${baseApi}datalake/nuts/${currentVersion}`);
     if (!resp.ok) {
       console.error("Failed to load nuts partitions", resp.status, resp.statusText);
       nutsPartitions = [];
