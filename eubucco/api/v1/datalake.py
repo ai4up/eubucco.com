@@ -1,5 +1,6 @@
 import tempfile
 import zipfile
+from enum import Enum
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
@@ -42,6 +43,12 @@ class FileListResponse(BaseModel):
     object_count: int
     total_size_bytes: int
     files: List[DatalakeObject]
+
+
+class DownloadFormat(str, Enum):
+    parquet = "parquet"
+    gpkg = "gpkg"
+    shp = "shp"
 
 
 PartitionKey = Tuple[str, str]  # (version, nuts_id)
@@ -113,10 +120,10 @@ def _build_zip_for_objects(client, settings: MinioSettings, objects: Iterable) -
 
 
 @router.get("/nuts", response_model=List[NutsPartitionResponse])
-async def list_nuts_partitions(version: str = Query(default=None)):
+async def list_nuts_partitions(version: str = Query(default=None), format: DownloadFormat = Query(default=None)):
     """
-    List all NUTS partitions. If `version` is provided, only partitions for that
-    dataset version are returned.
+    List all NUTS partitions. If `version` or `format` are provided, only partitions for that
+    dataset version and format are returned.
     """
     client, settings = build_client()
     ensure_bucket(client, settings)
@@ -132,6 +139,13 @@ async def list_nuts_partitions(version: str = Query(default=None)):
     # Optionally filter partitions by version (extra guard)
     if version:
         grouped = {k: v for k, v in grouped.items() if k[0] == version}
+
+    # Optionally filter files within each partition by format
+    if format:
+        for key in grouped:
+            grouped[key] = [
+                obj for obj in grouped[key] if f"/{format.value}/" in obj.object_name
+            ]
 
     responses = [
         _to_partition_response(client, settings, partition_key=key, objects=value)
@@ -161,43 +175,63 @@ async def get_partition(version: str, nuts_id: str):
 
 
 @router.get("/nuts/{version}/{nuts_prefix}/bundle", response_class=FileResponse)
-async def download_bundle(version: str, nuts_prefix: str):
-    """
-    Build a ZIP of all parquet files for the given dataset version whose NUTS code
-    starts with the given prefix (NUTS0/1/2/3).
-
-    Example:
-      - version: v0_2
-      - nuts_prefix: "DE1"
-
-      -> All partitions with nuts_id like "DE1", "DE11", "DE12", "DE123", ...
-    """
+async def download_bundle(
+    version: str,
+    nuts_prefix: str,
+    format: DownloadFormat = Query(default=DownloadFormat.parquet)
+):
     client, settings = build_client()
     ensure_bucket(client, settings)
 
-    # Load all objects for that version and group them
     prefix = f"{DATASET_PREFIX}/{version}/"
     objects = list(list_objects(client, settings, prefix=prefix))
     grouped = _group_by_partition(objects, dataset_prefix=DATASET_PREFIX)
 
-    # Select all partitions whose nuts_id starts with the prefix
     matching_objects = []
     for (obj_version, nuts_id), objs in grouped.items():
         if obj_version == version and nuts_id.startswith(nuts_prefix):
-            matching_objects.extend(objs)
+            for obj in objs:
+                key = obj.object_name
+                if f"/{format.value}/" in key:
+                    matching_objects.append(obj)
 
     if not matching_objects:
-        raise HTTPException(status_code=404, detail="No partitions match that NUTS prefix")
+        raise HTTPException(
+            status_code=404,
+            detail=f"No {format.value} files found for NUTS prefix {nuts_prefix}"
+        )
 
     zip_path = _build_zip_for_objects(client, settings, matching_objects)
-    filename = f"{nuts_prefix}.zip"
+    filename = f"eubucco_{version}_{nuts_prefix}_{format.value}.zip"
 
     return FileResponse(
         zip_path,
         media_type="application/zip",
         filename=filename,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        background=None
     )
+
+
+def _build_zip_for_objects(client, settings: MinioSettings, objects: Iterable) -> Path:
+    """
+    Stream objects from MinIO into a temporary ZIP bundle.
+    """
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    tmp_path = Path(tmp.name)
+
+    with zipfile.ZipFile(tmp, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for obj in objects:
+            resp = client.get_object(settings.bucket, obj.object_name)
+            try:
+                filename = Path(obj.object_name).name
+                zf.writestr(filename, resp.read())
+            finally:
+                resp.close()
+                resp.release_conn()
+
+    tmp.close()
+    return tmp_path
+
 
 @router.get("/files/{version}", response_model=FileListResponse)
 async def list_files_for_version(

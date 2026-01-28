@@ -16,7 +16,7 @@ RAW_FILES_DIR = Path("data/s3")
 DATASET_NAME = "buildings"
 SPATIAL_FORMATS = {
     "gpkg": (GeoPackageConverter(), ".gpkg"),
-    # "shp": (ShapefileConverter(), ".zip"), # Currently not enough storage space for shapefiles
+    "shp": (ShapefileConverter(), ".zip"),
 }
 
 r = redis.Redis(

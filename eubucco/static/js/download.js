@@ -235,19 +235,19 @@ const onNutsNameChange = () => {
 
 const renderNutsResults = () => {
   const tableBody = document.getElementById("downloadsBody");
-  const parquetZipBtn = document.getElementById("btnParquet");
+  const btnParquet = document.getElementById("btnParquet");
+  const btnGpkg = document.getElementById("btnGpkg");
+  const btnShp = document.getElementById("btnShp");
 
   if (!tableBody) return;
   if (currentVersion === "v0.1") return;
 
-  if (parquetZipBtn) {
-    parquetZipBtn.disabled = true;
-    parquetZipBtn.onclick = null;
-  }
+  // Reset bundle buttons
+  [btnParquet, btnGpkg, btnShp].forEach(btn => {
+    if (btn) { btn.disabled = true; btn.onclick = null; }
+  });
 
-  // Get search input from either code or name search
   let candidateCode = "";
-
   if (nutsCodeInput && nutsCodeInput.value.trim()) {
     candidateCode = nutsCodeInput.value.trim().toUpperCase();
   } else if (nutsNameInput && nutsNameInput.value.trim()) {
@@ -258,8 +258,7 @@ const renderNutsResults = () => {
   }
 
   if (!candidateCode) {
-    tableBody.innerHTML =
-      '<tr><td colspan="5" class="text-center">Search by NUTS code or region name to see downloads.</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Search by NUTS code or region name to see downloads.</td></tr>';
     selectedNutsId = "";
     updateSelectionLayer();
     applyFilters();
@@ -267,8 +266,7 @@ const renderNutsResults = () => {
   }
 
   if (!Array.isArray(nutsPartitions) || nutsPartitions.length === 0) {
-    tableBody.innerHTML =
-      '<tr><td colspan="5" class="text-error text-center">No data available.</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-error text-center">No data available.</td></tr>';
     updateSelectionLayer();
     applyFilters();
     return;
@@ -279,9 +277,7 @@ const renderNutsResults = () => {
   );
 
   if (matches.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="5" class="text-error text-center">
-      No data found for "${candidateCode}".
-    </td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5" class="text-error text-center">No data found for "${candidateCode}".</td></tr>`;
     selectedNutsId = "";
     updateSelectionLayer();
     applyFilters();
@@ -292,36 +288,50 @@ const renderNutsResults = () => {
   updateSelectionLayer();
   applyFilters();
 
+  // Helper to find specific format in the API's file list and return link + size
+  const getFileLink = (files, ext) => {
+    const file = files.find(f => f.key.toLowerCase().endsWith(ext));
+    if (!file) return `<td class="text-center text-gray-400">—</td>`;
+
+    const sizeMb = Math.round(file.size_bytes / 1e6);
+    return `
+      <td class="text-center">
+        <div class="tooltip tooltip-top" data-tip="Download single region">
+          <a class="link" href="${file.presigned_url}" referrerpolicy="strict-origin-when-cross-origin">
+            ${sizeMb} MB
+          </a>
+        </div>
+      </td>`;
+  };
+
   let rows = "";
   matches.forEach(part => {
-    const file = part.files.find(f => f.key.endsWith(".parquet")) || part.files[0];
-    const sizeMb = Math.round(file.size_bytes / 1e6);
     const nutsName = getNutsName(part.nuts_id);
     rows += `<tr>
-      <td>${part.nuts_id}</td>
+      <td class="font-mono">${part.nuts_id}</td>
       <td>${nutsName}</td>
-      <td><a class="link" href="${file.presigned_url}"
-              referrerpolicy="strict-origin-when-cross-origin">
-              Download (${sizeMb} MB)
-      </a></td>
-      <td class="text-center">—</td>
-      <td class="text-center">—</td>
+      ${getFileLink(part.files, '.parquet')}
+      ${getFileLink(part.files, '.gpkg')}
+      ${getFileLink(part.files, '.zip')}
     </tr>`;
   });
 
   tableBody.innerHTML = rows;
+  const version = currentVersion;
+  const setupBundleButton = (btn, format) => {
+    if (btn) {
+      btn.disabled = false;
+      btn.onclick = () => {
+        const url = `${getApiBase()}datalake/nuts/${version}/${candidateCode}/bundle?format=${format}`;
+        window.location.href = url;
+      };
+    }
+  };
 
-  const version = matches[0].version;
-  const bundleUrl = `${getApiBase()}datalake/nuts/${version}/${candidateCode}/bundle`;
-
-  if (parquetZipBtn) {
-    parquetZipBtn.disabled = false;
-    parquetZipBtn.onclick = () => {
-      window.location.href = bundleUrl;
-    };
-  }
+  setupBundleButton(btnParquet, 'parquet');
+  setupBundleButton(btnGpkg, 'gpkg');
+  setupBundleButton(btnShp, 'shp');
 };
-
 /* ---------- Map tooltip ---------- */
 
 const createTooltip = () => {

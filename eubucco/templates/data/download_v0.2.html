@@ -27,25 +27,42 @@
 {% block version_specific_table %}
 <div class="relative mt-6">
   <div class="overflow-x-auto max-h-96">
-    <table id="downloadsTable" class="table table-compact table-zebra w-full rounded-box text-sm">
+    <table id="downloadsTable" class="table table-compact table-zebra w-full table-fixed rounded-box text-sm">
       <thead>
-        <tr><th>NUTS ID</th><th>Name</th><th>Parquet</th><th>GPKG</th><th>Metadata</th></tr>
+        <tr>
+          <th class="w-[15%]">NUTS ID</th>
+          <th class="w-[25%]">Name</th>
+          <th class="text-center w-[20%]">Parquet</th>
+          <th class="text-center w-[20%]">GeoPackage</th>
+          <th class="text-center w-[20%]">Shapefile (Zip)</th>
+        </tr>
       </thead>
       <tbody id="downloadsBody">
         <tr>
-          <td colspan="4" class="text-center">
+          <td colspan="5" class="text-center">
             Select a country or NUTS code.
           </td>
         </tr>
       </tbody>
     </table>
   </div>
+  <div id="downloadsBottomBar" class="sticky bottom-0 p-3 grid grid-cols-5 gap-3 bg-base-100/90 backdrop-blur-sm border-t border-base-content/5 shadow-[0_-15px_20px_-10px_rgba(0,0,0,0.1)] rounded-b-box">
+      
+      <div class="col-span-2 flex items-center justify-end pr-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/40">Bundle results:</span>
+      </div>
+      
+      <div class="tooltip tooltip-top" data-tip="Download all results as Parquet (.zip)">
+        <button id="btnParquet" class="btn btn-xs btn-outline btn-ghost">All Parquets</button>
+      </div>
 
-  <div id="downloadsBottomBar" class="sticky bottom-0 p-1 grid gap-3 mt-1">
-    <div></div>
-    <button id="btnParquet" class="btn btn-xs btn-outline mx-auto">Download all Parquets</button>
-    <button id="btnGpkg" class="btn btn-xs btn-outline mx-auto">Download all GPKG</button>
-    <button id="btnMetadata" class="btn btn-xs btn-outline mx-auto">Download all Metadata</button>
+      <div class="tooltip tooltip-top" data-tip="Download all results as GeoPackage (.zip)">
+        <button id="btnGpkg" class="btn btn-xs btn-outline btn-ghost">All GPKG</button>
+      </div>
+
+      <div class="tooltip tooltip-top" data-tip="Download all results as Shapefile (.zip)">
+        <button id="btnShp" class="btn btn-xs btn-outline btn-ghost">All SHP</button>
+      </div>
   </div>
 </div>
 {% endblock %}
