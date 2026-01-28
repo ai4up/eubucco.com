@@ -25,44 +25,71 @@
 {% endblock %}
 
 {% block version_specific_table %}
-<div class="relative mt-6">
-  <div class="overflow-x-auto max-h-96">
-    <table id="downloadsTable" class="table table-compact table-zebra w-full table-fixed rounded-box text-sm">
-      <thead>
-        <tr>
-          <th class="w-[15%]">NUTS ID</th>
-          <th class="w-[25%]">Name</th>
-          <th class="text-center w-[20%]">Parquet</th>
-          <th class="text-center w-[20%]">GeoPackage</th>
-          <th class="text-center w-[20%]">Shapefile (Zip)</th>
-        </tr>
-      </thead>
-      <tbody id="downloadsBody">
-        <tr>
-          <td colspan="5" class="text-center">
-            Select a country or NUTS code.
-          </td>
-        </tr>
-      </tbody>
+<div class="mt-6">
+  <div class="overflow-y-auto overflow-y-visible max-h-96 border-base-content/5">
+    <table id="downloadsTable" class="table table-compact table-zebra w-full table-fixed text-sm border-separate border-spacing-0">
+        <thead>
+          <tr class="sticky top-0 z-30">
+            <th class="w-[15%]">NUTS ID</th>
+            <th class="w-[25%]">Name</th>
+
+            <th class="w-[20%] text-center">
+              Parquet
+              <div class="badge badge-success badge-xs opacity-95 tooltip tooltip-bottom normal-case font-normal tracking-normal whitespace-normal max-w-xs"
+                  data-tip="RECOMMENDED: Native format. Preservation of all metadata, strict typing, and high compression.">
+                !
+              </div>
+            </th>
+
+            <th class="w-[20%] text-center">
+              GeoPackage
+              <div class="badge badge-warning badge-xs opacity-95 tooltip tooltip-bottom normal-case font-normal tracking-normal whitespace-normal max-w-xs"
+                  data-tip="EXPERIMENTAL: Converted from Parquet. Minor typing discrepancies expected.">
+                ⚠
+              </div>
+            </th>
+
+            <th class="w-[20%] text-center">
+              Shapefile
+              <div class="badge badge-warning badge-xs opacity-95 tooltip tooltip-bottom normal-case font-normal tracking-normal whitespace-normal max-w-xs"
+                  data-tip="EXPERIMENTAL: Converted from Parquet. Minor typing discrepancies expected. Shortened column names. Individual files may exceed 2GB legacy cap.">
+                ⚠
+              </div>
+            </th>
+          </tr>
+        </thead>
+
+        <tbody id="downloadsBody">
+          <tr>
+            <td colspan="5" class="text-center py-8">
+              Select a country or NUTS code.
+            </td>
+          </tr>
+        </tbody>
+
+        <tfoot id="downloadsBottomBar" class="sticky bottom-0 z-20 bg-base-100/95 backdrop-blur-sm border-t border-base-content/10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.2)]">
+          <tr>
+            <td colspan="2" class="text-right pr-6 py-4">
+              <span class="text-xs font-semibold uppercase tracking-wider text-base-content/40">Bundle results:</span>
+            </td>
+            <td class="text-center py-4">
+              <div class="tooltip tooltip-top w-full" data-tip="Download all results as Parquet (.zip)">
+                <button id="btnParquet" class="btn btn-xs btn-outline btn-ghost w-full max-w-[120px]">All Parquets</button>
+              </div>
+            </td>
+            <td class="text-center py-4">
+              <div class="tooltip tooltip-top w-full" data-tip="Download all results as GeoPackage (.zip)">
+                <button id="btnGpkg" class="btn btn-xs btn-outline btn-ghost w-full max-w-[120px]">All GPKG</button>
+              </div>
+            </td>
+            <td class="text-center py-4">
+              <div class="tooltip tooltip-top w-full" data-tip="Download all results as Shapefile (.zip)">
+                <button id="btnShp" class="btn btn-xs btn-outline btn-ghost w-full max-w-[120px]">All SHP</button>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
     </table>
-  </div>
-  <div id="downloadsBottomBar" class="sticky bottom-0 p-3 grid grid-cols-5 gap-3 bg-base-100/90 backdrop-blur-sm border-t border-base-content/5 shadow-[0_-15px_20px_-10px_rgba(0,0,0,0.1)] rounded-b-box">
-      
-      <div class="col-span-2 flex items-center justify-end pr-2">
-        <span class="text-xs font-semibold uppercase tracking-wider text-base-content/40">Bundle results:</span>
-      </div>
-      
-      <div class="tooltip tooltip-top" data-tip="Download all results as Parquet (.zip)">
-        <button id="btnParquet" class="btn btn-xs btn-outline btn-ghost">All Parquets</button>
-      </div>
-
-      <div class="tooltip tooltip-top" data-tip="Download all results as GeoPackage (.zip)">
-        <button id="btnGpkg" class="btn btn-xs btn-outline btn-ghost">All GPKG</button>
-      </div>
-
-      <div class="tooltip tooltip-top" data-tip="Download all results as Shapefile (.zip)">
-        <button id="btnShp" class="btn btn-xs btn-outline btn-ghost">All SHP</button>
-      </div>
   </div>
 </div>
 {% endblock %}

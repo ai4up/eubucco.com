@@ -22,9 +22,10 @@
     .map-column > div { height: 20rem; }
   }
 
-  #downloadsBottomBar {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+  /* Ensure tooltips can 'break out' of the table headers */
+  .overflow-x-auto {
+    overflow-x: visible !important;
+    overflow-y: visible !important;
   }
 </style>
 
@@ -65,8 +66,8 @@
 
     <div class="container mx-auto px-4 py-4 w-full text-center">
       For metadata, license, and API details see the
-      <a class="link" href="{% url 'docs' %}">Docs</a>.  
-      Data is archived on  
+      <a class="link" href="{% url 'docs' %}">Docs</a>.
+      Data is archived on
       <a class="link" href="https://doi.org/10.5281/zenodo.6524780">Zenodo</a>.
     </div>
   </article>
