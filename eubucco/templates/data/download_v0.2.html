@@ -10,14 +10,14 @@
 
   <div id="searchControls" class="flex flex-wrap justify-center gap-5 mt-3">
     <div>
-        <input type="text" id="nutsCodeInput" list="nutsCodeOptions" class="input input-primary min-w-[14rem]" placeholder="Search by NUTS code (e.g., DE, DE1, DE12)">
+        <input type="text" id="nutsCodeInput" list="nutsCodeOptions" class="input input-md input-primary min-w-[14rem]" placeholder="Search by NUTS code (e.g., DE, DE1, DE12)">
         <datalist id="nutsCodeOptions"></datalist>
     </div>
-    <div id="orSeparator" class="flex items-center text-gray-400 font-semibold mx-2">
+    <div id="orSeparator" class="flex items-center text-gray-400 font-semibold mx-2 text-md">
       — OR —
     </div>
     <div>
-        <input type="text" id="nutsNameInput" list="nutsNameOptions" class="input input-primary min-w-[14rem]" placeholder="Search by region name (e.g., Baden-Württemberg)">
+        <input type="text" id="nutsNameInput" list="nutsNameOptions" class="input input-md input-primary min-w-[14rem]" placeholder="Search by region name (e.g., Baden-Württemberg)">
         <datalist id="nutsNameOptions"></datalist>
     </div>
   </div>
@@ -25,71 +25,87 @@
 {% endblock %}
 
 {% block version_specific_table %}
-<div class="mt-6">
-  <div class="overflow-y-auto overflow-y-visible max-h-96 border-base-content/5">
-    <table id="downloadsTable" class="table table-compact table-zebra w-full table-fixed text-sm border-separate border-spacing-0">
-        <thead>
-          <tr class="sticky top-0 z-30">
-            <th class="w-[15%]">NUTS ID</th>
-            <th class="w-[25%]">Name</th>
+<div class="mt-8 border-base-content/10 rounded-lg bg-base-100">
+  <div class="overflow-x-auto overflow-y-auto max-h-[500px] relative custom-scrollbar">
+    <table id="downloadsTable" class="table table-compact w-full table-fixed text-sm border-separate border-spacing-0">
+      
+      <thead>
+        <tr class="sticky top-0 z-40">
+          <th class="w-[15%] bg-base-200 border-b border-base-content/10 rounded-none">NUTS ID</th>
+          <th class="w-[30%] bg-base-200 border-b border-base-content/10">Name</th>
+          
+          <th class="w-[18%] bg-base-200 border-b border-base-content/10 text-center">
+            <span class="tooltip tooltip-bottom inline-flex items-center gap-1 cursor-help normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="RECOMMENDED: Strict typing, rich metadata, and high compression.">
+              Parquet <span class="badge badge-success badge-xs">!</span>
+            </span>
+          </th>
 
-            <th class="w-[20%] text-center">
-              Parquet
-              <div class="badge badge-success badge-xs opacity-95 tooltip tooltip-bottom normal-case font-normal tracking-normal whitespace-normal max-w-xs"
-                  data-tip="RECOMMENDED: Native format. Preservation of all metadata, strict typing, and high compression.">
-                !
-              </div>
-            </th>
+          <th class="w-[18%] bg-base-200 border-b border-base-content/10 text-center">
+            <span class="tooltip tooltip-bottom inline-flex items-center gap-1 cursor-help normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="EXPERIMENTAL: Converted from Parquet. Minor typing discrepancies expected.">
+              GPKG <span class="badge badge-warning badge-xs">⚠</span>
+            </span>
+          </th>
+          
+          <th class="w-[19%] bg-base-200 border-b border-base-content/10 text-center">
+            <span class="tooltip tooltip-bottom inline-flex items-center gap-1 cursor-help normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="EXPERIMENTAL: Converted from Parquet. Minor typing discrepancies expected. Shortened column names. Individual files may exceed 2GB legacy cap.">
+              SHP <span class="badge badge-warning badge-xs">⚠</span>
+            </span>
+          </th>
+        </tr>
+      </thead>
 
-            <th class="w-[20%] text-center">
-              GeoPackage
-              <div class="badge badge-warning badge-xs opacity-95 tooltip tooltip-bottom normal-case font-normal tracking-normal whitespace-normal max-w-xs"
-                  data-tip="EXPERIMENTAL: Converted from Parquet. Minor typing discrepancies expected.">
-                ⚠
-              </div>
-            </th>
+      <tbody id="downloadsBody">
+        <tr>
+          <td colspan="5" class="text-center py-12 italic opacity-40">
+            Select a region on the map or search above.
+          </td>
+        </tr>
+      </tbody>
 
-            <th class="w-[20%] text-center">
-              Shapefile
-              <div class="badge badge-warning badge-xs opacity-95 tooltip tooltip-bottom normal-case font-normal tracking-normal whitespace-normal max-w-xs"
-                  data-tip="EXPERIMENTAL: Converted from Parquet. Minor typing discrepancies expected. Shortened column names. Individual files may exceed 2GB legacy cap.">
-                ⚠
-              </div>
-            </th>
-          </tr>
-        </thead>
-
-        <tbody id="downloadsBody">
-          <tr>
-            <td colspan="5" class="text-center py-8">
-              Select a country or NUTS code.
-            </td>
-          </tr>
-        </tbody>
-
-        <tfoot id="downloadsBottomBar" class="sticky bottom-0 z-20 bg-base-100/95 backdrop-blur-sm border-t border-base-content/10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.2)]">
-          <tr>
-            <td colspan="2" class="text-right pr-6 py-4">
-              <span class="text-xs font-semibold uppercase tracking-wider text-base-content/40">Bundle results:</span>
-            </td>
-            <td class="text-center py-4">
-              <div class="tooltip tooltip-top w-full" data-tip="Download all results as Parquet (.zip)">
-                <button id="btnParquet" class="btn btn-xs btn-outline btn-ghost w-full max-w-[120px]">All Parquets</button>
-              </div>
-            </td>
-            <td class="text-center py-4">
-              <div class="tooltip tooltip-top w-full" data-tip="Download all results as GeoPackage (.zip)">
-                <button id="btnGpkg" class="btn btn-xs btn-outline btn-ghost w-full max-w-[120px]">All GPKG</button>
-              </div>
-            </td>
-            <td class="text-center py-4">
-              <div class="tooltip tooltip-top w-full" data-tip="Download all results as Shapefile (.zip)">
-                <button id="btnShp" class="btn btn-xs btn-outline btn-ghost w-full max-w-[120px]">All SHP</button>
-              </div>
-            </td>
-          </tr>
-        </tfoot>
+      <tfoot class="sticky bottom-0 z-30 bg-base-100 border-t border-base-content/20">
+        <tr class="bg-base-100">
+          <td colspan="2" class="py-4 px-4 font-bold text-[10px] uppercase tracking-widest opacity-50">
+            Bundle results:
+          </td>
+          <td class="text-center py-3">
+            <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all results as Parquet (.zip)">
+              <button id="btnParquet" class="btn btn-xs btn-ghost border-base-content/20 w-full max-w-[90px]" disabled>All</button>
+            </div>
+          </td>
+          <td class="text-center py-3">
+            <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all results as GeoPackage (.zip)">
+              <button id="btnGpkg" class="btn btn-xs btn-ghost border-base-content/20 w-full max-w-[90px]" disabled>All</button>
+            </div>
+          </td>
+          <td class="text-center py-3">
+            <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all results as Shapefile (.zip)">
+              <button id="btnShp" class="btn btn-xs btn-ghost border-base-content/20 w-full max-w-[90px]" disabled>All</button>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
     </table>
   </div>
 </div>
+
+<style>
+  /* Prevents tooltips from being cut off by the container */
+  .tooltip:before, .tooltip:after {
+    z-index: 50 !important;
+  }
+  
+  /* Modern minimal scrollbar */
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { 
+    background: hsl(var(--bc) / 0.2); 
+    border-radius: 10px; 
+  }
+
+  /* Tooltip width management */
+  .tooltip:before {
+    white-space: normal;
+    width: 160px;
+    text-align: center;
+  }
+</style>
 {% endblock %}

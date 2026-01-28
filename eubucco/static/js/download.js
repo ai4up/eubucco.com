@@ -235,102 +235,49 @@ const onNutsNameChange = () => {
 
 const renderNutsResults = () => {
   const tableBody = document.getElementById("downloadsBody");
-  const btnParquet = document.getElementById("btnParquet");
-  const btnGpkg = document.getElementById("btnGpkg");
-  const btnShp = document.getElementById("btnShp");
+  const buttons = {
+    parquet: document.getElementById("btnParquet"),
+    gpkg: document.getElementById("btnGpkg"),
+    shp: document.getElementById("btnShp")
+  };
 
   if (!tableBody) return;
-  if (currentVersion === "v0.1") return;
 
-  // Reset bundle buttons
-  [btnParquet, btnGpkg, btnShp].forEach(btn => {
-    if (btn) { btn.disabled = true; btn.onclick = null; }
-  });
+  // 1. Identify search term
+  const query = (nutsCodeInput?.value || findNutsIdByInput(nutsNameInput?.value) || "").toUpperCase().trim();
 
-  let candidateCode = "";
-  if (nutsCodeInput && nutsCodeInput.value.trim()) {
-    candidateCode = nutsCodeInput.value.trim().toUpperCase();
-  } else if (nutsNameInput && nutsNameInput.value.trim()) {
-    const foundCode = findNutsIdByInput(nutsNameInput.value);
-    if (foundCode) {
-      candidateCode = foundCode.toUpperCase();
-    }
-  }
-
-  if (!candidateCode) {
-    tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Search by NUTS code or region name to see downloads.</td></tr>';
-    selectedNutsId = "";
-    updateSelectionLayer();
-    applyFilters();
-    return;
-  }
-
-  if (!Array.isArray(nutsPartitions) || nutsPartitions.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="5" class="text-error text-center">No data available.</td></tr>';
-    updateSelectionLayer();
-    applyFilters();
-    return;
-  }
-
-  const matches = nutsPartitions.filter(
-    part => (part.nuts_id || "").toUpperCase().startsWith(candidateCode),
-  );
-
-  if (matches.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="5" class="text-error text-center">No data found for "${candidateCode}".</td></tr>`;
-    selectedNutsId = "";
-    updateSelectionLayer();
-    applyFilters();
-    return;
-  }
-
-  selectedNutsId = candidateCode;
+  // 2. Filter & Update Map
+  const matches = query ? nutsPartitions.filter(p => p.nuts_id.toUpperCase().startsWith(query)) : [];
+  selectedNutsId = query;
   updateSelectionLayer();
   applyFilters();
 
-  // Helper to find specific format in the API's file list and return link + size
-  const getFileLink = (files, ext) => {
-    const file = files.find(f => f.key.toLowerCase().endsWith(ext));
-    if (!file) return `<td class="text-center text-gray-400">—</td>`;
+  // 3. Render Table
+  if (matches.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 opacity-50">${query ? 'No results found' : 'Select a region on the map or search above.'}</td></tr>`;
+    Object.values(buttons).forEach(b => b && (b.disabled = true));
+    return;
+  }
 
-    const sizeMb = Math.round(file.size_bytes / 1e6);
-    return `
-      <td class="text-center">
-        <div class="tooltip tooltip-top" data-tip="Download single region">
-          <a class="link" href="${file.presigned_url}" referrerpolicy="strict-origin-when-cross-origin">
-            ${sizeMb} MB
-          </a>
-        </div>
-      </td>`;
-  };
+  tableBody.innerHTML = matches.map(part => `
+    <tr class="hover:bg-base-200/50">
+      <td class="font-mono text-xs">${part.nuts_id}</td>
+      <td class="truncate">${getNutsName(part.nuts_id)}</td>
+      ${['.parquet', '.gpkg', '.zip'].map(ext => {
+        const file = part.files.find(f => f.key.endsWith(ext));
+        return file 
+          ? `<td class="text-center"><a href="${file.presigned_url}" class="link link-primary no-underline hover:underline">${Math.round(file.size_bytes / 1e6)} MB</a></td>`
+          : `<td class="text-center opacity-20">—</td>`;
+      }).join('')}
+    </tr>
+  `).join('');
 
-  let rows = "";
-  matches.forEach(part => {
-    const nutsName = getNutsName(part.nuts_id);
-    rows += `<tr>
-      <td class="font-mono">${part.nuts_id}</td>
-      <td>${nutsName}</td>
-      ${getFileLink(part.files, '.parquet')}
-      ${getFileLink(part.files, '.gpkg')}
-      ${getFileLink(part.files, '.zip')}
-    </tr>`;
+  // 4. Activate Bundle Buttons
+  Object.entries(buttons).forEach(([format, btn]) => {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.onclick = () => window.location.href = `${getApiBase()}datalake/nuts/${currentVersion}/${query}/bundle?format=${format}`;
   });
-
-  tableBody.innerHTML = rows;
-  const version = currentVersion;
-  const setupBundleButton = (btn, format) => {
-    if (btn) {
-      btn.disabled = false;
-      btn.onclick = () => {
-        const url = `${getApiBase()}datalake/nuts/${version}/${candidateCode}/bundle?format=${format}`;
-        window.location.href = url;
-      };
-    }
-  };
-
-  setupBundleButton(btnParquet, 'parquet');
-  setupBundleButton(btnGpkg, 'gpkg');
-  setupBundleButton(btnShp, 'shp');
 };
 /* ---------- Map tooltip ---------- */
 
