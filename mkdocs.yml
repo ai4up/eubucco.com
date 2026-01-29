@@ -3,14 +3,35 @@ repo_url: https://github.com/ai4up/eubucco
 repo_name: ai4up/eubucco
 
 nav:
-    - Introduction: 'index.md'
-    - Data: 'data.md'
-    - API: 'api.md'
-    - License: 'license.md'
+  - Introduction: 'index.md'
+  - Data Access:
+    - 'data-access/index.md'
+    - CLI: 'data-access/cli.md'
+    - Python: 'data-access/python.md'
+    - SQL: 'data-access/sql.md'
+    - Website: 'data-access/website.md'
+    - Zenodo: 'data-access/zenodo.md'
+  - Data Format:
+    - 'data-format/index.md'
+    - Schema: 'data-format/schema.md'
+    - File Format: 'data-format/format.md'
+    - Partitioning: 'data-format/partitioning.md'
+    - Metadata Files: 'data-format/metadata.md'
+    - Uncertainty: 'data-format/uncertainty.md'
+  - Data Usage:
+    - Data Loading: 'data-usage/loading.md'
+    - Cookbook: 'data-usage/cookbook.md'
+  - License: 'license.md'
 
 theme:
   name: material
   language: en
+  features:
+    - navigation.indexes
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.footnote.tooltips
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
@@ -36,3 +57,24 @@ extra:
   version:
     provider: mike
     alias: true
+
+markdown_extensions:
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - footnotes
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
