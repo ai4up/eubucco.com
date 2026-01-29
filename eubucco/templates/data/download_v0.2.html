@@ -26,7 +26,7 @@
 
 {% block version_specific_table %}
 <div class="mt-8 border-base-content/10 rounded-lg bg-base-100">
-  <div class="overflow-x-auto overflow-y-auto max-h-[500px] relative custom-scrollbar">
+  <div class="overflow-x-auto overflow-y-auto max-h-[450px] relative custom-scrollbar">
     <table id="downloadsTable" class="table table-compact w-full table-fixed text-sm border-separate border-spacing-0">
 
       <thead>
@@ -68,17 +68,17 @@
             {% comment %} Bundle results: {% endcomment %}
           </td>
           <td class="text-center py-3">
-            <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all results as Parquet (.zip)">
+            <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all filtered regions as Parquet (.zip)">
               <button id="btnParquet" class="btn btn-xs btn-ghost border-base-content/20 w-full max-w-[90px]" disabled>All</button>
             </div>
           </td>
           <td class="text-center py-3">
-            <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all results as GeoPackage (.zip)">
+            <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all filtered regions as GeoPackage (.zip)">
               <button id="btnGpkg" class="btn btn-xs btn-ghost border-base-content/20 w-full max-w-[90px]" disabled>All</button>
             </div>
           </td>
           <td class="text-center py-3">
-            <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all results as Shapefile (.zip)">
+            <div class="tooltip tooltip-top w-full normal-case font-normal tracking-normal whitespace-normal max-w-xs" data-tip="Download all filtered regions as Shapefile (.zip)">
               <button id="btnShp" class="btn btn-xs btn-ghost border-base-content/20 w-full max-w-[90px]" disabled>All</button>
             </div>
           </td>
@@ -108,4 +108,63 @@
     text-align: center;
   }
 </style>
+{% endblock %}
+
+{% block advanced_data_access %}
+<div class="container mx-auto px-4 py-6 mt-8 w-full max-w-5xl">
+  <div class="text-center mb-4">
+    <h3 class="text-lg font-semibold text-base-content/70 mb-2">Advanced Data Access</h3>
+    <p class="text-sm text-base-content/50">Access EUBUCCO data programmatically using your preferred tool</p>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- CLI Card -->
+    <a href="https://dev-docs.eubucco.com/latest/data-access/cli/" target="_blank" rel="noopener noreferrer" class="card bg-base-200 hover:bg-base-300 transition-all duration-200 border border-base-content/10 hover:border-primary/30 hover:shadow-lg group">
+      <div class="card-body p-5">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="text-3xl">💻</div>
+          <h4 class="card-title text-base font-bold group-hover:text-primary transition-colors">CLI</h4>
+        </div>
+        <p class="text-sm text-base-content/70 leading-relaxed">
+          Download data from S3 using AWS CLI or MinIO Client. Best for full dataset downloads.
+        </p>
+        <div class="card-actions justify-end mt-3">
+          <div class="badge badge-outline badge-sm group-hover:badge-primary transition-colors">View Docs →</div>
+        </div>
+      </div>
+    </a>
+
+    <!-- Python Card -->
+    <a href="https://dev-docs.eubucco.com/latest/data-access/python/" target="_blank" rel="noopener noreferrer" class="card bg-base-200 hover:bg-base-300 transition-all duration-200 border border-base-content/10 hover:border-primary/30 hover:shadow-lg group">
+      <div class="card-body p-5">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="text-3xl">🐍</div>
+          <h4 class="card-title text-base font-bold group-hover:text-primary transition-colors">Python</h4>
+        </div>
+        <p class="text-sm text-base-content/70 leading-relaxed">
+          Stream data with GeoPandas or PyArrow. Ideal for small-scale exploration and analysis.
+        </p>
+        <div class="card-actions justify-end mt-3">
+          <div class="badge badge-outline badge-sm group-hover:badge-primary transition-colors">View Docs →</div>
+        </div>
+      </div>
+    </a>
+
+    <!-- DuckDB Card -->
+    <a href="https://dev-docs.eubucco.com/latest/data-access/sql/" target="_blank" rel="noopener noreferrer" class="card bg-base-200 hover:bg-base-300 transition-all duration-200 border border-base-content/10 hover:border-primary/30 hover:shadow-lg group">
+      <div class="card-body p-5">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="text-3xl">🦆</div>
+          <h4 class="card-title text-base font-bold group-hover:text-primary transition-colors">DuckDB</h4>
+        </div>
+        <p class="text-sm text-base-content/70 leading-relaxed">
+          Query S3 like a database. Best for large-scale analysis and selective downloads.
+        </p>
+        <div class="card-actions justify-end mt-3">
+          <div class="badge badge-outline badge-sm group-hover:badge-primary transition-colors">View Docs →</div>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
 {% endblock %}

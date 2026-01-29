@@ -22,11 +22,6 @@
     .map-column > div { height: 20rem; }
   }
 
-  /* Ensure tooltips can 'break out' of the table headers */
-  .overflow-x-auto {
-    overflow-x: visible !important;
-    overflow-y: visible !important;
-  }
 </style>
 
 <div class="main-container w-full flex flex-col gap-6">
@@ -52,9 +47,7 @@
       {% block version_specific_table %}{% endblock %}
     </div>
 
-    <div class="container mx-auto px-4 py-4 w-full text-center text-sm">
-      For advanced data access options including Python, SQL, and CLI tooling see the <a class="link" href="{% url 'docs' %}">Docs</a>.
-    </div>
+    {% block advanced_data_access %}{% endblock %}
 
     <!-- Examples -->
     {% comment %} <div class="container mx-auto px-4 py-4 w-full">
