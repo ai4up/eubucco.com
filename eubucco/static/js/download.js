@@ -265,7 +265,7 @@ const renderNutsResults = () => {
       <td class="truncate">${getNutsName(part.nuts_id)}</td>
       ${['.parquet', '.gpkg', '.zip'].map(ext => {
         const file = part.files.find(f => f.key.endsWith(ext));
-        return file 
+        return file
           ? `<td class="text-center"><a href="${file.presigned_url}" class="link link-primary no-underline hover:underline">${Math.round(file.size_bytes / 1e6)} MB</a></td>`
           : `<td class="text-center opacity-20">—</td>`;
       }).join('')}
@@ -525,5 +525,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   initMap();
   await loadNutsNames();
   await loadNutsOrFiles();
-  renderNutsResults();
+
+  // Preselect France on initial load
+  if (nutsNameInput && currentVersion === "v0.2") {
+    nutsNameInput.value = "France";
+    // Trigger the search to update results
+    onNutsNameChange();
+  } else {
+    renderNutsResults();
+  }
 });
