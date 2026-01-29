@@ -18,7 +18,9 @@
         <h1 class="mb-5 text-7xl font-bold">EUBUCCO</h1>
         <p class="mb-20 max-w-3xl text-2xl">European building stock characteristics in a common and open database for 322+ million individual buildings.</p>
         {% comment %} <a class="btn btn-primary" href="/files">Download the Data!</a> {% endcomment %}
-        <div class="alert alert-info shadow-lg max-w-4xl bg-gradient-to-r from-primary/90 via-secondary/90 to-accent/90 backdrop-blur-sm border-0 mx-auto">
+        <div class="alert alert-info shadow-lg max-w-4xl backdrop-blur-sm border-0 mx-auto relative overflow-hidden bg-base-300/50">
+          <div class="absolute inset-0 bg-gradient-to-r from-primary/70 via-secondary/70 to-accent/70"></div>
+          <div class="relative z-10">
           <div class="flex-1 w-full">
             <div class="flex flex-col items-center justify-center gap-3 w-full">
               <div class="flex items-center justify-center gap-2">
@@ -28,19 +30,19 @@
                 <span class="text-lg md:text-xl font-bold text-white">EUBUCCO v0.2 Now Available!</span>
               </div>
               <div class="flex flex-wrap items-center justify-center gap-2 md:gap-3 w-full">
-                <div class="badge badge-success gap-1.5 text-xs md:text-sm whitespace-nowrap">
+                <div class="badge badge-success gap-1.5 text-xs md:text-sm whitespace-nowrap bg-success/80 text-success-content">
                   <svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                   </svg>
                   100% Attribute Coverage
                 </div>
-                <div class="badge badge-info gap-1.5 text-xs md:text-sm whitespace-nowrap">
+                <div class="badge badge-info gap-1.5 text-xs md:text-sm whitespace-nowrap bg-info/80 text-info-content">
                   <svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"></path>
                   </svg>
                   >50% Footprint Coverage Improvement
                 </div>
-                <div class="badge badge-neutral gap-1.5 text-xs md:text-sm whitespace-nowrap">
+                <div class="badge badge-neutral gap-1.5 text-xs md:text-sm whitespace-nowrap bg-neutral/80 text-neutral-content">
                   <svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
                   </svg>
@@ -56,6 +58,7 @@
                 </a>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
