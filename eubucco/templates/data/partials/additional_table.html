@@ -8,7 +8,12 @@
         <td>{{ f.name }}</td>
         <td>
           <a href="{{ f.download_link }}" class="link">
-            {{ f.size_in_mb|floatformat:2 }} MB
+            {% if f.size_in_mb >= 512 %}
+              {% widthratio f.size_in_mb 1024 1 as size_in_gb %}
+              {{ size_in_gb|floatformat:1 }} GB
+            {% else %}
+              {{ f.size_in_mb|floatformat:0 }} MB
+            {% endif %}
           </a>
         </td>
         <td>{{ f.info }}</td>

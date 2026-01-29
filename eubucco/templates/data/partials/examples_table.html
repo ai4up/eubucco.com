@@ -9,14 +9,14 @@
         <td>
           {% if ex.gpkg_link %}
             <a href="{{ ex.gpkg_link }}" class="link">
-              {{ ex.gpkg_size|floatformat:1 }} MB
+              {{ ex.gpkg_size|floatformat:0 }} MB
             </a>
           {% else %}—{% endif %}
         </td>
         <td>
           {% if ex.csv_link %}
             <a href="{{ ex.csv_link }}" class="link">
-              {{ ex.csv_size|floatformat:1 }} MB
+              {{ ex.csv_size|floatformat:0 }} MB
             </a>
           {% else %}—{% endif %}
         </td>
