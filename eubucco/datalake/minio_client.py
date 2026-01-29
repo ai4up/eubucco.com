@@ -111,6 +111,15 @@ def ensure_bucket(client: Minio, settings: MinioSettings) -> None:
             raise
 
 
+def file_exists(client: Minio, settings: MinioSettings, object_name: str) -> bool:
+    """Check if an object exists in the bucket."""
+    try:
+        client.stat_object(settings.bucket, object_name)
+        return True
+    except S3Error:
+        return False
+
+
 def upload_file(
     client: Minio, settings: MinioSettings, object_name: str, file_path: str
 ) -> None:
