@@ -40,6 +40,15 @@
         <span id="errorBannerText"></span>
       </div>
 
+      <!-- Download Section Title -->
+      <div class="relative text-center mb-6">
+        <div class="absolute top-0 left-0">
+          {% block version_selector %}{% endblock %}
+        </div>
+        <h3 class="text-lg font-semibold text-base-content/70 mb-2">Building Data Download</h3>
+        {% block download_subtitle %}{% endblock %}
+      </div>
+
       <!-- VERSION-SPECIFIC CONTROLS -->
       {% block version_specific_controls %}{% endblock %}
 

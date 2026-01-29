@@ -1,14 +1,19 @@
 {% extends "data/download_base.html" %}
 
+{% block version_selector %}
+<select id="versionSelect" class="select select-ghost select-sm w-20 text-xs">
+  <option value="v0.2" selected>v0.2</option>
+  <option value="v0.1">v0.1</option>
+</select>
+{% endblock %}
+
+{% block download_subtitle %}
+<p class="text-sm text-base-content/50">Select regions on the map or search by NUTS code or name to download building data files</p>
+{% endblock %}
+
 {% block version_specific_controls %}
 <div class="flex flex-col items-center gap-4">
-
-  <select id="versionSelect" class="select select-primary w-28">
-    <option value="v0.2" selected>v0.2</option>
-    <option value="v0.1">v0.1</option>
-  </select>
-
-  <div id="searchControls" class="flex flex-wrap justify-center gap-5 mt-3">
+  <div id="searchControls" class="flex flex-wrap justify-center gap-5">
     <div>
         <input type="text" id="nutsCodeInput" list="nutsCodeOptions" class="input input-md input-primary min-w-[14rem]" placeholder="Search by NUTS code (e.g., DE, DE1, DE12)">
         <datalist id="nutsCodeOptions"></datalist>

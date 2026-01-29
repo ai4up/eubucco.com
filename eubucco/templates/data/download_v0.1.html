@@ -1,12 +1,18 @@
 {% extends "data/download_base.html" %}
 
+{% block version_selector %}
+<select id="versionSelect" class="select select-ghost select-sm w-20 text-xs">
+  <option value="v0.2">v0.2</option>
+  <option value="v0.1" selected>v0.1</option>
+</select>
+{% endblock %}
+
+{% block download_subtitle %}
+<p class="text-sm text-base-content/50">Browse and download country-level building data files</p>
+{% endblock %}
+
 {% block version_specific_controls %}
 <div class="flex flex-col items-center gap-4">
-  <select id="versionSelect" class="select select-primary w-28">
-    <option value="v0.2">v0.2</option>
-    <option value="v0.1" selected>v0.1</option>
-  </select>
-
   <p class="text-gray-500 text-sm mt-2">
     Version v0.1 provides only country-level downloads.
   </p>
