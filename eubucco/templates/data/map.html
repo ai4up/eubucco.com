@@ -619,26 +619,19 @@
           });
         }
 
-        const runColorMode = (fn) => {
-          if (!window.matchMedia) {
-            return;
-          }
+        // Helper to detect if dark mode is active
+        const isDarkMode = () => {
+          return document.documentElement.classList.contains("dark") || 
+                 document.documentElement.dataset.theme === "night";
+        };
 
-          const query = window.matchMedia('(prefers-color-scheme: dark)');
-
-          fn(query.matches);
-
-          query.addEventListener('change', (event) => fn(event.matches));
-        }
-
-        runColorMode((isDarkMode) => {
-          let dark
-          if (isDarkMode) {
+        // Function to update map based on theme
+        const updateMapTheme = () => {
+          const dark = isDarkMode();
+          if (dark) {
             mapcolor = "white"
-            dark = true
           } else {
             mapcolor = "black"
-            dark = false
           }
 
           paints = {
@@ -657,9 +650,84 @@
             }
           };
 
-          mountMap(dark)
+          // If map already exists, update it
+          if (map && map.isStyleLoaded()) {
+            // Update basemap source
+            const newSource = dark ? 'carto-dark' : 'carto-light';
+            if (map.getLayer('carto-layer')) {
+              // Remove old layer and add new one with correct source
+              map.removeLayer('carto-layer');
+            }
+            // Add the new layer (will be at the bottom as background)
+            map.addLayer({
+              'id': 'carto-layer',
+              'source': newSource,
+              'type': 'raster',
+              'minzoom': 0,
+              'maxzoom': 22
+            });
 
-        })
+            // Update layer colors
+            if (map.getLayer('public.data_building.Point.circle')) {
+              map.setPaintProperty('public.data_building.Point.circle', 'circle-color', mapcolor);
+            }
+            if (map.getLayer('public.data_building.Polygon.line')) {
+              map.setPaintProperty('public.data_building.Polygon.line', 'line-color', mapcolor);
+            }
+            if (map.getLayer('public.data_building.LineString.line')) {
+              map.setPaintProperty('public.data_building.LineString.line', 'line-color', mapcolor);
+            }
+          } else {
+            // Map doesn't exist yet, mount it
+            mountMap(dark);
+          }
+        };
+
+        // Initial theme detection - check both system preference and stored preference
+        const getInitialTheme = () => {
+          // First check stored preference
+          try {
+            const stored = localStorage.getItem("ui-theme");
+            if (stored === "light" || stored === "dark") {
+              return stored === "dark";
+            }
+          } catch (e) {
+            // ignore
+          }
+          // Fallback to system preference
+          if (window.matchMedia) {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+          }
+          return true; // default to dark
+        };
+
+        // Initialize map with current theme
+        updateMapTheme();
+
+        // Watch for theme changes
+        const themeObserver = new MutationObserver(() => {
+          updateMapTheme();
+        });
+        themeObserver.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["class", "data-theme"],
+        });
+
+        // Also listen to system preference changes
+        if (window.matchMedia) {
+          const query = window.matchMedia('(prefers-color-scheme: dark)');
+          query.addEventListener('change', (event) => {
+            // Only update if no stored preference exists
+            try {
+              const stored = localStorage.getItem("ui-theme");
+              if (!stored || (stored !== "light" && stored !== "dark")) {
+                updateMapTheme();
+              }
+            } catch (e) {
+              updateMapTheme();
+            }
+          });
+        }
 
 
         function enableLayer(source) {

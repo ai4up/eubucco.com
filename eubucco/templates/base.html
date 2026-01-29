@@ -9,7 +9,7 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <script>
     (function setInitialTheme() {
-      const themes = {light: "cmyk", dark: "night"};
+      const themes = {light: "pastel", dark: "night"};
       const root = document.documentElement;
       try {
         const stored = localStorage.getItem("ui-theme");
@@ -37,8 +37,8 @@
       <div class="flex flex-col">
         {#    <!-- Page content here -->#}
         <header class="sticky top-0 z-50">
-          <div class="navbar w-full bg-base-300">
-            <div class="flex-1 px-2 mx-2"><a href="/">EUBUCCO</a></div>
+          <div class="navbar w-full bg-gradient-to-r from-primary via-secondary to-accent dark:from-base-300 dark:via-base-300 dark:to-base-300 backdrop-blur-sm shadow-md">
+            <div class="flex-1 px-2 mx-2"><a href="/" class="font-bold text-primary-content dark:text-base-content">EUBUCCO</a></div>
             <div class="flex-none lg:hidden">
               <label for="my-drawer" class="btn btn-square btn-ghost">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -65,9 +65,9 @@
         </div>
 
 
-        <footer class="footer p-4 bg-base-300 text-neutral-content justify-center bottom-0 mt-auto">
+        <footer class="footer p-4 bg-gradient-to-r from-primary via-secondary to-accent dark:from-base-300 dark:via-base-300 dark:to-base-300 text-primary-content dark:text-neutral-content justify-center bottom-0 mt-auto backdrop-blur-sm shadow-md">
           <div class="items-center grid-flow-col">
-            <a class="link text-base-content" href="{% url 'about' %}">About</a>
+            <a class="link text-primary-content dark:text-neutral-content hover:opacity-80" href="{% url 'about' %}">About</a>
           </div>
         </footer>
       </div>

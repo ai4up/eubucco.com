@@ -323,6 +323,33 @@ const hideTooltip = () => {
 
 /* ---------- Map / NUTS highlighting ---------- */
 
+// Helper function to detect if dark mode is active
+const isDarkMode = () => {
+  return document.documentElement.classList.contains("dark") ||
+         document.documentElement.dataset.theme === "night";
+};
+
+// Get map colors based on theme
+const getMapColors = () => {
+  if (isDarkMode()) {
+    return {
+      background: "#0b1221",
+      fillColor: "#4f46e5",
+      fillOpacity: 0.12,
+      outlineColor: "#94a3b8",
+      selectedColor: "#e11d48",
+    };
+  } else {
+    return {
+      background: "#fafafa",
+      fillColor: "#e5e7eb",
+      fillOpacity: 0.4,
+      outlineColor: "#9ca3af",
+      selectedColor: "#3b82f6",
+    };
+  }
+};
+
 const initMap = () => {
   if (!NUTS_URL || !window.maplibregl || !window.pmtiles) {
     console.warn("Map configuration missing or libraries not loaded.");
@@ -345,6 +372,8 @@ const initMap = () => {
     ? NUTS_URL
     : `pmtiles://${NUTS_URL}`;
 
+  const colors = getMapColors();
+
   const map = new maplibregl.Map({
     container: "map",
     style: {
@@ -356,7 +385,7 @@ const initMap = () => {
         {
           id: "background",
           type: "background",
-          paint: { "background-color": "#0b1221" },
+          paint: { "background-color": colors.background },
         },
         {
           id: "nuts-fill",
@@ -364,8 +393,8 @@ const initMap = () => {
           source: "nuts",
           "source-layer": "nuts",
           paint: {
-            "fill-color": "#4f46e5",
-            "fill-opacity": 0.12,
+            "fill-color": colors.fillColor,
+            "fill-opacity": colors.fillOpacity,
           },
           filter: ["<=", ["get", "nuts_level"], 2],
         },
@@ -375,7 +404,7 @@ const initMap = () => {
           source: "nuts",
           "source-layer": "nuts",
           paint: {
-            "line-color": "#94a3b8",
+            "line-color": colors.outlineColor,
             "line-width": 0.4,
           },
           filter: ["<=", ["get", "nuts_level"], 2],
@@ -385,7 +414,7 @@ const initMap = () => {
           type: "line",
           source: "nuts",
           "source-layer": "nuts",
-          paint: { "line-color": "#e11d48", "line-width": 2.5 },
+          paint: { "line-color": colors.selectedColor, "line-width": 2.5 },
           filter: ["==", ["get", "nuts_id"], ""],
         },
       ],
@@ -472,6 +501,26 @@ const initMap = () => {
     }
     updateFilters();
     renderNutsResults();
+  });
+
+  // Listen for theme changes
+  const updateMapTheme = () => {
+    if (!mapInstance || !mapInstance.isStyleLoaded()) return;
+    const colors = getMapColors();
+    mapInstance.setPaintProperty("background", "background-color", colors.background);
+    mapInstance.setPaintProperty("nuts-fill", "fill-color", colors.fillColor);
+    mapInstance.setPaintProperty("nuts-fill", "fill-opacity", colors.fillOpacity);
+    mapInstance.setPaintProperty("nuts-outline", "line-color", colors.outlineColor);
+    mapInstance.setPaintProperty("nuts-selected", "line-color", colors.selectedColor);
+  };
+
+  // Watch for theme changes
+  const themeObserver = new MutationObserver(() => {
+    updateMapTheme();
+  });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class", "data-theme"],
   });
 };
 

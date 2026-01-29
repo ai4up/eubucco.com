@@ -1,7 +1,7 @@
 // Theme toggle controller: keeps DaisyUI data-theme and Tailwind dark class in sync
 (function () {
   const THEME_KEY = "ui-theme";
-  const THEMES = { light: "cmyk", dark: "night" };
+  const THEMES = { light: "pastel", dark: "night" };
 
   const getStoredTheme = () => {
     try {
