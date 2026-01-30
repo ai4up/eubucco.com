@@ -20,6 +20,8 @@ nav:
   - Data Usage:
     - Data Loading: 'data-usage/loading.md'
     - Cookbook: 'data-usage/cookbook.md'
+  - Advanced:
+    - Conflation Methodology: 'advanced/conflation.md'
   - License: 'license.md'
 
 theme:
