@@ -15,7 +15,7 @@
     .main-container { flex-direction: row; height: var(--content-height); overflow: hidden; }
     .map-column { width: 50%; flex-shrink: 0; height: 100%; }
     .map-column > div { height: 100%; }
-    .article-column { width: 50%; height: 100%; overflow-y: auto; }
+    .article-column { width: 50%; height: 100%; overflow-y: auto; overflow-x: hidden; }
   }
 
   @media (max-width: 767px) {
@@ -65,7 +65,7 @@
     </div> {% endcomment %}
 
     <!-- Additional Files -->
-    <div class="container mx-auto px-4 py-6 mt-2 w-full max-w-5xl">
+    <div class="container mx-auto px-4 py-6 mt-2 w-full max-w-5xl" style="overflow-x: hidden;">
       <div class="text-center mb-4">
         <h3 class="text-lg font-semibold text-base-content/70 mb-2">Additional Files</h3>
         <p class="text-sm text-base-content/50">Supplementary datasets and metadata files for EUBUCCO</p>
