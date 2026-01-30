@@ -3,10 +3,9 @@
 Filtering at the data-loading stage is the most efficient way to extract specific building subsets based on quality, source, or geography. By using predicate pushdown across partitioned files, you avoid reading unnecessary data into memory.
 
 ---
-
 ## Spatial Filtering
 
-#### Bounding Box (bbox) Filtering
+#### Bounding Box Filtering
 Limit the dataset to a specific geographic extent using helper columns. 
 
 === "GeoPandas"
@@ -74,7 +73,6 @@ Limit the dataset to specific cities, regions, or countries using the partition 
     ```
 
 ---
-
 ## Source Filtering
 
 #### Filtering by Footprint Source
@@ -148,7 +146,53 @@ Isolate records where the specific attribute comes from the same source as the f
     ```
 
 ---
+## Column Filtering
 
+Select only the footprint geometry and the main building attributes, and discard the remaining metadata columns.
+
+=== "GeoPandas"
+    ```python
+    import geopandas as gpd
+
+    columns = [
+        "id", "region_id", "city_id", 
+        "type", "subtype", "height", "floors", 
+        "construction_year", "geometry"
+    ]
+
+    gdf = gpd.read_parquet("eubucco_data/", columns=columns)
+    ```
+
+=== "PyArrow"
+    ```python
+    import pyarrow.dataset as ds
+
+    columns = [
+        "id", "region_id", "city_id", 
+        "type", "subtype", "height", "floors",
+        "construction_year", "geometry"
+    ]
+    
+    dataset = ds.dataset("eubucco_data/")
+    table = dataset.to_table(columns=columns)
+    ```
+
+=== "DuckDB"
+    ```sql
+    SELECT 
+        id,
+        region_id,
+        city_id,
+        type,
+        subtype,
+        height,
+        floors,
+        construction_year,
+        ST_AsText(geometry) AS geometry
+    FROM read_parquet('eubucco_data/**/*.parquet');
+    ```
+
+---
 ## Confidence Filtering
 Discard buildings with merged or estimated attributes that carry high uncertainty. We treat authoritative data (where confidence is `NaN`) as 100% certain.
 
