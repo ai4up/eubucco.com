@@ -213,6 +213,7 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    restart: unless-stopped
     env_file:
       - .envs/.dev/.minio
     command: server /data --console-address ":9001"
