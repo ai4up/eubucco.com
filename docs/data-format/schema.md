@@ -67,7 +67,7 @@
 #### Attribute Uncertainty
 * **Ground Truth**: `NaN` in a `<attr>_confidence` column indicates the attribute was provided directly by the geometry source; no merging or machine learning estimation was required.
 * **Interpretation**: For `type_confidence` and `subtype_confidence`, a value of 0.6 implies that 60% of buildings in that cohort are statistically expected to be correctly classified.
-* **Methodology**: For details on how the uncertainty of attribute estimation and merging is quantified, please refer to the [Uncertainty](../../../data-format/uncertainty) Section.
+* **Methodology**: For details on how the uncertainty of attribute estimation and merging is quantified, please refer to the [Uncertainty](uncertainty.md) Section.
 
 
 #### Attribute Merging
