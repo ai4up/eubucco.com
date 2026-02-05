@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../format/">
+        <link rel="prev" href="../partitioning/">
       
       
         <link rel="next" href="../uncertainty/">
@@ -532,6 +532,8 @@
       
         
       
+        
+      
     
     
     
@@ -641,6 +643,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../partitioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Partitioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -652,6 +682,24 @@
       
         
       
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metadata Files
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
@@ -669,6 +717,331 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#data-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Files
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eubucco_lat_lonparquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        eubucco_lat_lon.parquet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boundary-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boundary Files
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Boundary Files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lau-cities-2016parquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LAU-cities-2016.parquet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nuts-regions-2016parquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NUTS-regions-2016.parquet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statistics-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Statistics Files
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Statistics Files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#city-statsparquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        city-stats.parquet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="city-stats.parquet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#administrative-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Administrative Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-counts-by-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building Counts by Source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-quality-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Quality Indicators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-type-distributions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building Type Distributions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attribute-distributions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribute Distributions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#area-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Area Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#region-statsparquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        region-stats.parquet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prediction-eval-metricsparquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        prediction-eval-metrics.parquet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="prediction-eval-metrics.parquet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#administrative-information_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Administrative Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sample-sizes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sample Sizes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#categorical-variable-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Categorical Variable Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#continuous-variable-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continuous Variable Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference Tables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reference Tables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-type-harmonizationcsv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        building-type-harmonization.csv
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-datasets-metadataxlsx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        input-datasets-metadata.xlsx
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="input-datasets-metadata.xlsx">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contents
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -959,6 +1332,320 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#data-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Files
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eubucco_lat_lonparquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        eubucco_lat_lon.parquet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boundary-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Boundary Files
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Boundary Files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lau-cities-2016parquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LAU-cities-2016.parquet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nuts-regions-2016parquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        NUTS-regions-2016.parquet
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#statistics-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Statistics Files
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Statistics Files">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#city-statsparquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        city-stats.parquet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="city-stats.parquet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#administrative-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Administrative Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-counts-by-source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building Counts by Source
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-quality-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Quality Indicators
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-type-distributions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building Type Distributions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attribute-distributions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribute Distributions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#area-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Area Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#region-statsparquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        region-stats.parquet
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prediction-eval-metricsparquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        prediction-eval-metrics.parquet
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="prediction-eval-metrics.parquet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#administrative-information_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Administrative Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sample-sizes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sample Sizes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#categorical-variable-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Categorical Variable Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#continuous-variable-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continuous Variable Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference Tables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reference Tables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building-type-harmonizationcsv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        building-type-harmonization.csv
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#input-datasets-metadataxlsx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        input-datasets-metadata.xlsx
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="input-datasets-metadata.xlsx">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contents
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -978,34 +1665,139 @@
 
 
 <h1 id="metadata-files">Metadata Files</h1>
-<div class="admonition warning">
-<p class="admonition-title">Outdated</p>
-<p>Metadata files below correspond to EUBUCCO v0.1.</p>
-</div>
-<ol>
-<li><strong>Metadata table on input datasets</strong> (<code>input−dataset−metatable−v0.1.xlsx</code>): This table contains 38 dimensions
-that provide users with the main information about input datasets. Specifically, the file contains the input dataset’s<ul>
-<li>name and area information (e.g. country, dataset specific area and dataset name)</li>
-<li>meta info (e.g. access date, data owner, license, link to ressource or download approach)</li>
-<li>structure (e.g. file format, breakdown or additional files matched for attributes)</li>
-<li>content relevant to EUBUCCO v0.1 (e.g. availability of given attributes or LoDs)</li>
-<li>variable names (e.g. ID, construction year, or building element for <code>.gml</code> files)</li>
-<li>and validation information via the number of buildings at three stages of the workflow (after parsing, cleaning and matching with administrative boundaries) together with the losses that occurred and a short explanation in case of large losses</li>
+<p>EUBUCCO includes comprehensive metadata files to support data exploration, validation, analysis, and reproducibility. These files are organized into four main categories:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Files</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data Files</strong></td>
+<td><code>eubucco_lat_lon.parquet</code></td>
+<td>Lightweight building dataset</td>
+</tr>
+<tr>
+<td><strong>Boundaries</strong></td>
+<td><code>LAU-cities-2016.parquet</code>, <code>NUTS-regions-2016.parquet</code></td>
+<td>Administrative boundaries used</td>
+</tr>
+<tr>
+<td><strong>Statistics</strong></td>
+<td><code>city-stats.parquet</code>, <code>region-stats.parquet</code>, <code>prediction-eval-metrics.parquet</code></td>
+<td>Aggregated statistics and evaluation metrics</td>
+</tr>
+<tr>
+<td><strong>Reference Tables</strong></td>
+<td><code>building-type-harmonization.csv</code>, <code>input-datasets-metadata.xlsx</code></td>
+<td>Source dataset information and type mappings</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="data-files">Data Files</h2>
+<h3 id="eubucco_lat_lonparquet"><code>eubucco_lat_lon.parquet</code></h3>
+<p>A lightweight version of the EUBUCCO v0.2 dataset containing only building centroids (latitude/longitude coordinates) and footprint area, without full footprint geometries.</p>
+<hr />
+<h2 id="boundary-files">Boundary Files</h2>
+<h3 id="lau-cities-2016parquet"><code>LAU-cities-2016.parquet</code></h3>
+<p>City (LAU) administrative boundaries used in EUBUCCO v0.2, based on 2016 boundaries.</p>
+<p><strong>Contents</strong>: <code>city_id</code>, <code>region_id</code> and <code>geometry</code> for each city.</p>
+<hr />
+<h3 id="nuts-regions-2016parquet"><code>NUTS-regions-2016.parquet</code></h3>
+<p>Regional (NUTS 0-3) administrative boundaries used in EUBUCCO v0.2, based on 2016 boundaries.</p>
+<p><strong>Contents</strong>: <code>region_id</code>, <code>region_name</code>, and <code>geometry</code> for each NUTS region at all levels (0-3).</p>
+<hr />
+<h2 id="statistics-files">Statistics Files</h2>
+<h3 id="city-statsparquet"><code>city-stats.parquet</code></h3>
+<p>Comprehensive building stock statistics aggregated at the <strong>city (LAU) level</strong>. This <em>GeoDataFrame</em> includes city geometry and provides detailed metrics for each city.</p>
+<h4 id="administrative-information">Administrative Information</h4>
+<ul>
+<li><code>city_id</code>, <code>region_id</code> (NUTS 3), <code>country</code></li>
+<li>City geometry (CRS: EPSG:3035)</li>
 </ul>
-</li>
-<li><strong>Table on excluded datasets</strong> (<code>excluded−datasets−v0.1.xlsx</code>): This table provides an overview of available government datasets that were not included in this study with a rational why, most often because they were only available at a high cost. For all these datasets we contacted the data owner to ask whether the data were available for free for research; the status of the dataset reflects their answer and a contact date is also indicated in the file</li>
-<li><strong>Database content metrics at the city-level</strong> (<code>city−level−overview−tables−v0.1.zip</code>): The overview files provide 48 city-level metrics for all 41,456 cities, of which 627, mostly very small cities, do not contain any building. The files enable a detailed overview of the database content in term of geometries and attributes can be used to study patterns across regions and countries and can also be used to identify bugs or outliers. They are provided as a table for each country with the following naming: <code>&lt;country&gt;_overview−v0.1.csv</code>. Each table contains:<ul>
-<li>the city ID, name and region</li>
-<li>building counts and footprint metrics including total number of buildings, total footprint area, footprint area distribution, max footprint area, number of 0-m<sup>2</sup> footprints, etc.</li>
-<li>height distribution metrics in relative and absolute terms, including overall metrics e.g. median and max value, also outliers outside of a reasonable range e.g. negative values, and metrics by height bins e.g. <code>[3, 5(</code> or <code>[11, 15(</code></li>
-<li>type distribution metrics in relative and absolute terms computed for the variable type and describing the proportion of residential, non-residential and unknown building types</li>
-<li>construction year distribution metrics in relative and absolute terms grouped by construction year bins e.g. <code>[1801, 1900(</code> or <code>[1951, 2000(</code> and also counting additional dimensions such as outliers outside of a reasonable range e.g. negative values</li>
+<h4 id="building-counts-by-source">Building Counts by Source</h4>
+<ul>
+<li><code>n_gov</code>, <code>n_osm</code>, <code>n_msft</code> — Total counts by geometry source</li>
 </ul>
-</li>
-<li><strong>Type matching tables</strong> (<code>type_matches−v0.1.zip</code>): Multiple tables are provided for each relevant dataset or group of datasets (if cadaster codes apply for several datasets in Germany and Italy) as <code>&lt;dataset&gt;−type_matches−v0.1.csv</code>. These tables enable to map the type of the raw data (<code>type_source</code>) to the type column (<code>type_source</code>) of the database and provide an English translation of the type of the raw data</li>
-<li><strong>Administrative code matching table</strong> (<code>admin−codes−matches−v0.1.csv</code>): This table enables to match the GADM code from building ids with its country, region, city and the input dataset per city.</li>
-<li><strong>Administrative city levels</strong> (<code>gadm−city−levels−v0.1.csv</code>): This table provides an overview of the GADM level that was chosen to define the city level per country.</li>
-</ol>
+<h4 id="data-quality-indicators">Data Quality Indicators</h4>
+<ul>
+<li>Ground truth counts: Buildings with attributes from the same source as geometry</li>
+<li><code>n_gt_type</code>, <code>n_gt_subtype</code>, <code>n_gt_height</code>, <code>n_gt_floors</code>, <code>n_gt_construction_year</code></li>
+<li>Merged attribute counts: Buildings with attributes merged from different sources</li>
+<li><code>n_merged_type</code>, <code>n_merged_subtype</code>, <code>n_merged_height</code>, <code>n_merged_floors</code>, <code>n_merged_construction_year</code></li>
+<li>Estimated attribute counts: Buildings with estimated attributes</li>
+<li><code>n_estimated_type</code>, <code>n_estimated_subtype</code>, <code>n_estimated_height</code>, <code>n_estimated_floors</code></li>
+</ul>
+<h4 id="building-type-distributions">Building Type Distributions</h4>
+<ul>
+<li>Main types: Residential, non-residential (counts and areas)</li>
+<li>Subtypes: Commercial, industrial, agricultural, public, others, detached, semi-detached, terraced, apartment (counts and areas)</li>
+</ul>
+<h4 id="attribute-distributions">Attribute Distributions</h4>
+<ul>
+<li>Height bins: 0-5m, 5-10m, 10-20m, &gt;20m</li>
+<li>Floor bins: 0-3, 4-6, &gt;6 floors</li>
+<li>Construction year bins: ≤1900, 1901-1970, 1971-2000, &gt;2000</li>
+<li>Footprint area bins: 0-25m², 25-100m², 100-500m², &gt;500m²</li>
+</ul>
+<h4 id="area-metrics">Area Metrics</h4>
+<ul>
+<li>Total footprint area and floor area</li>
+<li>Breakdowns by source (gov, osm, msft), type, and subtype</li>
+</ul>
+<hr />
+<h3 id="region-statsparquet"><code>region-stats.parquet</code></h3>
+<p>Building stock statistics aggregated at the <strong>regional (NUTS 3) level</strong>. Contains the same metrics as city-level statistics but aggregated to NUTS 3 regions, including regional geometry.</p>
+<hr />
+<h3 id="prediction-eval-metricsparquet"><code>prediction-eval-metrics.parquet</code></h3>
+<p>Regional (NUTS 2) evaluation metrics for building attribute estimation models. This <em>GeoDataFrame</em> provides comprehensive performance metrics for predicted building attributes.</p>
+<h4 id="administrative-information_1">Administrative Information</h4>
+<ul>
+<li><code>region_id</code> (NUTS 2), <code>country</code></li>
+<li>Regional geometry (CRS: EPSG:3035)</li>
+</ul>
+<h4 id="sample-sizes">Sample Sizes</h4>
+<ul>
+<li><code>n</code> — Total number of buildings</li>
+<li><code>n_gt_binary_type</code>, <code>n_gt_type</code>, <code>n_gt_residential_type</code>, <code>n_gt_height</code>, <code>n_gt_floors</code> — Ground truth counts per attribute</li>
+</ul>
+<h4 id="categorical-variable-metrics">Categorical Variable Metrics</h4>
+<p>For binary_type, type, and residential_type:</p>
+<ul>
+<li>Overall classification metrics: F1 score (macro and micro), Cohen's kappa</li>
+<li>Per-class F1 scores: Individual F1 scores for each building type/subtype</li>
+</ul>
+<h4 id="continuous-variable-metrics">Continuous Variable Metrics</h4>
+<p>For height and floors:</p>
+<ul>
+<li>Overall metrics: MAE, RMSE, R² score</li>
+<li>Binned metrics: MAE and RMSE by value ranges</li>
+<li>Height: 0-5m, 5-10m, 10-20m, &gt;20m</li>
+<li>Floors: 0-3, 3-6, &gt;6</li>
+</ul>
+<h4 id="external-validation">External Validation</h4>
+<p>For height:</p>
+<ul>
+<li>Microsoft height comparison: Metrics comparing predicted height with heights from Microsoft's <a href="https://github.com/microsoft/GlobalMLBuildingFootprints">GlobalMLBuildingFootprints</a> dataset</li>
+</ul>
+<hr />
+<h2 id="reference-tables">Reference Tables</h2>
+<h3 id="building-type-harmonizationcsv"><code>building-type-harmonization.csv</code></h3>
+<p>Mapping table showing how building types from various source datasets are harmonized to the standardized EUBUCCO building type classification.</p>
+<hr />
+<h3 id="input-datasets-metadataxlsx"><code>input-datasets-metadata.xlsx</code></h3>
+<p>Comprehensive metadata table providing detailed information about all source datasets used in EUBUCCO v0.2.</p>
+<h4 id="contents">Contents</h4>
+<ul>
+<li>Dataset identification: Name, country, geographic coverage</li>
+<li>Access information: Data owner, license, access date, download links or procedures</li>
+<li>Technical details: File format, data structure, attribute availability</li>
+<li>Integration information: Processing workflow and integration approach</li>
+</ul>
 
 
 
