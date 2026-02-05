@@ -1,0 +1,26 @@
+{
+  "eubucco_lat_lon.parquet": {
+    "description": "Lightweight EUBUCCO v0.2 dataset containing only building centroids (latitude/longitude) and footprint area, but not the full footprint geometries."
+  },
+  "city-stats.parquet": {
+    "description": "City-level (LAU) building stock statistics."
+  },
+  "region-stats.parquet": {
+    "description": "Regional (NUTS 3) building stock statistics."
+  },
+  "prediction-eval-metrics.parquet": {
+    "description": "Regional (NUTS 2) evaluation metrics of building attribute estimation."
+  },
+  "LAU-cities-2016.parquet": {
+    "description": "City (LAU) boundaries used."
+  },
+  "NUTS-regions-2016.parquet": {
+    "description": "Regional (NUTS 0-3) boundaries used."
+  },
+  "building-type-harmonization.csv": {
+    "description": "Mapping of building types in source datasets to harmonized EUBUCCO types."
+  },
+  "input-datasets-metadata.xlsx": {
+    "description": "Metadata of source datasets."
+  }
+}
