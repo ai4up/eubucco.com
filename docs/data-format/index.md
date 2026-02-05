@@ -4,7 +4,7 @@
 The core dataset structure is organized into five functional groups:
 
 * **Identifiers**: Unique building `id` and geographic identifies: `region_id` ([NUTS3](https://ec.europa.eu/eurostat/web/nuts/maps)) and `city_id` ([LAU](https://ec.europa.eu/eurostat/web/nuts/local-administrative-units)).
-* **Attributes**: Building characteristics (`type`, `subtype`, `height`, `floors`, `year`).
+* **Attributes**: Building characteristics (`type`, `subtype`, `height`, `floors`, `construction_year`).
 * **Confidence**: Uncertainty of ML-based estimation and cross-source merging of attributes.
 * **Sources**: Provenance tracking for every attribute (i.e. `osm`, `msft`, `gov-*`, `estimated`).
 * **Geometry**: `ETRS89` footprints stored in Well-Known Binary (WKB) format.
