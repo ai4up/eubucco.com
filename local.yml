@@ -59,15 +59,15 @@ services:
     ports:
       - "5432:5432"
 
-  pg_tileserv:
-    image: pramsey/pg_tileserv:latest
-    depends_on:
-      - postgres
-    env_file:
-      - ./.envs/.local/.django
-      - ./.envs/.local/.postgres
-    ports:
-      - "7800:7800"
+  # pg_tileserv:
+  #   image: pramsey/pg_tileserv:latest
+  #   depends_on:
+  #     - postgres
+  #   env_file:
+  #     - ./.envs/.local/.django
+  #     - ./.envs/.local/.postgres
+  #   ports:
+  #     - "7800:7800"
 
   docs:
     image: eubucco/eubucco-docs:latest

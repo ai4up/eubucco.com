@@ -99,30 +99,30 @@ services:
       - "traefik.http.routers.dev-docs-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
 
-  pg_tileserv:
-    image: pramsey/pg_tileserv:latest
-    depends_on:
-      - postgres
-    restart: unless-stopped
-    networks:
-      - proxy
-      - default
-    env_file:
-      - .envs/.dev/.postgres
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dev-pg_tileserv.entrypoints=http"
-      - "traefik.http.routers.dev-pg_tileserv.rule=Host(`dev-tiles.eubucco.com`)"
-      - "traefik.http.middlewares.dev-pg_tileserv-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.dev-pg_tileserv.middlewares=dev-pg_tileserv-https-redirect"
-      - "traefik.http.routers.dev-pg_tileserv-secure.entrypoints=https"
-      - "traefik.http.routers.dev-pg_tileserv-secure.rule=Host(`dev-tiles.eubucco.com`)"
-      - "traefik.http.routers.dev-pg_tileserv-secure.tls=true"
-      - "traefik.http.routers.dev-pg_tileserv-secure.tls.certresolver=http"
-      - "traefik.http.routers.dev-pg_tileserv-secure.service=dev-pg_tileserv"
-      - "traefik.http.services.dev-pg_tileserv.loadbalancer.server.port=7800"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.dev-pg_tileserv-secure.middlewares=secHeaders@file"
+  # pg_tileserv:
+  #   image: pramsey/pg_tileserv:latest
+  #   depends_on:
+  #     - postgres
+  #   restart: unless-stopped
+  #   networks:
+  #     - proxy
+  #     - default
+  #   env_file:
+  #     - .envs/.dev/.postgres
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.dev-pg_tileserv.entrypoints=http"
+  #     - "traefik.http.routers.dev-pg_tileserv.rule=Host(`dev-tiles.eubucco.com`)"
+  #     - "traefik.http.middlewares.dev-pg_tileserv-https-redirect.redirectscheme.scheme=https"
+  #     - "traefik.http.routers.dev-pg_tileserv.middlewares=dev-pg_tileserv-https-redirect"
+  #     - "traefik.http.routers.dev-pg_tileserv-secure.entrypoints=https"
+  #     - "traefik.http.routers.dev-pg_tileserv-secure.rule=Host(`dev-tiles.eubucco.com`)"
+  #     - "traefik.http.routers.dev-pg_tileserv-secure.tls=true"
+  #     - "traefik.http.routers.dev-pg_tileserv-secure.tls.certresolver=http"
+  #     - "traefik.http.routers.dev-pg_tileserv-secure.service=dev-pg_tileserv"
+  #     - "traefik.http.services.dev-pg_tileserv.loadbalancer.server.port=7800"
+  #     - "traefik.docker.network=proxy"
+  #     - "traefik.http.routers.dev-pg_tileserv-secure.middlewares=secHeaders@file"
 
   postgres:
     image: eubucco/postgis:latest
