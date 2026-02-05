@@ -15,6 +15,7 @@ nav:
     - 'data-format/index.md'
     - Schema: 'data-format/schema.md'
     - File Format: 'data-format/format.md'
+    - Partitioning: 'data-format/partitioning.md'
     - Metadata Files: 'data-format/metadata.md'
     - Uncertainty: 'data-format/uncertainty.md'
   - Data Usage:
