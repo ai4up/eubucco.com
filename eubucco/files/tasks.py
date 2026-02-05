@@ -27,6 +27,7 @@ DIRS = [
 def ingest_file(path_str: str, file_type: FileType, version: str, info: str) -> File:
     path = Path(path_str)
     file = File.objects.filter(path=path_str).first()
+    logging.info(f"Ingesting or updating file {path.name}")
 
     if file:
         logging.debug("File already in db, updating")
@@ -65,7 +66,7 @@ def load_metadata(version_dir: Path) -> dict:
 
 
 @celery_app.task(soft_time_limit=60, hard_time_limit=61)
-def scan_files():
+def sync_files():
     logging.info("Starting files scan task")
     for base_dir, file_type in DIRS:
         base = Path(base_dir)
@@ -78,25 +79,29 @@ def scan_files():
             logging.debug(f"Scanning {version_dir} (version={version})")
 
             metadata = load_metadata(version_dir)
-            for path in version_dir.glob("*"):
+
+            paths = list(version_dir.glob("*"))
+            for path in paths:
                 if path.name.startswith(".") or path.name == "metadata.json":
                     continue
 
                 info = metadata.get(path.name, {}).get("description", "")
                 ingest_file(str(path), file_type, version, info)
 
-
-@celery_app.task(soft_time_limit=60, hard_time_limit=61)
-def start_example_ingestion_tasks():
-    sleep(10)
-    scan_files.delay()
+            # Remove files from database that no longer exist in the directory
+            remote_files = File.objects.filter(type=file_type, version=version)
+            local_files = [p.name for p in paths]
+            for file in remote_files:
+                if file.name not in local_files:
+                    logging.info(f"Removing file {file.name} from database")
+                    file.delete()
 
 
 def main():
     """Ensure ingestion runs only once using Redis-based locking."""
     lock = Redlock(key="eubucco.examples.files.main", masters={r}, auto_release_time=20)
     if lock.acquire(blocking=False):
-        start_example_ingestion_tasks.delay()
+        sync_files.delay()
         sleep(10)
         lock.release()
     else:

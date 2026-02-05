@@ -242,7 +242,7 @@ docker compose -f local.yml run --rm django python manage.py shell -c "from eubu
 ```
 **Trigger ingestion of additional files**
 ```bash
-docker compose -f local.yml run --rm django python manage.py shell -c "from eubucco.files.tasks import scan_files; scan_files()"
+docker compose -f local.yml run --rm django python manage.py shell -c "from eubucco.files.tasks import sync_files; sync_files()"
 ```
 
 
