@@ -36,7 +36,9 @@ def _grouped(files, ftype):
 
 
 def _additional(files):
-    return [f for f in files if f.type == "AD"]
+    additional_files = [f for f in files if f.type == "AD"]
+
+    return sorted(additional_files, key=lambda f: f.size_in_mb, reverse=True)
 
 
 @cache_page(60 * 60)
