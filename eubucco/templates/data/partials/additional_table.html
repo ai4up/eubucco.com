@@ -17,9 +17,11 @@
         <td class="break-words" style="word-wrap: break-word; overflow-wrap: break-word; overflow: hidden;">{{ f.name }}</td>
         <td class="whitespace-nowrap">
           <a href="{{ f.download_link }}" class="link">
-            {% if f.size_in_mb >= 512 %}
+            {% if f.size_in_mb >= 1024 %}
               {% widthratio f.size_in_mb 1024 1 as size_in_gb %}
-              {{ size_in_gb|floatformat:1 }} GB
+              {{ size_in_gb }} GB
+            {% elif f.size_in_mb < 1 %}
+              {{ f.size_in_mb|floatformat:1 }} MB
             {% else %}
               {{ f.size_in_mb|floatformat:0 }} MB
             {% endif %}
