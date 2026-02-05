@@ -40,6 +40,9 @@
 | | `construction_year_source_ids` | `array` | List of IDs from source(s) contributing to the `construction_year`. | `['ign_456']` |
 | **Source values** | `subtype_raw` | `string` | The original, unmapped building use type from the source dataset. | `Einfamilienhaus` |
 
+!!! warning "Incorrect OSM Source IDs"
+    The `geometry_source_id` and `<attr>_source_ids` fields currently do not contain the original OSM ID but a sequential index.
+
 ### Example
 | id | region_id | city_id | type | subtype | height | floors | construction_year | type_confidence | subtype_confidence | height_confidence_lower | height_confidence_upper | floors_confidence_lower | floors_confidence_upper | construction_year_confidence_lower | construction_year_confidence_upper | geometry_source | type_source | subtype_source | height_source | floors_source | construction_year_source | geometry_source_id | type_source_ids | subtype_source_ids | height_source_ids | floors_source_ids | construction_year_source_ids | subtype_raw | geometry |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
