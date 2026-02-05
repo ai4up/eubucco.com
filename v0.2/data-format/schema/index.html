@@ -974,6 +974,92 @@
   
   
   
+    
+    
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/conflation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conflation Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../license/" class="md-nav__link">
         
@@ -1385,6 +1471,10 @@
 </tr>
 </tbody>
 </table>
+<div class="admonition warning">
+<p class="admonition-title">Incorrect OSM Source IDs</p>
+<p>The <code>geometry_source_id</code> and <code>&lt;attr&gt;_source_ids</code> fields currently do not contain the original OSM ID but a sequential index.</p>
+</div>
 <h3 id="example">Example</h3>
 <table>
 <thead>
@@ -1574,7 +1664,7 @@
 <ul>
 <li><strong>Ground Truth</strong>: <code>NaN</code> in a <code>&lt;attr&gt;_confidence</code> column indicates the attribute was provided directly by the geometry source; no merging or machine learning estimation was required.</li>
 <li><strong>Interpretation</strong>: For <code>type_confidence</code> and <code>subtype_confidence</code>, a value of 0.6 implies that 60% of buildings in that cohort are statistically expected to be correctly classified.</li>
-<li><strong>Methodology</strong>: For details on how the uncertainty of attribute estimation and merging is quantified, please refer to the <a href="../../../data-format/uncertainty">Uncertainty</a> Section.</li>
+<li><strong>Methodology</strong>: For details on how the uncertainty of attribute estimation and merging is quantified, please refer to the <a href="../uncertainty/">Uncertainty</a> Section.</li>
 </ul>
 <h4 id="attribute-merging">Attribute Merging</h4>
 <ul>
