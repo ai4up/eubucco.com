@@ -8,8 +8,8 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from eubucco.datalake.constants import DATASET_PREFIX
-from eubucco.datalake.minio_client import (
+from eubucco.data.constants import DATASET_PREFIX
+from eubucco.data.minio_client import (
     MinioSettings,
     build_client,
     ensure_bucket,

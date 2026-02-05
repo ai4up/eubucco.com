@@ -94,12 +94,8 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "eubucco.users",
-    # Your stuff: custom apps go here
     "eubucco.data",
-    "eubucco.dumps",
-    "eubucco.ingest",
     "eubucco.files",
-    "eubucco.datalake",
     "eubucco.blog",
     "eubucco.analytics",
     "eubucco.tutorials",

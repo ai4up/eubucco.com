@@ -1,19 +1,11 @@
 from fastapi.responses import RedirectResponse
 
 from .. import api
-from .countries import router as countries_router
 from .datalake import router as datalake_router
 from .files import router as files_router
 
-api.include_router(countries_router, prefix="/v1/countries", tags=["countries"])
 api.include_router(files_router, prefix="/v1/files", tags=["files"])
 api.include_router(datalake_router, prefix="/v1/datalake", tags=["datalake"])
-
-
-# api.include_router(regions_router, prefix="/regions", tags=["regions"])
-# api.include_router(cities_router, prefix="/cities", tags=["cities"])
-# api.include_router(buildings_router, prefix="/v0.1/buildings", tags=["buildings v0.1"])
-# api.include_router("/dumps", dumps_router, tags=["dumps"])
 
 
 @api.get("/", tags=["redirect to docs"])

@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Optional, Tuple
+from typing import Optional
 from urllib.parse import urlparse
 
 from minio import Minio
