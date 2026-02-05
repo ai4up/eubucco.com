@@ -23,16 +23,12 @@ urlpatterns = [
     ),
     path("docs", cache_page(60 * 60)(DocsRedirectView.as_view()), name="docs"),
     path("about", TemplateView.as_view(template_name="pages/about.html"), name="about"),
-    # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
-    # User management
     path("users/", include("eubucco.users.urls", namespace="users")),
     path("accounts/", include("allauth.urls")),
-    # Your stuff: custom urls includes go here
     path("files/", include("eubucco.files.urls")),
     path("data/", include("eubucco.data.urls")),
     path("blog/", include("eubucco.blog.urls")),
-    path("dumps/", include("eubucco.dumps.urls")),
     path("tutorials/", include("eubucco.tutorials.urls")),
     path("martor/", include("martor.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
