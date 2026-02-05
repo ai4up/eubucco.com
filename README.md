@@ -1,152 +1,267 @@
-# eubucco
+# EUBUCCO Website
 
-EUBUCCO is a scientific database of individual building footprints for buildings across the 27 European Union countries
-and Switzerland.
+> A web platform for exploring and accessing the EUBUCCO dataset.
 
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Black code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-License: MIT
+## About
 
-## Settings
+**EUBUCCO** is a scientific database of individual building footprints for **322+ million buildings** across the 27 European Union countries, Norway, Switzerland, and the UK. This repository contains the web platform that provides:
 
-Moved to [settings](http://cookiecutter-django.readthedocs.io/en/latest/settings.html).
+- **Data Download Interface** - Download building data by region, country, or custom filters
+- **Interactive Map Explorer** - Browse and visualize building data across Europe
+- **Data Lake** - S3-compatible object storage for storing and distributing EUBUCCO data
+- **RESTful API** - Programmatic access to building data and more
+- **Documentation** - Comprehensive guides for data access and usage
 
-## pre-commit
+The platform serves as the primary interface for researchers, urban planners, and developers working with European building stock data.
 
-We are using [pre-commit](https://pre-commit.com/) to uphold certain formatting standards. Please check out the link to
-find out how to use/install it on your system.
 
-## Basic Commands
+## Architecture
 
-### Getting Up and Running Locally With Docker
+### Tech Stack
 
-Full Guide can be found
-here: [Getting Up and Running Locally With Docker](https://cookiecutter-django.readthedocs.io/en/latest/developing-locally-docker.html)
+**Backend**
+- **Django** - Main web framework
+- **MinIO** - S3-compatible object storage
+- **PostGIS** - Geospatial database
+- **FastAPI** - High-performance API server
+- **Redis** - Caching and Celery broker
+- **Celery** - Asynchronous task processing
+- **Flower** - Celery monitoring
+- **MkDocs + Material**  - Documentation rendering
 
-#### Start the server with:
+**Frontend**
+- **Django Templates** - Server-side rendering
+- **Tailwind CSS** - Utility-first CSS framework
+- **Leaflet** - Interactive maps
 
-    docker compose -f local.yml up
+**Infrastructure**
+- **Docker & Docker Compose** - Containerization
+- **Nginx** (production) - Reverse proxy
+- **Traefik** (production) - Load balancer
 
-#### Rebuild the images & Start
+**Data Processing**
+- **DuckDB** - Analytical database for Parquet queries
+- **PyArrow** - Parquet file handling
+- **GeoPandas** - Geospatial data manipulation
 
-    docker compose -f local.yml up --build
+### Project Structure
 
-## Data lake: MinIO + Parquet + DuckDB
-
-- Object storage: `local.yml` now starts a MinIO server on `9000` (S3 API) and `9001` (console) with a bucket named `eubucco` created by the `minio-setup` sidecar.
-- Ingestion: run `publish_parquet_partitions` to transform the zipped GPKG sources into Parquet partitioned by `nuts_id` and upload them to MinIO.
-    ```bash
-    docker compose -f local.yml run --rm django \
-      python manage.py shell -c "from eubucco.ingest.tasks import publish_parquet_partitions; publish_parquet_partitions(chunk_size=20000)"
-    ```
-  Add an optional `csvs/util/nuts_lookup.csv` (columns: `country,region,city,nuts_level,nuts_id`) to control the NUTS mapping; otherwise regions are used as the partition key.
-- If you already have per-NUTS3 Parquet files (filename is the NUTS3 code, e.g. `ES300.parquet`), drop them into `csvs/buildings_parquet/` and push them straight to MinIO without conversion:
-    ```bash
-    docker compose -f local.yml run --rm django \
-      python manage.py shell -c "from eubucco.ingest.tasks import stage_existing_parquet; stage_existing_parquet(version_tag='v0_1')"
-    ```
-- Public endpoint for presigned links: set `MINIO_PUBLIC_ENDPOINT` (default in local.yml is `http://localhost:9000`) so browser downloads don’t point at the internal `minio:9000` host.
-- NUTS vector tiles for the map UI: place `nuts.pmtiles` in `./tiles/` before `docker compose up`; the `minio-setup` job uploads it to MinIO and the UI reads it from `${NUTS_PM_TILES_URL}` (defaults to `${MINIO_PUBLIC_ENDPOINT}/nuts.pmtiles`).
-  Make sure the URL includes the bucket, e.g. `http://localhost:9000/eubucco/nuts.pmtiles` (local.yml sets this by default).
-  If you also place `pmtiles.js` in `./tiles/`, it will be uploaded and served from MinIO (set `PMTILES_JS_URL` or rely on the default), avoiding external CDNs.
-- API discovery: `GET http://localhost:8001/v0.1/datalake/nuts` lists available partitions; `GET http://localhost:8001/v0.1/datalake/nuts/<version>/<nuts_id>` returns presigned links for one partition.
-- DuckDB example for a local subset:
-    ```bash
-    duckdb -c "INSTALL httpfs; LOAD httpfs;
-    SET s3_endpoint='http://localhost:9000';
-    SET s3_access_key_id='minioadmin';
-    SET s3_secret_access_key='minioadmin';
-    SET s3_use_ssl=false;
-    SELECT count(*) FROM read_parquet('s3://eubucco/buildings/v0_1/nuts_id=CY00/*.parquet');"
-    ```
-
-### Setting Up Your Users
-
-- To create a **normal user account**, just go to Sign Up and fill out the form. Once you submit it, you'll see a "
-  Verify Your E-mail Address" page. Go to your console to see a simulated email verification message. Copy the link into
-  your browser. Now the user's email should be verified and ready to go.
-
-- To create a **superuser account**, use this command:
-
-      docker compose -f local.yml run --rm django python manage.py createsuperuser
-
-To access the email verification message go to `http://localhost:8025/` where Mailhog is running and confirm the email
-of the user there. A superuser can log into the admin panel without verification but not into the normal site.
-
-For convenience, you can keep your normal user logged in on Chrome and your superuser logged in on Firefox (or similar),
-so that you can see how the site behaves for both kinds of users.
-
----
-
-# From here on the doc is autogenerated, commands might not work in our instance!
-
----
-
-### Type checks
-
-Running type checks with mypy:
-
-    $ mypy eubucco
-
-### Test coverage
-
-To run the tests, check your test coverage, and generate an HTML coverage report:
-
-    $ coverage run -m pytest
-    $ coverage html
-    $ open htmlcov/index.html
-
-#### Running tests with pytest
-
-    $ pytest
-
-### Live reloading and Sass CSS compilation
-
-Moved
-to [Live reloading and SASS compilation](https://cookiecutter-django.readthedocs.io/en/latest/developing-locally.html#sass-compilation-live-reloading)
-.
-
-### Celery
-
-This app comes with Celery.
-
-To run a celery worker:
-
-``` bash
-cd eubucco
-celery -A config.celery_app worker -l info
+```
+eubucco/
+├── config/             # Django configuration
+│   ├── settings/       # Environment-specific settings
+│   └── urls.py         # URL routing
+├── eubucco/            # Django apps
+│   ├── analytics/      # Basic analytics
+│   ├── api/            # FastAPI endpoints
+│   │   └── v1/         # API version 1
+│   │       ├── tiles.py      # Vector tile generation
+│   │       ├── datalake.py   # Data lake access
+│   │       └── files.py      # File management
+│   ├── blog/           # Blog
+│   ├── data/           # Data lake integration & visualization
+│   ├── files/          # Management additional files
+│   ├── templates/      # Django templates
+│   ├── tutorial/       # Jupyter notebook tutorials
+│   ├── static/         # Static assets
+│   └── users/          # User management
+├── compose/            # Docker Compose configurations
+│   ├── local/          # Local development
+│   └── production/     # Production deployment
+├── docs/               # Documentation (MkDocs)
+├── requirements/       # Python dependencies
+└── theme/              # Frontend theme & Tailwind sources
 ```
 
-Please note: For Celery's import magic to work, it is important *where* the celery commands are run. If you are in the
-same folder with *manage.py*, you should be right.
+## API Documentation
 
-### Email Server
+Auto-generated docs (Swagger UI): http://localhost:8001/docs
 
-In development, it is often nice to be able to see emails that are being sent from your application. For that reason
-local SMTP server [MailHog](https://github.com/mailhog/MailHog) with a web interface is available as docker container.
+### Vector Tiles
 
-Container mailhog will start automatically when you will run all docker containers. Please
-check [cookiecutter-django Docker documentation](http://cookiecutter-django.readthedocs.io/en/latest/deployment-with-docker.html)
-for more details how to start all containers.
+Get Mapbox Vector Tiles (MVT) for building footprints:
 
-With MailHog running, to view messages that are sent by your application, open your browser and go
-to `http://127.0.0.1:8025`
+```
+GET /v0.1/tiles/{z}/{x}/{y}.pbf
+```
 
-### Sentry
+**Parameters:**
+- `z`, `x`, `y`: Tile coordinates (zoom, x, y)
+- `include_attributes`: Comma-separated list of attributes (default: `id,height,construction_year,type`)
 
-Sentry is an error logging aggregator service. You can sign up for a free account
-at <https://sentry.io/signup/?code=cookiecutter> or download and host it yourself. The system is set up with reasonable
-defaults, including 404 logging and integration with the WSGI application.
+**Example:**
+```bash
+curl http://localhost:8001/v0.1/tiles/10/512/512.pbf
+```
 
-You must set the DSN url in production.
+### Data Lake API
+
+**List all NUTS partitions:**
+```
+GET /v0.1/datalake/nuts/{version}
+```
+
+**Get specific partition:**
+```
+GET /v0.1/datalake/nuts/{version}/{nuts_id}
+```
+
+**Download bundle:**
+```
+GET /v0.1/datalake/nuts/{version}/{nuts_prefix}/bundle?format=parquet
+```
+
 
 ## Deployment
 
-The following details how to deploy this application.
+Development and production deployment uses Docker Compose with additional services:
 
-### Docker
+```bash
+docker compose -f dev.yml -p eubucco-dev --env-file <path-to-file> up -d
+```
 
-See
-detailed [cookiecutter-django Docker documentation](http://cookiecutter-django.readthedocs.io/en/latest/deployment-with-docker.html)
-.
+```bash
+docker compose -f production.yml -p eubucco --env-file <path-to-file> up -d
+```
+
+Production configuration includes:
+- Traefik for reverse proxy and SSL
+- Watchtower for automatic container updates
+- Portainer for container management
+- Plausible for analytics
+
+See `compose/production/` for production-specific configurations.
+
+
+## Development
+
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/get-started) and Docker Compose
+
+
+### Code Style
+
+- **Python**: Follow [Black](https://black.readthedocs.io/) formatting
+- **Type hints**: Use type hints where possible
+- **Docstrings**: Follow Google-style docstrings
+- **Pre-commit**: Install [pre-commit](https://pre-commit.com/) hooks: `pre-commit install`
+
+
+### Local Setup
+
+1. **Set up environment variables**
+   ```bash
+   .envs/.local/.django
+   .envs/.local/.postgres
+   .envs/.local/.minio
+   ```
+
+2. **Start the development environment**
+   ```bash
+   docker compose -f local.yml up --build -d
+   ```
+
+3. **Create a superuser**
+   ```bash
+   docker compose -f local.yml run --rm django python manage.py createsuperuser
+   ```
+
+4. **Access the application**
+   - Main website: http://localhost:8000
+   - API server: http://localhost:8001
+   - API docs: http://localhost:8001/docs
+   - MinIO S3 endpoint: http://localhost:9000
+   - MinIO console: http://localhost:9001
+   - MailHog (email testing): http://localhost:8025
+   - Flower (Celery monitoring): http://localhost:5555
+
+
+### Documentation
+
+Build and serve docs locally with MkDocs:
+
+```
+mkdocs serve
+```
+
+### Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+docker compose -f local.yml run --rm django pytest
+
+# Run with coverage
+docker compose -f local.yml run --rm django coverage run -m pytest
+docker compose -f local.yml run --rm django coverage html
+```
+
+
+### Common Development Tasks
+
+**Run tests**
+```bash
+docker compose -f local.yml run --rm django pytest
+```
+
+**Run type checking**
+```bash
+docker compose -f local.yml run --rm django mypy eubucco
+```
+
+**Format code**
+```bash
+docker compose -f local.yml run --rm django black .
+```
+
+**Create database migrations**
+```bash
+docker compose -f local.yml run --rm django python manage.py makemigrations
+```
+
+**Run database migrations**
+```bash
+docker compose -f local.yml run --rm django python manage.py migrate
+```
+
+**Access Django shell**
+```bash
+docker compose -f local.yml run --rm django python manage.py shell
+```
+
+**Trigger building data ingestion**
+```bash
+docker compose -f local.yml run --rm django python manage.py shell -c "from eubucco.data.tasks import ingest_all_by_version; ingest_all_by_version(version_tag='v0.2')"
+```
+**Trigger ingestion of additional files**
+```bash
+docker compose -f local.yml run --rm django python manage.py shell -c "from eubucco.files.tasks import scan_files; scan_files()"
+```
+
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
+## Contact
+
+- **Email**: info@eubucco.com
+- **Website**: https://eubucco.com
+- **Documentation**: https://docs.eubucco.com
+- **Issues**: https://github.com/ai4up/eubucco/issues
+
+## Related Resources
+
+- [ai4up/eubucco](https://github.com/ai4up/eubucco) - Main repository
+- [ai4up/eubucco-conflation](https://github.com/ai4up/eubucco-conflation) - Matching and merging repository
+- [ai4up/eubucco-features](https://github.com/ai4up/eubucco-features) - Feature engineering repository for building attribute prediction
+- [ai4up/ufo-prediction](https://github.com/ai4up/ufo-prediction) - Building attribute prediction repository
+
