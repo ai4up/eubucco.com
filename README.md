@@ -42,6 +42,9 @@ The platform serves as the primary interface for researchers, urban planners, an
 - **Docker & Docker Compose** - Containerization
 - **Nginx** (production) - Reverse proxy
 - **Traefik** (production) - Load balancer
+- **Portainer** (production) - Container management
+- **Watchtower** (production) - Container updates
+- **Plausible** (production) - Analytics
 
 **Data Processing**
 - **DuckDB** - Analytical database for Parquet queries
@@ -135,6 +138,18 @@ Production configuration includes:
 - Plausible for analytics
 
 See `compose/production/` for production-specific configurations.
+
+**Access production services:**
+- Main website: https://eubucco.com
+- API server: https://api.eubucco.com
+- API docs: https://api.eubucco.com/docs
+- Documentation: https://docs.eubucco.com
+- Flower (Celery monitoring): https://tasks.eubucco.com
+- Portainer (container management): https://docker.eubucco.com
+- Plausible (analytics): https://analytics.eubucco.com
+- Traefik dashboard: https://traefik.eubucco.com
+- MinIO (S3 object storage): https://s3.eubucco.com/
+- MinIO console: https://minio-console.eubucco.com/
 
 
 ## Development
