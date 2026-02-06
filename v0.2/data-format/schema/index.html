@@ -749,6 +749,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#attribute-prediction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribute Prediction
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -949,7 +960,7 @@
   <span class="md-ellipsis">
     
   
-    Data Loading
+    Loading & Filtering
   
 
     
@@ -1009,6 +1020,8 @@
       
         
       
+        
+      
     
     
     
@@ -1064,6 +1077,34 @@
     
   
     Conflation Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/eval-metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prediction Evaluation
   
 
     
@@ -1237,6 +1278,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#attribute-prediction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribute Prediction
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1328,7 +1380,7 @@
 <td style="text-align: left;"></td>
 <td style="text-align: left;"><code>construction_year</code></td>
 <td style="text-align: left;"><code>integer</code></td>
-<td style="text-align: left;">Year initial construction finished (not renovation year).</td>
+<td style="text-align: left;">Year construction finished (not renovation year).</td>
 <td style="text-align: left;"><code>1963</code></td>
 </tr>
 <tr>
@@ -1356,56 +1408,56 @@
 <td style="text-align: left;"><strong>Confidence</strong></td>
 <td style="text-align: left;"><code>type_confidence</code></td>
 <td style="text-align: left;"><code>float</code></td>
-<td style="text-align: left;">Area-weighted intersection ratio (merged) or sum of calibrated subtype probabilities (predicted). Range: [0, 1].</td>
+<td style="text-align: left;">Relative intersection of footprints (<em>merged</em>) or calibrated class probability (<em>predicted</em>). Range: <code>[0, 1]</code>.</td>
 <td style="text-align: left;"><code>0.95</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"><code>subtype_confidence</code></td>
 <td style="text-align: left;"><code>float</code></td>
-<td style="text-align: left;">Area-weighted intersection ratio (merged) or calibrated class probability (predicted). Range: [0, 1].</td>
+<td style="text-align: left;">Relative intersection of footprints (<em>merged</em>) or calibrated class probability (<em>predicted</em>). Range: <code>[0, 1]</code>.</td>
 <td style="text-align: left;"><code>0.64</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"><code>height_confidence_lower</code></td>
 <td style="text-align: left;"><code>float</code></td>
-<td style="text-align: left;">Min source value (merged) or lower 95% bootstrap CI (predicted) for height.</td>
+<td style="text-align: left;">Min source value (<em>merged</em>) or lower 95% bootstrap CI (<em>predicted</em>).</td>
 <td style="text-align: left;"><code>7.5</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"><code>height_confidence_upper</code></td>
 <td style="text-align: left;"><code>float</code></td>
-<td style="text-align: left;">Max source value (merged) or upper 95% bootstrap CI (predicted) for height.</td>
+<td style="text-align: left;">Max source value (<em>merged</em>) or upper 95% bootstrap CI (<em>predicted</em>).</td>
 <td style="text-align: left;"><code>10.5</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"><code>floors_confidence_lower</code></td>
 <td style="text-align: left;"><code>float</code></td>
-<td style="text-align: left;">Min source value (merged) or lower 95% bootstrap CI (predicted) for floors.</td>
+<td style="text-align: left;">Min source value (<em>merged</em>) or lower 95% bootstrap CI (<em>predicted</em>).</td>
 <td style="text-align: left;"><code>2.7</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"><code>floors_confidence_upper</code></td>
 <td style="text-align: left;"><code>float</code></td>
-<td style="text-align: left;">Max source value (merged) or upper 95% bootstrap CI (predicted) for floors.</td>
+<td style="text-align: left;">Max source value (<em>merged</em>) or upper 95% bootstrap CI (<em>predicted</em>).</td>
 <td style="text-align: left;"><code>3.2</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"><code>construction_year_confidence_lower</code></td>
 <td style="text-align: left;"><code>int</code></td>
-<td style="text-align: left;">Min source year (merged) or lower 95% bootstrap CI (predicted) for year.</td>
+<td style="text-align: left;">Min source year (<em>merged</em>) or lower 95% bootstrap CI (<em>predicted</em>).</td>
 <td style="text-align: left;"><code>1990</code></td>
 </tr>
 <tr>
 <td style="text-align: left;"></td>
 <td style="text-align: left;"><code>construction_year_confidence_upper</code></td>
 <td style="text-align: left;"><code>int</code></td>
-<td style="text-align: left;">Max source year (merged) or upper 95% bootstrap CI (predicted) for year.</td>
+<td style="text-align: left;">Max source year (<em>merged</em>) or upper 95% bootstrap CI (<em>predicted</em>).</td>
 <td style="text-align: left;"><code>2000</code></td>
 </tr>
 <tr>
@@ -1705,8 +1757,11 @@
 <li><strong>Source Mismatch</strong>: If <code>geometry_source</code> and <code>&lt;attr&gt;_source</code> differ, the attribute has been merged between datasets.</li>
 <li><strong>Data Fusion:</strong> If <code>&lt;attr&gt;_source_ids</code> contains multiple values, the final value has been from aggregated from multiple source buildings.</li>
 </ul>
-<!-- #### Attribute Prediction
-* If `subtype_source` is `estimated` but `type_source` corresponds to a source dataset, only the subtype (i.e. residential subtype `detached`, `terraced`, etc.) has been estimated. -->
+<h4 id="attribute-prediction">Attribute Prediction</h4>
+<ul>
+<li>See the <a href="../../advanced/eval-metrics/">Prediction Evaluation</a> section for an assessment of attribute estimation quality.</li>
+</ul>
+<!-- * If `subtype_source` is `estimated` but `type_source` corresponds to a source dataset, only the subtype (i.e. residential subtype `detached`, `terraced`, etc.) has been estimated. -->
 
 <div class="footnote">
 <hr />
