@@ -1505,6 +1505,10 @@
 <p class="admonition-title">Incorrect OSM Source IDs</p>
 <p>The <code>geometry_source_id</code> and <code>&lt;attr&gt;_source_ids</code> fields currently do not contain the original OSM ID but a sequential index.</p>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">NUTS Code Discrepancies</p>
+<p>EUBUCCO uses modified <a href="https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/">NUTS 2016 boundaries</a> with two regional merges (DEB33 → DEB3H, UKD73 → UKD47) and one reconstructed region: UKN1 was missing from the official download but reconstructed from its NUTS 3 components.</p>
+</div>
 <h3 id="example">Example</h3>
 <table>
 <thead>
