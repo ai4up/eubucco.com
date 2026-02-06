@@ -12,20 +12,20 @@
 | | `subtype` | `category` | Detailed usage type[^3]. | `terraced` |
 | | `height` | `float` | Distance in meters from ground floor to top of building. | `23.9` |
 | | `floors` | `float` | Total number of above-ground floors. | `3.5` |
-| | `construction_year` | `integer` | Year initial construction finished (not renovation year). | `1963` |
+| | `construction_year` | `integer` | Year construction finished (not renovation year). | `1963` |
 | **Geometry** | `geometry` | `binary` | Footprint geometry projected in `ETRS89` (`EPSG:3035`) encoded as WKB. Units in meters. | `01030000...` |
 
 ### Auxiliary Data Fields
 | Group | Attribute | Type | Definition | Example |
 | :--- | :--- | :--- | :--- | :--- |
-| **Confidence** | `type_confidence` | `float` | Area-weighted intersection ratio (merged) or sum of calibrated subtype probabilities (predicted). Range: [0, 1]. | `0.95` |
-| | `subtype_confidence`| `float` | Area-weighted intersection ratio (merged) or calibrated class probability (predicted). Range: [0, 1]. | `0.64` |
-| | `height_confidence_lower` | `float` | Min source value (merged) or lower 95% bootstrap CI (predicted) for height. | `7.5` |
-| | `height_confidence_upper` | `float` | Max source value (merged) or upper 95% bootstrap CI (predicted) for height. | `10.5` |
-| | `floors_confidence_lower` | `float` | Min source value (merged) or lower 95% bootstrap CI (predicted) for floors. | `2.7` |
-| | `floors_confidence_upper` | `float` | Max source value (merged) or upper 95% bootstrap CI (predicted) for floors. | `3.2` |
-| | `construction_year_confidence_lower` | `int` | Min source year (merged) or lower 95% bootstrap CI (predicted) for year. | `1990` |
-| | `construction_year_confidence_upper` | `int` | Max source year (merged) or upper 95% bootstrap CI (predicted) for year. | `2000` |
+| **Confidence** | `type_confidence` | `float` | Relative intersection of footprints (*merged*) or calibrated class probability (*predicted*). Range: `[0, 1]`. | `0.95` |
+| | `subtype_confidence`| `float` | Relative intersection of footprints (*merged*) or calibrated class probability (*predicted*). Range: `[0, 1]`. | `0.64` |
+| | `height_confidence_lower` | `float` | Min source value (*merged*) or lower 95% bootstrap CI (*predicted*). | `7.5` |
+| | `height_confidence_upper` | `float` | Max source value (*merged*) or upper 95% bootstrap CI (*predicted*). | `10.5` |
+| | `floors_confidence_lower` | `float` | Min source value (*merged*) or lower 95% bootstrap CI (*predicted*). | `2.7` |
+| | `floors_confidence_upper` | `float` | Max source value (*merged*) or upper 95% bootstrap CI (*predicted*). | `3.2` |
+| | `construction_year_confidence_lower` | `int` | Min source year (*merged*) or lower 95% bootstrap CI (*predicted*). | `1990` |
+| | `construction_year_confidence_upper` | `int` | Max source year (*merged*) or upper 95% bootstrap CI (*predicted*). | `2000` |
 | **Sources** | `geometry_source` | `category` | Origin of footprint geometry. | `gov-france` |
 | | `type_source` | `category` | Origin of `type` attribute. | `osm` |
 | | `subtype_source` | `category` | Origin of `subtype` attribute. | `estimated` |
