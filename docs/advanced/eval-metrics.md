@@ -56,7 +56,7 @@ Continuous estimation of building height and number of floors using regression m
 
 | Attribute | MAE | RMSE | Support |
 | :--- | :--- | :--- | :--- |
-| **Floors** | 1.27 | 1.85 | 10,734,280 |
+| **Floors** | 0.47 | 0.77 | 10,734,280 |
 | **Height** | 1.43 m | 2.35 m | 24,745,273 |
 | *Microsoft Height* | *2.29 m* | *3.24 m* | *12,824,553* |
 
