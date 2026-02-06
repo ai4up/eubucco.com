@@ -46,14 +46,17 @@ Regional ([NUTS 0-3](https://ec.europa.eu/eurostat/web/nuts/maps)) administrativ
 
 Comprehensive building stock statistics aggregated at the **city ([LAU](https://ec.europa.eu/eurostat/web/nuts/local-administrative-units)) level**. This *GeoDataFrame* includes city geometry and provides detailed metrics for each city.
 
-#### Administrative Information
+**Administrative Information**
+
 - `city_id`, `region_id` (NUTS 3), `country`
 - City geometry (CRS: EPSG:3035)
 
-#### Building Counts by Source
+**Building Counts by Source**
+
 - `n_gov`, `n_osm`, `n_msft` — Total counts by geometry source
 
-#### Data Quality Indicators
+**Data Quality Indicators**
+
 - Ground truth counts: Buildings with attributes from the same source as geometry
   - `n_gt_type`, `n_gt_subtype`, `n_gt_height`, `n_gt_floors`, `n_gt_construction_year`
 - Merged attribute counts: Buildings with attributes merged from different sources
@@ -61,17 +64,20 @@ Comprehensive building stock statistics aggregated at the **city ([LAU](https://
 - Estimated attribute counts: Buildings with estimated attributes
   - `n_estimated_type`, `n_estimated_subtype`, `n_estimated_height`, `n_estimated_floors`
 
-#### Building Type Distributions
+**Building Type Distributions**
+
 - Main types: Residential, non-residential (counts and areas)
 - Subtypes: Commercial, industrial, agricultural, public, others, detached, semi-detached, terraced, apartment (counts and areas)
 
-#### Attribute Distributions
+**Attribute Distributions**
+
 - Height bins: 0-5m, 5-10m, 10-20m, >20m
 - Floor bins: 0-3, 4-6, >6 floors
 - Construction year bins: ≤1900, 1901-1970, 1971-2000, >2000
 - Footprint area bins: 0-25m², 25-100m², 100-500m², >500m²
 
-#### Area Metrics
+**Area Metrics**
+
 - Total footprint area and floor area
 - Breakdowns by source (gov, osm, msft), type, and subtype
 
@@ -87,21 +93,25 @@ Building stock statistics aggregated at the **regional ([NUTS 3](https://ec.euro
 
 Regional ([NUTS 2](https://ec.europa.eu/eurostat/web/nuts/maps)) evaluation metrics for building attribute estimation models. This *GeoDataFrame* provides comprehensive performance metrics for predicted building attributes.
 
-#### Administrative Information
+**Administrative Information**
+
 - `region_id` (NUTS 2), `country`
 - Regional geometry (CRS: EPSG:3035)
 
-#### Sample Sizes
+**Sample Sizes**
+
 - `n` — Total number of buildings
 - `n_gt_binary_type`, `n_gt_type`, `n_gt_residential_type`, `n_gt_height`, `n_gt_floors` — Ground truth counts per attribute
 
-#### Categorical Variable Metrics
+**Categorical Variable Metrics**
+
 For binary_type, type, and residential_type:
 
 - Overall classification metrics: F1 score (macro and micro), Cohen's kappa
 - Per-class F1 scores: Individual F1 scores for each building type/subtype
 
-#### Continuous Variable Metrics
+**Continuous Variable Metrics**
+
 For height and floors:
 
 - Overall metrics: MAE, RMSE, R² score
@@ -109,7 +119,8 @@ For height and floors:
   - Height: 0-5m, 5-10m, 10-20m, >20m
   - Floors: 0-3, 3-6, >6
 
-#### External Validation
+**External Validation**
+
 For height:
 
 - Microsoft height comparison: Metrics comparing predicted height with heights from Microsoft's [GlobalMLBuildingFootprints](https://github.com/microsoft/GlobalMLBuildingFootprints) dataset
@@ -130,7 +141,7 @@ Mapping table showing how building types from various source datasets are harmon
 
 Comprehensive metadata table providing detailed information about all source datasets used in EUBUCCO v0.2.
 
-#### Contents
+**Contents**
 
 - Dataset identification: Name, country, geographic coverage
 - Access information: Data owner, license, access date, download links or procedures
