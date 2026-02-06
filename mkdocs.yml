@@ -19,7 +19,7 @@ nav:
     - Metadata Files: 'data-format/metadata.md'
     - Uncertainty: 'data-format/uncertainty.md'
   - Data Usage:
-    - Data Loading: 'data-usage/loading.md'
+    - Loading & Filtering: 'data-usage/loading.md'
     - Cookbook: 'data-usage/cookbook.md'
   - Advanced:
     - Conflation Methodology: 'advanced/conflation.md'
