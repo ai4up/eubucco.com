@@ -23,6 +23,7 @@ nav:
     - Cookbook: 'data-usage/cookbook.md'
   - Advanced:
     - Conflation Methodology: 'advanced/conflation.md'
+    - Prediction Evaluation: 'advanced/eval-metrics.md'
   - License: 'license.md'
 
 theme:

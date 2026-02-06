@@ -19,6 +19,8 @@ The database provides high-granularity information for building type, height, fl
 * Type categories: `residential` and `non-residential`.
 * Subtype categories: `industrial`, `commercial`, `public`, `agricultural`, `others`, `detached`, `semi-detached`, `terraced`, and `apartment`.
 
+For an assessment of attribute estimation quality, see the [Prediction Evaluation](advanced/eval-metrics.md) section.
+
 ## Accessing the Data
 The data is stored as `.parquet` files on a S3-compatible object storage (MinIO) and can be accessed in multiple ways:
 

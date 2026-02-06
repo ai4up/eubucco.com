@@ -81,8 +81,9 @@
 * **Source Mismatch**: If `geometry_source` and `<attr>_source` differ, the attribute has been merged between datasets.
 * **Data Fusion:** If `<attr>_source_ids` contains multiple values, the final value has been from aggregated from multiple source buildings.
 
-<!-- #### Attribute Prediction
-* If `subtype_source` is `estimated` but `type_source` corresponds to a source dataset, only the subtype (i.e. residential subtype `detached`, `terraced`, etc.) has been estimated. -->
+#### Attribute Prediction
+* See the [Prediction Evaluation](../advanced/eval-metrics.md) section for an assessment of attribute estimation quality.
+<!-- * If `subtype_source` is `estimated` but `type_source` corresponds to a source dataset, only the subtype (i.e. residential subtype `detached`, `terraced`, etc.) has been estimated. -->
 
 
 [^1]: Block ID: A unique identifier for a cluster of topologically connected (touching) buildings.
