@@ -43,6 +43,10 @@
 !!! warning "Incorrect OSM Source IDs"
     The `geometry_source_id` and `<attr>_source_ids` fields currently do not contain the original OSM ID but a sequential index.
 
+!!! warning "NUTS Code Discrepancies"
+    EUBUCCO uses modified [NUTS 2016 boundaries](https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/) with two regional merges (DEB33 → DEB3H, UKD73 → UKD47) and one reconstructed region: UKN1 was missing from the official download but reconstructed from its NUTS 3 components.
+
+
 ### Example
 | id | region_id | city_id | type | subtype | height | floors | construction_year | type_confidence | subtype_confidence | height_confidence_lower | height_confidence_upper | floors_confidence_lower | floors_confidence_upper | construction_year_confidence_lower | construction_year_confidence_upper | geometry_source | type_source | subtype_source | height_source | floors_source | construction_year_source | geometry_source_id | type_source_ids | subtype_source_ids | height_source_ids | floors_source_ids | construction_year_source_ids | subtype_raw | geometry |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |

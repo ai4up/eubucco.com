@@ -23,7 +23,7 @@ A lightweight version of the EUBUCCO v0.2 dataset containing only building centr
 
 ### `LAU-cities-2016.parquet`
 
-City (LAU) administrative boundaries used in EUBUCCO v0.2, based on 2016 boundaries.
+City ([LAU](https://ec.europa.eu/eurostat/web/nuts/local-administrative-units)) administrative boundaries used in EUBUCCO v0.2, based on 2016 boundaries.
 
 **Contents**: `city_id`, `region_id` and `geometry` for each city.
 
@@ -31,9 +31,12 @@ City (LAU) administrative boundaries used in EUBUCCO v0.2, based on 2016 boundar
 
 ### `NUTS-regions-2016.parquet`
 
-Regional (NUTS 0-3) administrative boundaries used in EUBUCCO v0.2, based on 2016 boundaries.
+Regional ([NUTS 0-3](https://ec.europa.eu/eurostat/web/nuts/maps)) administrative boundaries used in EUBUCCO v0.2, based on [2016 boundaries](https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/).
 
 **Contents**: `region_id`, `region_name`, and `geometry` for each NUTS region at all levels (0-3).
+
+!!! warning "NUTS Code Discrepancies"
+    EUBUCCO uses modified [NUTS 2016 boundaries](https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/) with two regional merges (DEB33 → DEB3H, UKD73 → UKD47) and one reconstructed region: UKN1 was missing from the official download but reconstructed from its NUTS 3 components.
 
 ---
 
@@ -41,7 +44,7 @@ Regional (NUTS 0-3) administrative boundaries used in EUBUCCO v0.2, based on 201
 
 ### `city-stats.parquet`
 
-Comprehensive building stock statistics aggregated at the **city (LAU) level**. This *GeoDataFrame* includes city geometry and provides detailed metrics for each city.
+Comprehensive building stock statistics aggregated at the **city ([LAU](https://ec.europa.eu/eurostat/web/nuts/local-administrative-units)) level**. This *GeoDataFrame* includes city geometry and provides detailed metrics for each city.
 
 #### Administrative Information
 - `city_id`, `region_id` (NUTS 3), `country`
@@ -76,13 +79,13 @@ Comprehensive building stock statistics aggregated at the **city (LAU) level**. 
 
 ### `region-stats.parquet`
 
-Building stock statistics aggregated at the **regional (NUTS 3) level**. Contains the same metrics as city-level statistics but aggregated to NUTS 3 regions, including regional geometry.
+Building stock statistics aggregated at the **regional ([NUTS 3](https://ec.europa.eu/eurostat/web/nuts/maps)) level**. Contains the same metrics as city-level statistics but aggregated to NUTS 3 regions, including regional geometry.
 
 ---
 
 ### `prediction-eval-metrics.parquet`
 
-Regional (NUTS 2) evaluation metrics for building attribute estimation models. This *GeoDataFrame* provides comprehensive performance metrics for predicted building attributes.
+Regional ([NUTS 2](https://ec.europa.eu/eurostat/web/nuts/maps)) evaluation metrics for building attribute estimation models. This *GeoDataFrame* provides comprehensive performance metrics for predicted building attributes.
 
 #### Administrative Information
 - `region_id` (NUTS 2), `country`
