@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 import redis
-from celery import chord
+from celery import chord, chain, group
 from pottery import Redlock
 
 from config import celery_app
@@ -42,27 +42,6 @@ def upload_parquet_task(version_tag: str, file_path: str, reupload: bool = False
         logging.info(f"Skipping existing parquet: {parquet_key}")
 
     return f"Uploaded {nuts_id}"
-
-
-@celery_app.task
-def notify_uploads_complete(results, version_tag: str, file_list: list, reupload: bool):
-    """
-    Notification 1: Triggered when ALL Parquet uploads are finished.
-    Then triggers the Conversion Phase.
-    """
-    logging.info(f"--- PHASE 1 SUCCESS: {len(results)} Parquet files uploaded for {version_tag} ---")
-
-    # Prepare Phase 2 tasks
-    conversion_tasks = [
-        convert_spatial_task.s(version_tag, f_path, reupload)
-        for f_path in file_list
-    ]
-
-    # Final Chord: [Conversions] -> [Final Notification]
-    callback = notify_all_complete.s(version_tag)
-    chord(conversion_tasks)(callback)
-
-    return "Phase 1 Complete, Phase 2 Dispatched"
 
 
 # --- PHASE 2: CONVERSIONS ---
@@ -104,34 +83,55 @@ def convert_spatial_task(version_tag: str, file_path: str, reupload: bool = Fals
 
 
 @celery_app.task
-def notify_all_complete(results, version_tag: str):
-    """Notification 2: Final success message."""
-    logging.info(f"--- PHASE 2 SUCCESS: All conversions finished for {version_tag} ---")
-    return "Full Pipeline Complete"
-
-
-@celery_app.task
-def ingest_all_by_version(version_tag: str = "v0.2", source_dir: str = RAW_FILES_DIR, reupload: bool = False):
-    """Entry point: Discovers files and creates the first Chord."""
-    base_path = Path(source_dir) / version_tag
-    if not base_path.exists():
-        logging.error(f"Source dir not found: {base_path}")
-        return
-
+def ingest_all_by_version(
+    version_tag: str = "v0.2",
+    reupload: bool = False,
+    run_upload: bool = True,
+    run_conversion: bool = True
+):
+    base_path = Path(RAW_FILES_DIR) / version_tag
     parquet_files = [str(p) for p in base_path.rglob("*.parquet")]
 
     if not parquet_files:
-        logging.warning("No files found.")
-        return
+        return "No files found."
 
-    # Phase 1: Upload Group
-    upload_group = [upload_parquet_task.s(version_tag, f, reupload) for f in parquet_files]
+    pipeline = []
 
-    # Callback: Notify Success Phase 1 + Trigger Phase 2
-    callback = notify_uploads_complete.s(version_tag, parquet_files, reupload)
+    # PHASE 1: Uploads
+    if run_upload:
+        upload_tasks = group(upload_parquet_task.s(version_tag, f, reupload) for f in parquet_files)
+        # Use .si() for the callback to prevent passing strings into the next chain link
+        pipeline.append(chord(upload_tasks, notify_phase_complete.si(None, "Upload")))
 
-    chord(upload_group)(callback)
-    logging.info(f"Pipeline started: {len(parquet_files)} uploads queued.")
+    # PHASE 2: Conversions
+    if run_conversion:
+        conversion_tasks = group(convert_spatial_task.s(version_tag, f, reupload) for f in parquet_files)
+        pipeline.append(chord(conversion_tasks, notify_phase_complete.si(None, "Conversion")))
+
+    # Final Step: Notification
+    pipeline.append(notify_all_complete.si(None, version_tag))
+
+    # Construct the sequential chain
+    chain(*pipeline).apply_async(link_error=on_pipeline_failure.s())
+
+    logging.info(f"Data ingestion pipeline sequenced for {version_tag}")
+
+
+@celery_app.task
+def notify_phase_complete(results, phase_name: str):
+    count = len(results) if results else "unknown"
+    logging.info(f"--- PHASE SUCCESS: {phase_name} phase finished with {count} items ---")
+    return f"{phase_name} complete"
+
+
+@celery_app.task
+def notify_all_complete(results, version_tag: str):
+    logging.info(f"Full data ingestion pipeline completed for {version_tag}.")
+
+
+@celery_app.task
+def on_pipeline_failure(request, exc, traceback):
+    logging.error(f"Data ingestion pipeline failed: {exc}")
 
 
 def main():
