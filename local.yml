@@ -4,7 +4,6 @@ name: eubucco_local
 volumes:
   postgres_data: { }
   postgres_data_backups: { }
-  data_dumps: { }
   minio_data: { }
 
 services:
@@ -16,7 +15,6 @@ services:
     platform: linux/x86_64
     volumes:
       - .:/app:z
-      - data_dumps:/dumps
     depends_on:
       - postgres
       - redis
@@ -53,7 +51,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data:Z
       - postgres_data_backups:/backups:z
-      - data_dumps:/dumps
     env_file:
       - ./.envs/.local/.postgres
     ports:
