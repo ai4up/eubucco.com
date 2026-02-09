@@ -170,7 +170,7 @@ services:
     networks:
       - default
 
-  celeryworker:
+  celeryworker-io:
     image: eubucco/eubucco.com:production
     restart: unless-stopped
     depends_on:
@@ -190,7 +190,31 @@ services:
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-    command: /start-celeryworker
+    command: /start-celeryworker-io
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  celeryworker-heavy:
+    image: eubucco/eubucco.com:production
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - /home/eubucco/csvs:/app/csvs
+    environment:
+      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
+      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
+      SENTRY_DSN: $SENTRY_DSN
+      REDIS_URL: $REDIS_URL
+      CELERY_BROKER_URL: $CELERY_BROKER_URL
+      DATABASE_URL: $DATABASE_URL
+      POSTGRES_HOST: $POSTGRES_HOST
+      POSTGRES_PORT: $POSTGRES_PORT
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    command: /start-celeryworker-heavy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 

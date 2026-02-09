@@ -85,7 +85,7 @@ services:
     ports:
       - "6379:6379"
 
-  celeryworker:
+  celeryworker-io:
     <<: *django
     image: celeryworker
     depends_on:
@@ -98,7 +98,22 @@ services:
       - ./.envs/.local/.postgres
       - ./.envs/.local/.minio
     ports: []
-    command: /start-celeryworker
+    command: /start-celeryworker-io
+
+  celeryworker-heavy:
+    <<: *django
+    image: celeryworker
+    depends_on:
+      - redis
+      - postgres
+      - mailhog
+      - minio
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+      - ./.envs/.local/.minio
+    ports: []
+    command: /start-celeryworker-heavy
 
   celerybeat:
     <<: *django

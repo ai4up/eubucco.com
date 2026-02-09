@@ -146,7 +146,7 @@ services:
     networks:
       - default
 
-  celeryworker:
+  celeryworker-io:
     image: eubucco/eubucco.com:dev
     restart: unless-stopped
     depends_on:
@@ -159,7 +159,27 @@ services:
       - .envs/.dev/.minio
     volumes:
       - /home/eubucco-data:/app/data
-    command: /start-celeryworker
+    command: /start-celeryworker-io
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      - default
+      - dev-db
+
+  celeryworker-heavy:
+    image: eubucco/eubucco.com:dev
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    env_file:
+      - .envs/.dev/.django
+      - .envs/.dev/.postgres
+      - .envs/.dev/.minio
+    volumes:
+      - /home/eubucco-data:/app/data
+    command: /start-celeryworker-heavy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     networks:

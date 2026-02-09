@@ -77,13 +77,14 @@ RUN pip install --no-cache-dir --upgrade pip setuptools \
 # Copy scripts and fix line endings/permissions
 COPY --chown=django:django ./compose/production/django/entrypoint /entrypoint
 COPY --chown=django:django ./compose/production/django/start /start
-COPY --chown=django:django ./compose/production/django/celery/worker/start /start-celeryworker
+COPY --chown=django:django ./compose/production/django/celery/worker/start-io /start-celeryworker-io
+COPY --chown=django:django ./compose/production/django/celery/worker/start-heavy /start-celeryworker-heavy
 COPY --chown=django:django ./compose/production/django/celery/beat/start /start-celerybeat
 COPY --chown=django:django ./compose/production/django/api/start /start-api
 COPY --chown=django:django ./compose/production/django/celery/flower/start /start-flower
 
-RUN sed -i 's/\r$//g' /entrypoint /start /start-celeryworker /start-celerybeat /start-api /start-flower \
-    && chmod +x /entrypoint /start /start-celeryworker /start-celerybeat /start-api /start-flower
+RUN sed -i 's/\r$//g' /entrypoint /start /start-celeryworker-io /start-celeryworker-heavy /start-celerybeat /start-api /start-flower \
+    && chmod +x /entrypoint /start /start-celeryworker-io /start-celeryworker-heavy /start-celerybeat /start-api /start-flower
 
 # Copy application code to WORKDIR
 COPY --chown=django:django . ${APP_HOME}
