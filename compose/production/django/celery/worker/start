@@ -5,4 +5,5 @@ set -o pipefail
 set -o nounset
 
 
-exec celery -A config.celery_app worker -l INFO --concurrency=8
+exec celery -A config.celery_app worker -l INFO -Q io_tasks,default --concurrency=8
+exec celery -A config.celery_app worker -l INFO -Q heavy_tasks --concurrency=1

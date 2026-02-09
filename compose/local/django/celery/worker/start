@@ -6,4 +6,5 @@ set -o nounset
 useradd worker -u 999 || true
 
 #watchfiles celery.__main__.main --args '-A config.celery_app worker -l INFO --uid 999' --ignore-paths 'data'
-exec celery -A config.celery_app worker -l INFO --concurrency=1
+exec celery -A config.celery_app worker -l INFO -Q io_tasks,default --concurrency=4
+exec celery -A config.celery_app worker -l INFO -Q heavy_tasks --concurrency=1

@@ -63,6 +63,15 @@ INSTALLED_APPS += ["django_extensions"]  # noqa F405
 
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-eager-propagates
 CELERY_TASK_EAGER_PROPAGATES = True
-# Your stuff...
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_QUEUES = {
+    "default": {},
+    "io_tasks": {},
+    "heavy_tasks": {},
+}
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 10
+CELERY_TASK_SOFT_TIME_LIMIT = 3000
+
 # ------------------------------------------------------------------------------
 CSRF_COOKIE_HTTPONLY = False

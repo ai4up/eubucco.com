@@ -27,7 +27,7 @@ r = redis.Redis(
 
 # --- PHASE 1: PARQUET UPLOADS ---
 
-@celery_app.task(soft_time_limit=600)
+@celery_app.task(soft_time_limit=600, queue="io_tasks")
 def upload_parquet_task(version_tag: str, file_path: str, reupload: bool = False):
     """Stage 1: Individual task to upload a single Parquet file."""
     source = Path(file_path)
@@ -46,7 +46,7 @@ def upload_parquet_task(version_tag: str, file_path: str, reupload: bool = False
 
 # --- PHASE 2: CONVERSIONS ---
 
-@celery_app.task(soft_time_limit=3000, acks_late=True)
+@celery_app.task(soft_time_limit=3000, acks_late=True, queue="heavy_tasks")
 def convert_spatial_task(version_tag: str, file_path: str, reupload: bool = False):
     """Stage 2: Heavy-duty conversion task. Isolated for OOM protection."""
     source = Path(file_path)
