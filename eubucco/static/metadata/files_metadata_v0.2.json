@@ -1,6 +1,6 @@
 {
   "eubucco_lat_lon.parquet": {
-    "description": "Lightweight EUBUCCO v0.2 dataset containing only building centroids (latitude/longitude) and footprint area, but not the full footprint geometries."
+    "description": "Lightweight EUBUCCO v0.2 dataset containing building centroids (latitude/longitude) and footprint areas instead of full footprint geometries."
   },
   "city-stats.parquet": {
     "description": "City-level (LAU) building stock statistics."
