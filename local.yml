@@ -178,9 +178,8 @@ services:
 
       # 2. Configure the Webhook Target (The Plausible Bridge)
       echo 'Configuring Plausible webhook...'
-      /usr/bin/mc admin config set localminio audit_webhook:plausible \
-        endpoint=\"http://django:8000/data/webhook/minio/\" \
-        auth_token=\"$${MINIO_WEBHOOK_AUTH_TOKEN}\";
+      /usr/bin/mc admin config set localminio audit_webhook:plausible endpoint="http://django:8000/data/webhook/minio/";
+      /usr/bin/mc admin config set localminio notify_webhook:plausible endpoint="http://django:8000/data/webhook/minio/";
 
       # 3. Restart MinIO to register the new SQS ARN
       echo 'Restarting MinIO to apply webhook config...'

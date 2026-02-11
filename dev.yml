@@ -18,8 +18,10 @@ services:
     volumes:
       - /home/eubucco-data:/app/data
     networks:
-      - default
-      - proxy
+      default:
+        aliases:
+          - django-webhook
+      proxy: {}
     env_file:
       - .envs/.dev/.django
       - .envs/.dev/.postgres
@@ -285,6 +287,7 @@ services:
     image: minio/mc:RELEASE.2024-05-09T17-04-24Z
     depends_on:
       - minio
+      - django
     env_file:
       - .envs/.dev/.minio
     entrypoint: |
@@ -296,9 +299,8 @@ services:
 
       # 2. Configure the Webhook Target (The Plausible Bridge)
       echo 'Configuring Plausible webhook...'
-      /usr/bin/mc admin config set localminio audit_webhook:plausible \
-        endpoint=\"http://django:8000/data/webhook/minio/\" \
-        auth_token=\"$${MINIO_WEBHOOK_AUTH_TOKEN}\";
+      /usr/bin/mc admin config set localminio notify_webhook:plausible endpoint='http://django-webhook:5000/data/webhook/minio/' enable='on';
+      /usr/bin/mc admin config set localminio audit_webhook:plausible endpoint='http://django-webhook:5000/data/webhook/minio/' enable='on';
 
       # 3. Restart MinIO to register the new SQS ARN
       echo 'Restarting MinIO to apply webhook config...'
