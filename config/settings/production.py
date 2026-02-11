@@ -71,7 +71,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # MinIO webhook → Plausible (S3 download analytics)
 PLAUSIBLE_API_URL = env("PLAUSIBLE_API_URL", default="http://plausible:8000")
-SITE_DOMAIN = env("SITE_DOMAIN", default="eubucco.com")
+PLAUSIBLE_DATA_DOMAIN = env("PLAUSIBLE_DATA_DOMAIN", default="eubucco.com")
 
 # EMAIL
 # ------------------------------------------------------------------------------

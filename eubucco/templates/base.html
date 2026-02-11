@@ -22,7 +22,9 @@
       }
     })();
   </script>
-  <script defer data-domain="eubucco.com" src="https://analytics.eubucco.com/js/plausible.js"></script>
+  {% if PLAUSIBLE_DATA_DOMAIN %}
+  <script defer data-domain="{{ PLAUSIBLE_DATA_DOMAIN }}" src="https://analytics.eubucco.com/js/plausible.js"></script>
+  {% endif %}
   <link rel="preload" href="/static/css/dist/styles.css" as="style">
   <link rel="stylesheet" href="/static/css/dist/styles.css">
 </head>

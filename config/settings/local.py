@@ -29,7 +29,7 @@ CACHES = {
 
 # MinIO webhook → Plausible (S3 download analytics)
 PLAUSIBLE_API_URL = env("PLAUSIBLE_API_URL", default="https://analytics.eubucco.com")
-SITE_DOMAIN = env("SITE_DOMAIN", default="localhost")
+PLAUSIBLE_DATA_DOMAIN = env("PLAUSIBLE_DATA_DOMAIN", default="localhost")
 
 # EMAIL
 # ------------------------------------------------------------------------------

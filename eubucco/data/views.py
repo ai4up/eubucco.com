@@ -94,8 +94,8 @@ def minio_webhook(request):
         # ENRICHED PAYLOAD
         payload = {
             "name": "S3 Download",
-            "url": f"https://{settings.SITE_DOMAIN}/downloads/{quote(obj_key)}",
-            "domain": settings.SITE_DOMAIN,
+            "url": f"https://{settings.PLAUSIBLE_DATA_DOMAIN}/downloads/{quote(obj_key)}",
+            "domain": settings.PLAUSIBLE_DATA_DOMAIN,
             "props": json.dumps({
                 "version": version,
                 "type": data_type,
