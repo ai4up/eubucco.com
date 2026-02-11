@@ -57,6 +57,7 @@ MINIO_SECRET_KEY = env("MINIO_SECRET_KEY", default="minioadmin")
 MINIO_USE_SSL = env.bool("MINIO_USE_SSL", default=False)
 MINIO_PUBLIC_USE_SSL = env.bool("MINIO_PUBLIC_USE_SSL", default=True)
 
+
 # URLS
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf

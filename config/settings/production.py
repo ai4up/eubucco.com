@@ -69,6 +69,10 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # MEDIA
 # ------------------------------------------------------------------------------
 
+# MinIO webhook → Plausible (S3 download analytics)
+PLAUSIBLE_API_URL = env("PLAUSIBLE_API_URL", default="https://analytics.eubucco.com")
+SITE_DOMAIN = env("SITE_DOMAIN", default="eubucco.com")
+
 # EMAIL
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email

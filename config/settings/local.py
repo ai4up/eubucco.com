@@ -18,9 +18,18 @@ ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", "*"]
 # https://docs.djangoproject.com/en/dev/ref/settings/#caches
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": env("REDIS_URL", default="redis://127.0.0.1:6379/0"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "IGNORE_EXCEPTIONS": True,
+        },
     }
 }
+
+# MinIO webhook → Plausible (S3 download analytics)
+PLAUSIBLE_API_URL = env("PLAUSIBLE_API_URL", default="https://analytics.eubucco.com")
+SITE_DOMAIN = env("SITE_DOMAIN", default="localhost")
 
 # EMAIL
 # ------------------------------------------------------------------------------

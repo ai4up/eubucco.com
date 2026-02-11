@@ -171,8 +171,36 @@ services:
       - ./.envs/.local/.minio
     entrypoint: |
       /bin/sh -c "
-      until (/usr/bin/mc alias set localminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}); do echo 'waiting for minio...' && sleep 1; done;
+      # 1. Connect to local MinIO
+      until (/usr/bin/mc alias set localminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}); do
+        echo 'waiting for minio...' && sleep 1;
+      done;
+
+      # 2. Configure the Webhook Target (The Plausible Bridge)
+      echo 'Configuring Plausible webhook...'
+      /usr/bin/mc admin config set localminio audit_webhook:plausible \
+        endpoint=\"http://django:8000/data/webhook/minio/\" \
+        auth_token=\"$${MINIO_WEBHOOK_AUTH_TOKEN}\";
+
+      # 3. Restart MinIO to register the new SQS ARN
+      echo 'Restarting MinIO to apply webhook config...'
+      /usr/bin/mc admin service restart localminio;
+
+      # Wait a moment for MinIO to come back online after restart
+      sleep 3;
+
+      # 4. Create Bucket and Set Permissions
       /usr/bin/mc mb -p localminio/$${MINIO_BUCKET};
       /usr/bin/mc anonymous set download localminio/$${MINIO_BUCKET};
-      if [ -f /tiles/nuts.pmtiles ]; then /usr/bin/mc cp /tiles/nuts.pmtiles localminio/$${MINIO_BUCKET}/$${NUTS_PM_TILES_OBJECT}; fi;
+
+      # 5. Seed initial data
+      if [ -f /tiles/nuts.pmtiles ]; then
+        /usr/bin/mc cp /tiles/nuts.pmtiles localminio/$${MINIO_BUCKET}/$${NUTS_PM_TILES_OBJECT};
+      fi;
+
+      # 6. Subscribe the Bucket to the Webhook
+      echo 'Adding bucket event notification...'
+      /usr/bin/mc event add localminio/$${MINIO_BUCKET} arn:minio:sqs::plausible:webhook --event get || true;
+
+      echo 'MinIO setup complete.'
       "
