@@ -11,7 +11,7 @@ GeoPandas uses `fsspec` under the hood to handle S3 paths. Use `storage_options`
 
     storage_opts = {
         "anon": True,
-        "client_kwargs": {"endpoint_url": "https://dev-s3.eubucco.com"}
+        "client_kwargs": {"endpoint_url": "https://s3.eubucco.com"}
     }
 
     # Example: Download Liguria (ITC3)
@@ -31,7 +31,7 @@ PyArrow is significantly more efficient for large data chunks because it only lo
     fs = fsspec.filesystem(
         protocol="s3",
         anon=True,
-        client_kwargs={"endpoint_url": "https://dev-s3.eubucco.com"}
+        client_kwargs={"endpoint_url": "https://s3.eubucco.com"}
     )
 
     # Example: Download Liguria (ITC3)
@@ -51,7 +51,7 @@ PyArrow is significantly more efficient for large data chunks because it only lo
     fs = fsspec.filesystem(
         protocol="s3",
         anon=True,
-        client_kwargs={"endpoint_url": "https://dev-s3.eubucco.com"}
+        client_kwargs={"endpoint_url": "https://s3.eubucco.com"}
     )
 
     dataset = ds.dataset(

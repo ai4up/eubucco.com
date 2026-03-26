@@ -6,7 +6,7 @@ Filtering at the data-loading stage is the most efficient way to extract specifi
     The following commands assume that you have downloaded the complete EUBUCCO dataset, e.g. using the [CLI](../data-access/cli.md):
     ```bash
     aws s3 cp s3://eubucco/v0.2/buildings/parquet/ ./eubucco-data/ \
-        --endpoint-url https://dev-s3.eubucco.com \
+        --endpoint-url https://s3.eubucco.com \
         --no-sign-request \
         --recursive
     ```

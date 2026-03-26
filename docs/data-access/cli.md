@@ -10,7 +10,7 @@ The standard AWS CLI can be used to access EUBUCCO data by specifying the custom
     ```bash
     # Example: Download Liguria (ITC3)
     aws s3 cp s3://eubucco/v0.2/buildings/parquet/nuts_id=ITC3/ITC3.parquet . \
-        --endpoint-url https://dev-s3.eubucco.com \
+        --endpoint-url https://s3.eubucco.com \
         --no-sign-request
     ```
 
@@ -19,7 +19,7 @@ The standard AWS CLI can be used to access EUBUCCO data by specifying the custom
     ```bash
     # Example: Download the entire v0.2 dataset
     aws s3 cp s3://eubucco/v0.2/buildings/parquet/ ./eubucco-data/ \
-        --endpoint-url https://dev-s3.eubucco.com \
+        --endpoint-url https://s3.eubucco.com \
         --no-sign-request \
         --recursive
     ```
@@ -29,7 +29,7 @@ The MinIO CLI `mc` is another convenient option for interacting with S3-compatib
 
 Setup:
 ```bash
-mc alias set eubucco https://dev-s3.eubucco.com "" ""
+mc alias set eubucco https://s3.eubucco.com "" ""
 ```
 
 === "Download single region"
@@ -48,10 +48,10 @@ For users on systems without S3 clients, standard network utilities provide a li
 
 === "wget"
     ```bash
-    wget -c --show-progress https://dev-s3.eubucco.com/eubucco/v0.2/buildings/parquet/nuts_id=ITC3/ITC3.parquet
+    wget -c --show-progress https://s3.eubucco.com/eubucco/v0.2/buildings/parquet/nuts_id=ITC3/ITC3.parquet
     ```
 
 === "cURL"
     ```bash
-    curl -OC - --retry 5 https://dev-s3.eubucco.com/eubucco/v0.2/buildings/parquet/nuts_id=ITC3/ITC3.parquet
+    curl -OC - --retry 5 https://s3.eubucco.com/eubucco/v0.2/buildings/parquet/nuts_id=ITC3/ITC3.parquet
     ```

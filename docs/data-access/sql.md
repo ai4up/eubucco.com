@@ -13,7 +13,7 @@ INSTALL spatial; LOAD spatial
 
 Configure EUBUCCO's MinIO endpoint:
 ```SQL
-SET s3_endpoint='dev-s3.eubucco.com';
+SET s3_endpoint='s3.eubucco.com';
 SET s3_url_style='path';
 ```
 
@@ -51,7 +51,7 @@ con = duckdb.connect()
 con.execute("INSTALL httpfs; LOAD httpfs;")
 con.execute("INSTALL spatial; LOAD spatial;")
 
-con.execute("SET s3_endpoint='dev-s3.eubucco.com';") 
+con.execute("SET s3_endpoint='s3.eubucco.com';")
 con.execute("SET s3_url_style='path';")
 ```
 
