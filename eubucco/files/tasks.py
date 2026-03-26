@@ -1,5 +1,6 @@
 import logging
 import os
+import json
 from pathlib import Path
 from time import sleep
 
@@ -17,58 +18,90 @@ r = redis.Redis(
 )
 
 DIRS = [
-    ("csvs/examples", FileType.EXAMPLE),
-    ("csvs/additional", FileType.ADDITIONAL),
+    ("data/buildings", FileType.BUILDING),
+    ("data/examples", FileType.EXAMPLE),
+    ("data/additional", FileType.ADDITIONAL),
 ]
 
 
-def ingest_file(path_str: str, file_type: FileType) -> File:
+def ingest_file(path_str: str, file_type: FileType, version: str, info: str) -> File:
     path = Path(path_str)
     file = File.objects.filter(path=path_str).first()
+    logging.info(f"Ingesting or updating file {path.name}")
+
     if file:
-        logging.debug("File already in db, updateing")
+        logging.debug("File already in db, updating")
         file.size_in_mb = get_file_size(path_str)
         file.name = path.name
         file.type = FileType(file_type)
+        file.version = version
+        file.info = info
         file.save()
         return file
 
-    logging.info(f"Detected new file at {path}")
     file = File(
         name=path.name,
         size_in_mb=get_file_size(path_str),
         path=str(path),
         type=FileType(file_type),
+        version=version,
+        info=info,
     )
     file.save()
     return file
 
 
-@celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
-def scan_files():
+def load_metadata(version_dir: Path) -> dict:
+    """Loads metadata.json if present. Returns {} if not found or invalid."""
+    meta_path = version_dir / "metadata.json"
+    if not meta_path.exists():
+        logging.warning(f"No metadata.json in {version_dir}")
+        return {}
+
+    try:
+        return json.loads(meta_path.read_text())
+    except Exception as e:
+        logging.warning(f"Could not parse metadata.json in {version_dir}: {e}")
+        return {}
+
+
+@celery_app.task(soft_time_limit=60, hard_time_limit=61)
+def sync_files():
     logging.info("Starting files scan task")
-    for dir, file_type in DIRS:
-        logging.debug(f"Ingesting {dir}")
-        pathlist = Path(dir)
-        for path in pathlist.glob("*"):
-            if not path.name.startswith("."):
-                ingest_file(path_str=str(path), file_type=file_type)
+    for base_dir, file_type in DIRS:
+        base = Path(base_dir)
+
+        for version_dir in base.iterdir():
+            if not version_dir.is_dir() or version_dir.name.startswith("."):
+                continue
+
+            version = version_dir.name
+            logging.debug(f"Scanning {version_dir} (version={version})")
+
+            metadata = load_metadata(version_dir)
+
+            paths = list(version_dir.glob("*"))
+            for path in paths:
+                if path.name.startswith(".") or path.name == "metadata.json":
+                    continue
+
+                info = metadata.get(path.name, {}).get("description", "")
+                ingest_file(str(path), file_type, version, info)
+
+            # Remove files from database that no longer exist in the directory
+            remote_files = File.objects.filter(type=file_type, version=version)
+            local_files = [p.name for p in paths]
+            for file in remote_files:
+                if file.name not in local_files:
+                    logging.info(f"Removing file {file.name} from database")
+                    file.delete()
 
 
-@celery_app.task(soft_time_limit=60, hard_time_limit=60 + 1)
-def start_example_ingestion_tasks():
-    sleep(10)
-    scan_files.delay()
-
-
-# @synchronize(key='eubucco.ingest.tasks.main', masters={r}, auto_release_time=20, blocking=True, timeout=1)
 def main():
-    """In dev mode django and the watcher are started. We use this main function to start
-    the ingestion tasks only once with the lock applied here!"""
-
+    """Ensure ingestion runs only once using Redis-based locking."""
     lock = Redlock(key="eubucco.examples.files.main", masters={r}, auto_release_time=20)
     if lock.acquire(blocking=False):
-        start_example_ingestion_tasks.delay()
+        sync_files.delay()
         sleep(10)
         lock.release()
     else:

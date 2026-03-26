@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+
+useradd worker -u 999 || true
+
+exec celery -A config.celery_app worker -l INFO -Q heavy_tasks --concurrency=1

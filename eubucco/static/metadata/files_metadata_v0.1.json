@@ -1,0 +1,23 @@
+{
+  "gadm-city-levels-v0.1.csv": {
+    "description": "GADM level used for city level per country."
+  },
+  "admin-codes-matches-v0.1.csv": {
+    "description": "Mapping of ID to country, region, city, and source dataset."
+  },
+  "eubucco-v0_1.zip": {
+    "description": "Complete dataset."
+  },
+  "type-matches.zip": {
+    "description": "Mapping of building types in source datasets to harmonized EUBUCCO types."
+  },
+  "city-level-overview-tables-v0.1.zip": {
+    "description": "City-level building stock statistics."
+  },
+  "input-dataset-metatable-v0.1.xlsx": {
+    "description": "Metadata of source datasets."
+  },
+  "excluded-datasets-v0.1.xlsx": {
+    "description": "Excluded source datasets."
+  }
+}

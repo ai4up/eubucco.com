@@ -1,0 +1,26 @@
+<table class="table table-compact table-zebra w-full text-sm rounded-box">
+  <thead>
+    <tr><th>City</th><th>GPKG</th><th>CSV</th></tr>
+  </thead>
+  <tbody>
+    {% for ex in example_files %}
+      <tr>
+        <td>{{ ex.region|capfirst }}</td>
+        <td>
+          {% if ex.gpkg_link %}
+            <a href="{{ ex.gpkg_link }}" class="link">
+              {{ ex.gpkg_size|floatformat:0 }} MB
+            </a>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if ex.csv_link %}
+            <a href="{{ ex.csv_link }}" class="link">
+              {{ ex.csv_size|floatformat:0 }} MB
+            </a>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

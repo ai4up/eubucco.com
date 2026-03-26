@@ -58,8 +58,11 @@ RUN apt-get -y install zip
 
 # install npm for tailwind
 RUN apt-get update \
-  && apt-get install -y build-essential curl \
-  && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+  && apt-get install -y build-essential curl gnupg ca-certificates \
+  && mkdir -p /etc/apt/keyrings \
+  && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+  && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+  && apt-get update \
   && apt-get install -y nodejs --no-install-recommends \
   && rm -rf /var/lib/apt/lists/* /usr/share/doc /usr/share/man \
   && apt-get clean
@@ -69,9 +72,10 @@ RUN apt-get update \
 # copy python dependency wheels from python-build-stage
 COPY --from=python-build-stage /usr/src/app/wheels  /wheels/
 
-# use wheels to install python dependencies
-RUN pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
-	&& rm -rf /wheels/
+# Install setuptools first, then install python dependencies from wheels
+RUN pip install --no-cache-dir --upgrade pip setuptools \
+  && pip install --no-cache-dir --no-index --find-links=/wheels/ /wheels/* \
+  && rm -rf /wheels/
 
 COPY ./compose/production/django/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint
@@ -81,10 +85,6 @@ COPY ./compose/local/django/start /start
 RUN sed -i 's/\r$//g' /start
 RUN chmod +x /start
 
-COPY ./compose/local/docs/start /start-docs
-RUN sed -i 's/\r$//g' /start-docs
-RUN chmod +x /start-docs
-
 COPY ./compose/local/django/api/start /start-api
 RUN sed -i 's/\r$//g' /start-api
 RUN chmod +x /start-api
@@ -93,9 +93,10 @@ COPY ./compose/local/tailwind/start /start-tailwind
 RUN sed -i 's/\r$//g' /start-tailwind
 RUN chmod +x /start-tailwind
 
-COPY ./compose/local/django/celery/worker/start /start-celeryworker
-RUN sed -i 's/\r$//g' /start-celeryworker
-RUN chmod +x /start-celeryworker
+COPY ./compose/local/django/celery/worker/start-io /start-celeryworker-io
+COPY ./compose/local/django/celery/worker/start-heavy /start-celeryworker-heavy
+RUN sed -i 's/\r$//g' /start-celeryworker-io /start-celeryworker-heavy
+RUN chmod +x /start-celeryworker-io /start-celeryworker-heavy
 
 COPY ./compose/local/django/celery/beat/start /start-celerybeat
 RUN sed -i 's/\r$//g' /start-celerybeat

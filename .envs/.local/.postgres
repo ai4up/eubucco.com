@@ -1,7 +1,6 @@
 # PostgreSQL
-# ------------------------------------------------------------------------------
 POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 POSTGRES_DB=eubucco
-POSTGRES_USER=NvWkXLveTsmzpuuhXdewHwavJFSsSoVa
-POSTGRES_PASSWORD=vf8LaPN8IQvWDuvMKIGj2Paf1JqxkJziiNBWBUgQB6MHGuTrd9waXyPtVI1PIRRu
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres

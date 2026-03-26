@@ -20,4 +20,4 @@ else:
 django_application = get_asgi_application()
 django.setup()
 
-from .v0_1.api import api  # noqa: F401 E402
+from .v1.api import api  # noqa: F401 E402

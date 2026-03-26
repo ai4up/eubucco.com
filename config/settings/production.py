@@ -14,7 +14,7 @@ from .base import env
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["eubucco.com"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[".eubucco.com", "django-webhook"])
 
 # DATABASES
 # ------------------------------------------------------------------------------
@@ -68,6 +68,10 @@ SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # MEDIA
 # ------------------------------------------------------------------------------
+
+# MinIO webhook → Plausible (S3 download analytics)
+PLAUSIBLE_API_URL = env("PLAUSIBLE_API_URL", default="http://plausible:8000")
+PLAUSIBLE_DATA_DOMAIN = env("PLAUSIBLE_DATA_DOMAIN", default="eubucco.com")
 
 # EMAIL
 # ------------------------------------------------------------------------------

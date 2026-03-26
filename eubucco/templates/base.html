@@ -1,13 +1,30 @@
 {% load tailwind_tags %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="night" class="dark">
 <head>
   {% load static %}
   <title>EUBUCCO</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <script defer data-domain="eubucco.com" src="https://analytics.eubucco.com/js/plausible.js"></script>
+  <script>
+    (function setInitialTheme() {
+      const themes = {light: "pastel", dark: "night"};
+      const root = document.documentElement;
+      try {
+        const stored = localStorage.getItem("ui-theme");
+        const mode = stored === "light" || stored === "dark" ? stored : "dark";
+        root.dataset.theme = themes[mode];
+        root.classList.toggle("dark", mode === "dark");
+      } catch (err) {
+        root.dataset.theme = "night";
+        root.classList.add("dark");
+      }
+    })();
+  </script>
+  {% if PLAUSIBLE_DATA_DOMAIN %}
+  <script defer data-domain="{{ PLAUSIBLE_DATA_DOMAIN }}" src="https://analytics.eubucco.com/js/plausible.js"></script>
+  {% endif %}
   <link rel="preload" href="/static/css/dist/styles.css" as="style">
   <link rel="stylesheet" href="/static/css/dist/styles.css">
 </head>
@@ -22,8 +39,8 @@
       <div class="flex flex-col">
         {#    <!-- Page content here -->#}
         <header class="sticky top-0 z-50">
-          <div class="navbar w-full bg-base-300">
-            <div class="flex-1 px-2 mx-2"><a href="/">EUBUCCO</a></div>
+          <div class="navbar w-full bg-gradient-to-r from-base-100/90 via-base-100/80 to-primary/5 dark:from-base-100/90 dark:via-base-100/80 dark:to-base-200/20 backdrop-blur-md border-b border-base-content/10">
+            <div class="flex-1 px-2 mx-2"><a href="/" class="font-bold text-base-content">EUBUCCO</a></div>
             <div class="flex-none lg:hidden">
               <label for="my-drawer" class="btn btn-square btn-ghost">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -50,9 +67,9 @@
         </div>
 
 
-        <footer class="footer p-4 bg-base-300 text-neutral-content justify-center bottom-0 mt-auto">
+        <footer class="footer p-4 bg-gradient-to-r from-base-200 via-base-200/95 to-accent/10 dark:from-base-200 dark:via-base-200/95 dark:to-base-300/30 text-base-content justify-center mt-auto border-t border-base-content/10">
           <div class="items-center grid-flow-col">
-            <a class="link text-base-content" href="{% url 'about' %}">About</a>
+            <a class="link link-hover opacity-70 hover:opacity-100" href="{% url 'about' %}">About</a>
           </div>
         </footer>
       </div>
@@ -68,7 +85,6 @@
   </div>
 </div>
 
-</div>
 <script>
   const appHeight = () => {
     const doc = document.documentElement
@@ -84,5 +100,8 @@
   )
   appHeight()
 </script>
+<script defer src="{% static 'js/theme-toggle.js' %}"></script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>

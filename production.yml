@@ -1,9 +1,10 @@
 version: '3.2'
+name: eubucco
 
 volumes:
-  production_postgres_data: { }
-  production_postgres_data_backups: { }
-  production_traefik: { }
+  postgres_data: { }
+  postgres_data_backups: { }
+  minio_data: {}
 
 services:
   django:
@@ -12,38 +13,20 @@ services:
     depends_on:
       - postgres
       - redis
+      - minio
     command: /start
     restart: unless-stopped
     volumes:
-      - /home/app/eubucco/csvs:/app/csvs
+      - /home/eubucco-data:/app/data
     networks:
-      - default
-      - proxy
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
-      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
-      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
-      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
-      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
-      WEB_CONCURRENCY: $WEB_CONCURRENCY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      DOMAIN: $DOMAIN
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      TILE_URL: $TILE_URL
-      DOCS_URL: $DOCS_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-
+      default:
+        aliases:
+          - django-webhook
+      proxy: {}
+    env_file:
+      - .envs/.production/.django
+      - .envs/.production/.postgres
+      - .envs/.production/.minio
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.django.entrypoints=http"
@@ -62,40 +45,20 @@ services:
 
   api:
     image: eubucco/eubucco.com:production
-    container_name: eubucco_api
     command: /start-api
     depends_on:
       - postgres
+      - minio
     restart: unless-stopped
     volumes:
-      - /home/app/eubucco/csvs:/app/csvs
+      - /home/eubucco-data:/app/data
     networks:
       - proxy
       - default
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
-      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
-      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
-      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
-      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
-      WEB_CONCURRENCY: $WEB_CONCURRENCY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      DOMAIN: $DOMAIN
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      TILE_URL: $TILE_URL
-      DOCS_URL: $DOCS_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    env_file:
+      - .envs/.production/.django
+      - .envs/.production/.postgres
+      - .envs/.production/.minio
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.entrypoints=http"
@@ -113,37 +76,11 @@ services:
       - "com.centurylinklabs.watchtower.enable=true"
 
   docs:
-    image: eubucco/eubucco.com:production
-    container_name: eubucco_docs
-    command: /start-docs
+    image: eubucco/eubucco-docs:latest
     restart: unless-stopped
     networks:
       - proxy
       - default
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
-      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
-      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
-      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
-      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
-      WEB_CONCURRENCY: $WEB_CONCURRENCY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      DOMAIN: $DOMAIN
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      TILE_URL: $TILE_URL
-      DOCS_URL: $DOCS_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.docs.entrypoints=http"
@@ -155,131 +92,85 @@ services:
       - "traefik.http.routers.docs-secure.tls=true"
       - "traefik.http.routers.docs-secure.tls.certresolver=http"
       - "traefik.http.routers.docs-secure.service=docs"
-      - "traefik.http.services.docs.loadbalancer.server.port=8000"
+      - "traefik.http.services.docs.loadbalancer.server.port=80"
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.docs-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
 
-
-  pg_tileserv:
-    image: pramsey/pg_tileserv:latest
-    depends_on:
-      - postgres
-    restart: unless-stopped
-    networks:
-      - proxy
-      - default
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
-      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
-      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
-      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
-      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
-      WEB_CONCURRENCY: $WEB_CONCURRENCY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      DOMAIN: $DOMAIN
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      TILE_URL: $TILE_URL
-      DOCS_URL: $DOCS_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.pg_tileserv.entrypoints=http"
-      - "traefik.http.routers.pg_tileserv.rule=Host(`tiles.eubucco.com`)"
-      - "traefik.http.middlewares.pg_tileserv-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.pg_tileserv.middlewares=pg_tileserv-https-redirect"
-      - "traefik.http.routers.pg_tileserv-secure.entrypoints=https"
-      - "traefik.http.routers.pg_tileserv-secure.rule=Host(`tiles.eubucco.com`)"
-      - "traefik.http.routers.pg_tileserv-secure.tls=true"
-      - "traefik.http.routers.pg_tileserv-secure.tls.certresolver=http"
-      - "traefik.http.routers.pg_tileserv-secure.service=pg_tileserv"
-      - "traefik.http.services.pg_tileserv.loadbalancer.server.port=7800"
-      - "traefik.docker.network=proxy"
-      - "traefik.http.routers.pg_tileserv-secure.middlewares=secHeaders@file"
+  # pg_tileserv:
+  #   image: pramsey/pg_tileserv:latest
+  #   depends_on:
+  #     - postgres
+  #   restart: unless-stopped
+  #   networks:
+  #     - proxy
+  #     - default
+  #   environment:
+  #     DATABASE_URL: $DATABASE_URL
+  #     POSTGRES_HOST: $POSTGRES_HOST
+  #     POSTGRES_PORT: $POSTGRES_PORT
+  #     POSTGRES_DB: $POSTGRES_DB
+  #     POSTGRES_USER: $POSTGRES_USER
+  #     POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.pg_tileserv.entrypoints=http"
+  #     - "traefik.http.routers.pg_tileserv.rule=Host(`tiles.eubucco.com`)"
+  #     - "traefik.http.middlewares.pg_tileserv-https-redirect.redirectscheme.scheme=https"
+  #     - "traefik.http.routers.pg_tileserv.middlewares=pg_tileserv-https-redirect"
+  #     - "traefik.http.routers.pg_tileserv-secure.entrypoints=https"
+  #     - "traefik.http.routers.pg_tileserv-secure.rule=Host(`tiles.eubucco.com`)"
+  #     - "traefik.http.routers.pg_tileserv-secure.tls=true"
+  #     - "traefik.http.routers.pg_tileserv-secure.tls.certresolver=http"
+  #     - "traefik.http.routers.pg_tileserv-secure.service=pg_tileserv"
+  #     - "traefik.http.services.pg_tileserv.loadbalancer.server.port=7800"
+  #     - "traefik.docker.network=proxy"
+  #     - "traefik.http.routers.pg_tileserv-secure.middlewares=secHeaders@file"
 
   postgres:
     image: eubucco/postgis:latest
     restart: unless-stopped
     volumes:
-      - production_postgres_data:/var/lib/postgresql/data:Z
-      - production_postgres_data_backups:/backups:z
-    networks:
-      - default
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
-      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
-      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
-      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
-      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
-      WEB_CONCURRENCY: $WEB_CONCURRENCY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      DOMAIN: $DOMAIN
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      TILE_URL: $TILE_URL
-      DOCS_URL: $DOCS_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      - postgres_data:/var/lib/postgresql/data:Z
+      - postgres_data_backups:/backups:z
+    env_file:
+      - .envs/.production/.postgres
 
   redis:
     image: redis:6
     restart: unless-stopped
-    networks:
-      - default
 
-  celeryworker:
+  celeryworker-io:
     image: eubucco/eubucco.com:production
     restart: unless-stopped
     depends_on:
       - postgres
       - redis
+      - minio
+    env_file:
+      - .envs/.production/.django
+      - .envs/.production/.postgres
+      - .envs/.production/.minio
     volumes:
-      - /home/app/eubucco/csvs:/app/csvs
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
-      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
-      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
-      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
-      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
-      WEB_CONCURRENCY: $WEB_CONCURRENCY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      DOMAIN: $DOMAIN
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      TILE_URL: $TILE_URL
-      DOCS_URL: $DOCS_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-    command: /start-celeryworker
+      - /home/eubucco-data:/app/data
+    command: /start-celeryworker-io
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  celeryworker-heavy:
+    image: eubucco/eubucco.com:production
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    env_file:
+      - .envs/.production/.django
+      - .envs/.production/.postgres
+      - .envs/.production/.minio
+    volumes:
+      - /home/eubucco-data:/app/data
+    command: /start-celeryworker-heavy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
@@ -288,30 +179,11 @@ services:
     depends_on:
       - postgres
       - redis
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
-      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
-      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
-      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
-      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
-      WEB_CONCURRENCY: $WEB_CONCURRENCY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      DOMAIN: $DOMAIN
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      TILE_URL: $TILE_URL
-      DOCS_URL: $DOCS_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      - minio
+    env_file:
+      - .envs/.production/.django
+      - .envs/.production/.postgres
+      - .envs/.production/.minio
     command: /start-celerybeat
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
@@ -325,30 +197,9 @@ services:
     networks:
       - proxy
       - default
-    environment:
-      DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE
-      DJANGO_SECRET_KEY: $DJANGO_SECRET_KEY
-      DJANGO_ADMIN_URL: $DJANGO_ADMIN_URL
-      DJANGO_ALLOWED_HOSTS: $DJANGO_ALLOWED_HOSTS
-      DJANGO_SECURE_SSL_REDIRECT: $DJANGO_SECURE_SSL_REDIRECT
-      DJANGO_SERVER_EMAIL: $DJANGO_SERVER_EMAIL
-      DJANGO_ACCOUNT_ALLOW_REGISTRATION: $DJANGO_ACCOUNT_ALLOW_REGISTRATION
-      WEB_CONCURRENCY: $WEB_CONCURRENCY
-      SENTRY_DSN: $SENTRY_DSN
-      REDIS_URL: $REDIS_URL
-      CELERY_FLOWER_USER: $CELERY_FLOWER_USER
-      CELERY_FLOWER_PASSWORD: $CELERY_FLOWER_PASSWORD
-      DOMAIN: $DOMAIN
-      CELERY_BROKER_URL: $CELERY_BROKER_URL
-      API_URL: $API_URL
-      DATABASE_URL: $DATABASE_URL
-      TILE_URL: $TILE_URL
-      DOCS_URL: $DOCS_URL
-      POSTGRES_HOST: $POSTGRES_HOST
-      POSTGRES_PORT: $POSTGRES_PORT
-      POSTGRES_DB: $POSTGRES_DB
-      POSTGRES_USER: $POSTGRES_USER
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    env_file:
+      - .envs/.production/.django
+      - .envs/.production/.postgres
     command: /start-flower
     labels:
       - "traefik.enable=true"
@@ -365,6 +216,100 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.flower-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    restart: unless-stopped
+    env_file:
+      - .envs/.production/.minio
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+      - /home/app/eubucco/tiles:/tiles:ro
+    networks:
+      - default
+      - proxy
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      # ===================================
+      # S3 API on s3.eubucco.com
+      # ===================================
+      - "traefik.http.routers.minio.entrypoints=http"
+      - "traefik.http.routers.minio.rule=Host(`s3.eubucco.com`)"
+      - "traefik.http.middlewares.minio-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.minio.middlewares=minio-https-redirect"
+      - "traefik.http.routers.minio-secure.entrypoints=https"
+      - "traefik.http.routers.minio-secure.rule=Host(`s3.eubucco.com`)"
+      - "traefik.http.routers.minio-secure.tls=true"
+      - "traefik.http.routers.minio-secure.tls.certresolver=http"
+      - "traefik.http.routers.minio-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.minio-secure.service=minio"
+      - "traefik.http.services.minio.loadbalancer.server.port=9000"
+
+      # ===================================
+      # Console on minio-console.eubucco.com
+      # ===================================
+      - "traefik.http.routers.minio-console.entrypoints=http"
+      - "traefik.http.routers.minio-console.rule=Host(`minio-console.eubucco.com`)"
+      - "traefik.http.middlewares.minio-console-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.minio-console.middlewares=minio-console-https-redirect"
+
+      - "traefik.http.routers.minio-console-secure.entrypoints=https"
+      - "traefik.http.routers.minio-console-secure.rule=Host(`minio-console.eubucco.com`)"
+      - "traefik.http.routers.minio-console-secure.tls=true"
+      - "traefik.http.routers.minio-console-secure.tls.certresolver=http"
+      - "traefik.http.routers.minio-console-secure.middlewares=secHeaders@file"
+      - "traefik.http.routers.minio-console-secure.service=minio-console"
+      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+
+  minio-setup:
+    image: minio/mc:RELEASE.2024-05-09T17-04-24Z
+    depends_on:
+      - minio
+      - django
+    env_file:
+      - .envs/.production/.minio
+    entrypoint: |
+      /bin/sh -c "
+      # 1. Connect to local MinIO
+      until (/usr/bin/mc alias set localminio http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD}); do
+        echo 'waiting for minio...' && sleep 1;
+      done;
+
+      # 2. Configure the Webhook Target (The Plausible Bridge)
+      echo 'Configuring Plausible webhook...'
+      /usr/bin/mc admin config set localminio notify_webhook:plausible endpoint='http://django-webhook:5000/data/webhook/minio/' enable='on';
+      /usr/bin/mc admin config set localminio audit_webhook:plausible endpoint='http://django-webhook:5000/data/webhook/minio/' enable='on';
+
+      # 3. Restart MinIO to register the new SQS ARN
+      echo 'Restarting MinIO to apply webhook config...'
+      /usr/bin/mc admin service restart localminio;
+
+      # Wait a moment for MinIO to come back online after restart
+      sleep 3;
+
+      # 4. Create Bucket and Set Permissions
+      /usr/bin/mc mb -p localminio/$${MINIO_BUCKET};
+      /usr/bin/mc anonymous set download localminio/$${MINIO_BUCKET};
+
+      # 5. Seed initial data
+      if [ -f /tiles/nuts.pmtiles ]; then
+        /usr/bin/mc cp /tiles/nuts.pmtiles localminio/$${MINIO_BUCKET}/$${NUTS_PM_TILES_OBJECT};
+      fi;
+
+      # 6. Subscribe the Bucket to the Webhook
+      echo 'Adding bucket event notification...'
+      /usr/bin/mc event add localminio/$${MINIO_BUCKET} arn:minio:sqs::plausible:webhook --event get || true;
+
+      echo 'MinIO setup complete.'
+      "
+    volumes:
+      - /home/eubucco/tiles:/tiles:ro
 
 networks:
   default:

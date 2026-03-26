@@ -19,6 +19,7 @@ class File(models.Model):
     path = models.FilePathField(max_length=200, unique=True)
     type = models.CharField(max_length=2, choices=FileType.choices, db_index=True)
     info = models.CharField(max_length=200, null=False, blank=True)
+    version = models.CharField(max_length=10,  null=True, blank=True, db_index=True)
 
     def __str__(self):
         return self.name

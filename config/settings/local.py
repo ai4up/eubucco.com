@@ -18,9 +18,18 @@ ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1", "*"]
 # https://docs.djangoproject.com/en/dev/ref/settings/#caches
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": env("REDIS_URL", default="redis://127.0.0.1:6379/0"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "IGNORE_EXCEPTIONS": True,
+        },
     }
 }
+
+# MinIO webhook → Plausible (S3 download analytics)
+PLAUSIBLE_API_URL = env("PLAUSIBLE_API_URL", default="https://analytics.eubucco.com")
+PLAUSIBLE_DATA_DOMAIN = env("PLAUSIBLE_DATA_DOMAIN", default="localhost")
 
 # EMAIL
 # ------------------------------------------------------------------------------
@@ -63,6 +72,15 @@ INSTALLED_APPS += ["django_extensions"]  # noqa F405
 
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-eager-propagates
 CELERY_TASK_EAGER_PROPAGATES = True
-# Your stuff...
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_QUEUES = {
+    "default": {},
+    "io_tasks": {},
+    "heavy_tasks": {},
+}
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 10
+CELERY_TASK_SOFT_TIME_LIMIT = 3000
+
 # ------------------------------------------------------------------------------
 CSRF_COOKIE_HTTPONLY = False
