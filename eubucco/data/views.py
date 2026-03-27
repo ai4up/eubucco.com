@@ -47,7 +47,6 @@ def minio_webhook(request):
         return HttpResponse(status=200)
 
     # SITE CONFIG - Ensure this matches your Plausible dashboard domain
-    analytics_domain = "localhost"
     plausible_api = f"{settings.PLAUSIBLE_API_URL.rstrip('/')}/api/event"
     forwarded_count = 0
 
@@ -84,6 +83,8 @@ def minio_webhook(request):
 
         # PATH EXTRACTION
         parts = obj_key.split("/")
+        if len(parts) < 3:
+            continue  # not a data download path, skip
         version = parts[0]
         data_type = parts[1]
         file_format = parts[2]
