@@ -41,6 +41,8 @@ services:
       - "traefik.docker.network=proxy"
       - "traefik.http.routers.dev-django-secure.middlewares=secHeaders@file"
       - "com.centurylinklabs.watchtower.enable=true"
+    extra_hosts:
+      - "analytics.eubucco.com:host-gateway"
 
   api:
     image: eubucco/eubucco.com:dev
@@ -49,6 +51,7 @@ services:
     depends_on:
       - postgres
       - minio
+      - django
     restart: unless-stopped
     volumes:
       - /home/eubucco-data:/app/data
