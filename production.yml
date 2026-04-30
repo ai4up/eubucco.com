@@ -29,19 +29,25 @@ services:
       - .envs/.production/.minio
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.django.entrypoints=http"
-      - "traefik.http.routers.django.rule=Host(`eubucco.com`) || Host(`www.eubucco.com`)"
-      - "traefik.http.middlewares.django-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.django.middlewares=django-https-redirect"
+      - "traefik.docker.network=proxy"
+
+      # HTTP Router: Redirect to HTTPS (but allows ACME challenges)
+      - "traefik.http.routers.django-http.entrypoints=http"
+      - "traefik.http.routers.django-http.rule=Host(`eubucco.com`)"
+      - "traefik.http.routers.django-http.middlewares=django-redirect"
+      - "traefik.http.middlewares.django-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.django-redirect.redirectscheme.permanent=true"
+
+      # HTTPS Router: Main entrypoint with www redirect and security headers
       - "traefik.http.routers.django-secure.entrypoints=https"
-      - "traefik.http.routers.django-secure.rule=Host(`eubucco.com`) || Host(`www.eubucco.com`)"
+      - "traefik.http.routers.django-secure.rule=Host(`eubucco.com`)"
       - "traefik.http.routers.django-secure.tls=true"
       - "traefik.http.routers.django-secure.tls.certresolver=http"
       - "traefik.http.routers.django-secure.service=django"
-      - "traefik.http.services.django.loadbalancer.server.port=5000"
-      - "traefik.docker.network=proxy"
       - "traefik.http.routers.django-secure.middlewares=secHeaders@file"
-      - "com.centurylinklabs.watchtower.enable=true"
+
+      # Service definition
+      - "traefik.http.services.django.loadbalancer.server.port=5000"
     extra_hosts:
       - "analytics.eubucco.com:host-gateway"
 
@@ -64,18 +70,23 @@ services:
       - .envs/.production/.minio
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      # HTTP Router
       - "traefik.http.routers.api.entrypoints=http"
       - "traefik.http.routers.api.rule=Host(`api.eubucco.com`)"
-      - "traefik.http.middlewares.api-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.api.middlewares=api-https-redirect"
+      - "traefik.http.middlewares.api-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.api-https-redirect.redirectscheme.permanent=true"
+
+      # HTTPS Router
       - "traefik.http.routers.api-secure.entrypoints=https"
       - "traefik.http.routers.api-secure.rule=Host(`api.eubucco.com`)"
       - "traefik.http.routers.api-secure.tls=true"
       - "traefik.http.routers.api-secure.tls.certresolver=http"
       - "traefik.http.routers.api-secure.service=api"
-      - "traefik.http.services.api.loadbalancer.server.port=8000"
-      - "traefik.docker.network=proxy"
       - "traefik.http.routers.api-secure.middlewares=secHeaders@file"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
       - "com.centurylinklabs.watchtower.enable=true"
 
   docs:
@@ -86,18 +97,23 @@ services:
       - default
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      # HTTP Router
       - "traefik.http.routers.docs.entrypoints=http"
       - "traefik.http.routers.docs.rule=Host(`docs.eubucco.com`)"
-      - "traefik.http.middlewares.docs-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.docs.middlewares=docs-https-redirect"
+      - "traefik.http.middlewares.docs-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.docs-https-redirect.redirectscheme.permanent=true"
+
+      # HTTPS Router
       - "traefik.http.routers.docs-secure.entrypoints=https"
       - "traefik.http.routers.docs-secure.rule=Host(`docs.eubucco.com`)"
       - "traefik.http.routers.docs-secure.tls=true"
       - "traefik.http.routers.docs-secure.tls.certresolver=http"
       - "traefik.http.routers.docs-secure.service=docs"
-      - "traefik.http.services.docs.loadbalancer.server.port=80"
-      - "traefik.docker.network=proxy"
       - "traefik.http.routers.docs-secure.middlewares=secHeaders@file"
+      - "traefik.http.services.docs.loadbalancer.server.port=80"
       - "com.centurylinklabs.watchtower.enable=true"
 
   # pg_tileserv:
@@ -206,18 +222,23 @@ services:
     command: /start-flower
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      # HTTP Router
       - "traefik.http.routers.flower.entrypoints=http"
       - "traefik.http.routers.flower.rule=Host(`tasks.eubucco.com`)"
-      - "traefik.http.middlewares.flower-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.flower.middlewares=flower-https-redirect"
+      - "traefik.http.middlewares.flower-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.flower-https-redirect.redirectscheme.permanent=true"
+
+      # HTTPS Router
       - "traefik.http.routers.flower-secure.entrypoints=https"
       - "traefik.http.routers.flower-secure.rule=Host(`tasks.eubucco.com`)"
       - "traefik.http.routers.flower-secure.tls=true"
       - "traefik.http.routers.flower-secure.tls.certresolver=http"
       - "traefik.http.routers.flower-secure.service=flower"
-      - "traefik.http.services.flower.loadbalancer.server.port=5555"
-      - "traefik.docker.network=proxy"
       - "traefik.http.routers.flower-secure.middlewares=secHeaders@file"
+      - "traefik.http.services.flower.loadbalancer.server.port=5555"
       - "com.centurylinklabs.watchtower.enable=true"
 
   minio:
@@ -228,7 +249,6 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
-      - /home/app/eubucco/tiles:/tiles:ro
     networks:
       - default
       - proxy
@@ -239,10 +259,13 @@ services:
       # ===================================
       # S3 API on s3.eubucco.com
       # ===================================
+      - "traefik.http.routers.minio.service=minio"
       - "traefik.http.routers.minio.entrypoints=http"
       - "traefik.http.routers.minio.rule=Host(`s3.eubucco.com`)"
-      - "traefik.http.middlewares.minio-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.minio.middlewares=minio-https-redirect"
+      - "traefik.http.middlewares.minio-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.minio-https-redirect.redirectscheme.permanent=true"
+
       - "traefik.http.routers.minio-secure.entrypoints=https"
       - "traefik.http.routers.minio-secure.rule=Host(`s3.eubucco.com`)"
       - "traefik.http.routers.minio-secure.tls=true"
@@ -254,10 +277,12 @@ services:
       # ===================================
       # Console on minio-console.eubucco.com
       # ===================================
+      - "traefik.http.routers.minio-console.service=minio-console"
       - "traefik.http.routers.minio-console.entrypoints=http"
       - "traefik.http.routers.minio-console.rule=Host(`minio-console.eubucco.com`)"
-      - "traefik.http.middlewares.minio-console-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.minio-console.middlewares=minio-console-https-redirect"
+      - "traefik.http.middlewares.minio-console-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.minio-console-https-redirect.redirectscheme.permanent=true"
 
       - "traefik.http.routers.minio-console-secure.entrypoints=https"
       - "traefik.http.routers.minio-console-secure.rule=Host(`minio-console.eubucco.com`)"
