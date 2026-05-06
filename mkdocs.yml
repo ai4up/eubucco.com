@@ -21,6 +21,7 @@ nav:
   - Data Usage:
     - Loading & Filtering: 'data-usage/loading.md'
     - Cookbook: 'data-usage/cookbook.md'
+    - Example notebook: 'data-usage/example-notebook.md'
   - Advanced:
     - Conflation Methodology: 'advanced/conflation.md'
     - Prediction Evaluation: 'advanced/eval-metrics.md'
