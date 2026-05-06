@@ -20,7 +20,6 @@ Limit the dataset to a specific geographic extent using helper columns.
 === "GeoPandas"
     ```python
     import geopandas as gpd
-    import glob
     
     # GeoPandas only reads the subsets of the data that intersect the bbox
     bbox = (5300000, 1880000, 5400000, 1920000)
