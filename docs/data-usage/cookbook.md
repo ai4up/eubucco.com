@@ -146,13 +146,6 @@ Replace building footprints with centroids to reduce computational overhead for 
 
 Map buildings to hexagonal grid ([H3](https://h3geo.org/)) for analysis.
 
-=== "Python (h3pandas)"
-    ```python
-    import h3pandas
-    # Automatically handles centroid extraction and CRS shift to WGS84
-    # 'res=9' provides a spatial resolution of ~0.1km²
-    h3_gdf = gdf.h3.geo_to_h3_aggregate(res=9, operation='count')
-    ```
 === "Python (h3-py + GeoPandas)"
     ```python
     import h3
