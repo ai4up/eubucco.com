@@ -14,6 +14,18 @@ The standard AWS CLI can be used to access EUBUCCO data by specifying the custom
         --no-sign-request
     ```
 
+=== "Download country"
+
+    ```bash
+    # Example: Download all files for Italy
+    aws s3 cp s3://eubucco/v0.2/buildings/parquet/ ./italy/ \
+        --endpoint-url https://s3.eubucco.com \
+        --no-sign-request \
+        --recursive
+        --exclude "*" \
+        --include "nuts_id=IT*" \
+    ```
+
 === "Download entire dataset"
 
     ```bash
@@ -35,6 +47,11 @@ mc alias set eubucco https://s3.eubucco.com "" ""
 === "Download single region"
     ```bash
     mc cp eubucco/eubucco/v0.2/buildings/parquet/nuts_id=ITC3/ITC3.parquet .
+    ```
+
+=== "Download country"
+    ```bash
+    mc cp --recursive eubucco/eubucco/v0.2/buildings/parquet/nuts_id=IT .
     ```
 
 === "Download entire dataset"
