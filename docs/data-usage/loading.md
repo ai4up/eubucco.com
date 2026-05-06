@@ -217,7 +217,7 @@ Discard buildings with merged or estimated attributes that carry high uncertaint
     high_conf = gdf[gdf["type_confidence"].fillna(1.0) > 0.8]
 
     # Numerical: Precise height (uncertainty interval < 2m)
-    precise_height = gdf[(gdf["height_confidence_upper"] - gdf["height_confidence_lower"]) < 2.0]    
+    precise_height = gdf[(gdf["height_confidence_upper"] - gdf["height_confidence_lower"]).fillna(0.0) < 2.0]    
     ```
 === "PyArrow"
     ```python
@@ -240,5 +240,5 @@ Discard buildings with merged or estimated attributes that carry high uncertaint
     -- Categorical confidence
     WHERE COALESCE(type_confidence, 1.0) > 0.8 
     -- Numerical confidence
-    AND (height_confidence_upper - height_confidence_lower) < 2.0;
+    AND COALESCE(height_confidence_upper, height) - COALESCE(height_confidence_lower, height) < 2.0;
     ```
