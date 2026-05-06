@@ -53,5 +53,5 @@ For users on systems without S3 clients, standard network utilities provide a li
 
 === "cURL"
     ```bash
-    curl -OC - --retry 5 https://s3.eubucco.com/eubucco/v0.2/buildings/parquet/nuts_id=ITC3/ITC3.parquet
+    curl --progress-bar -C - -o ITC3.parquet "https://s3.eubucco.com/eubucco/v0.2/buildings/parquet/nuts_id=ITC3/ITC3.parquet"
     ```
