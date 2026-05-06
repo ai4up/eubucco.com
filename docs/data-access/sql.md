@@ -53,6 +53,9 @@ con.execute("INSTALL spatial; LOAD spatial;")
 
 con.execute("SET s3_endpoint='s3.eubucco.com';")
 con.execute("SET s3_url_style='path';")
+con.execute("SET s3_region='eu';")
+con.execute("SET s3_access_key_id='';")
+con.execute("SET s3_secret_access_key='';")
 ```
 
 
