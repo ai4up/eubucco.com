@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import os
 from urllib.parse import quote, unquote
 
 import requests
@@ -32,7 +33,9 @@ def map(request):
 
 def explorer(request):
     """High-performance building explorer using vector tiles from parquet files."""
-    return render(request, "data/explorer.html")
+    api_url = os.getenv("API_URL", "http://localhost:8001/v1").rstrip("/")
+    return render(request, "data/explorer.html", {"api_url": api_url})
+
 
 @csrf_exempt
 @require_POST

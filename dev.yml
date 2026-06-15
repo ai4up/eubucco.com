@@ -253,6 +253,7 @@ services:
       # ===================================
       # S3 API on dev-s3.eubucco.com
       # ===================================
+      - "traefik.http.routers.dev-minio.service=dev-minio"
       - "traefik.http.routers.dev-minio.entrypoints=http"
       - "traefik.http.routers.dev-minio.rule=Host(`dev-s3.eubucco.com`)"
       - "traefik.http.middlewares.dev-minio-https-redirect.redirectscheme.scheme=https"
@@ -268,6 +269,7 @@ services:
       # ===================================
       # Console on dev-minio-console.eubucco.com
       # ===================================
+      - "traefik.http.routers.dev-minio-console.service=dev-minio-console"
       - "traefik.http.routers.dev-minio-console.entrypoints=http"
       - "traefik.http.routers.dev-minio-console.rule=Host(`dev-minio-console.eubucco.com`)"
       - "traefik.http.middlewares.dev-minio-console-https-redirect.redirectscheme.scheme=https"

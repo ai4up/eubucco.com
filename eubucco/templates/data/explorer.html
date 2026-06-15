@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+
+<style>
+  :root {
+    --bg: #0d0f12;
+    --panel: #15181d;
+    --ink: #e6e8eb;
+    --ink-dim: #9aa1ad;
+    --rule: #262b33;
+    --accent: #e8b54a;
+  }
+  body { overflow: hidden !important; }
+
+  #map { position: absolute; inset: 0; background: var(--bg); }
+
+  /* ── Floating Panel ── */
+  #panel {
+    position: absolute; top: 20px; left: 20px;
+    width: 340px; max-height: calc(100vh - 104px);
+    background: linear-gradient(180deg, #171a1f 0%, #13161b 100%);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 20px 22px 18px;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,.7), 0 2px 0 rgba(255,255,255,.02) inset;
+    overflow-y: auto; z-index: 5;
+  }
+  #panel::-webkit-scrollbar { width: 5px; }
+  #panel::-webkit-scrollbar-track { background: transparent; }
+  #panel::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+
+  #panel h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    font-weight: 500; font-size: 18px; line-height: 1.2;
+    margin: 0 0 4px; letter-spacing: -.01em; color: var(--ink);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .version-badge {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 9px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent);
+    padding: 2px 6px; border-radius: 2px;
+  }
+  .section-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink-dim); margin: 16px 0 7px;
+  }
+
+  #panel select {
+    width: 100%; padding: 7px 8px; cursor: pointer; outline: none;
+    background: transparent; border: 1px solid var(--rule); color: var(--ink);
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px;
+    letter-spacing: .05em; border-radius: 2px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239aa1ad'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+    transition: border-color .15s ease;
+  }
+  #panel select:focus { border-color: var(--accent); }
+  #panel select option { background: #1a1d23; }
+
+  .seg { display: flex; gap: 4px; flex-wrap: wrap; }
+  .seg button {
+    background: transparent; border: 1px solid var(--rule); color: var(--ink-dim);
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10.5px;
+    letter-spacing: .05em; border-radius: 2px; padding: 5px 10px; cursor: pointer;
+    transition: all .15s ease;
+  }
+  .seg button:hover { color: var(--ink); border-color: #3a414c; }
+  .seg button.on { background: var(--accent); border-color: var(--accent); color: #0d0f12; font-weight: 600; }
+
+  /* ── Legend ── */
+  #legend {
+    margin-top: 8px; padding: 10px 12px;
+    background: rgba(255,255,255,.02); border: 1px solid var(--rule); border-radius: 2px;
+    display: none;
+  }
+  #legend.visible { display: block; }
+  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .legend-row:last-child { margin-bottom: 0; }
+  .legend-swatch {
+    width: 12px; height: 10px; border-radius: 1px; flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .legend-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5px; color: var(--ink-dim);
+  }
+  .legend-gradient {
+    height: 8px; border-radius: 1px; flex: 1;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .legend-gradient-labels {
+    display: flex; justify-content: space-between; margin-top: 3px;
+  }
+
+  /* ── Hover Tooltip ── */
+  #tip {
+    position: absolute; pointer-events: none; z-index: 9;
+    background: rgba(19,22,27,.97); border: 1px solid var(--rule);
+    border-radius: 2px; padding: 10px 12px;
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px;
+    color: var(--ink); max-width: 280px;
+    box-shadow: 0 12px 28px -10px rgba(0,0,0,.7);
+    display: none;
+  }
+  #tip .tip-id {
+    font-size: 9.5px; color: var(--ink-dim); letter-spacing: .06em;
+    margin-bottom: 7px; word-break: break-all;
+    border-bottom: 1px solid var(--rule); padding-bottom: 5px;
+  }
+  #tip table { border-collapse: collapse; width: 100%; }
+  #tip td { padding: 2px 6px 2px 0; vertical-align: top; }
+  #tip td.k { color: var(--ink-dim); text-transform: uppercase; font-size: 9px; letter-spacing: .1em; white-space: nowrap; }
+  #tip td.v { color: var(--ink); }
+  #tip .src-pill {
+    display: inline-block; padding: 1px 5px; border-radius: 2px;
+    font-size: 8.5px; letter-spacing: .08em; color: #0d0f12;
+    font-weight: 700; text-transform: uppercase; margin-left: 5px; vertical-align: middle;
+  }
+  #tip .src-osm        { background: var(--accent); }
+  #tip .src-government { background: #7dd3a0; }
+  #tip .src-microsoft  { background: #5cb1c9; }
+  #tip .src-estimated  { background: #9a8fc0; color: var(--ink); }
+  #tip .na { color: #5a6170; font-style: italic; }
+
+  /* ── Bottom-right HUD ── */
+  #hud {
+    position: absolute; bottom: 20px; right: 20px; z-index: 5;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  }
+  #loading-badge {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--ink-dim); background: var(--panel); border: 1px solid var(--rule);
+    padding: 5px 10px; border-radius: 2px; display: none; align-items: center; gap: 6px;
+  }
+  #loading-badge.visible { display: flex; }
+  .spinner {
+    width: 8px; height: 8px; border: 1.5px solid var(--rule);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #zoom-display {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px; color: var(--ink-dim);
+    background: var(--panel); border: 1px solid var(--rule);
+    padding: 5px 10px; border-radius: 2px;
+  }
+  #zoom-display span { color: var(--accent); }
+
+  /* Zoom-hint when too far out */
+  #zoom-hint {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--ink-dim); background: var(--panel); border: 1px solid var(--rule);
+    padding: 5px 14px; border-radius: 2px; z-index: 5; pointer-events: none;
+    transition: opacity .3s ease;
+  }
+
+  /* MapLibre overrides */
+  .maplibregl-ctrl-attrib { background: rgba(13,15,18,.7) !important; }
+  .maplibregl-ctrl-attrib a,
+  .maplibregl-ctrl-attrib-inner { color: var(--ink-dim) !important; font-size: 10px !important; }
+  .maplibregl-ctrl-group {
+    background: var(--panel) !important; border: 1px solid var(--rule) !important; border-radius: 2px !important;
+  }
+  .maplibregl-ctrl-group button {
+    background: transparent !important; border-bottom: 1px solid var(--rule) !important;
+  }
+  .maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
+  .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(0.6); }
+  .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon { filter: invert(0.9); }
+</style>
+
+<div style="position:relative; width:100%; height:calc(100vh - 64px);">
+  <div id="map"></div>
+  <div id="tip"></div>
+
+  <!-- ── Control Panel ── -->
+  <aside id="panel">
+    <h1>
+      EUBUCCO Explorer
+      <span class="version-badge">v0.2</span>
+    </h1>
+
+    <p class="section-label">Color by</p>
+    <select id="colorSelect">
+      <option value="default">Uniform (accent)</option>
+      <option value="geometry_source">Data Source</option>
+      <option value="type">Building Type</option>
+      <option value="height">Height (m)</option>
+      <option value="construction_year">Construction Year</option>
+    </select>
+
+    <div id="legend"></div>
+
+    <p class="section-label">View</p>
+    <div class="seg" id="viewSeg">
+      <button class="on" data-view="flat">Flat</button>
+      <button data-view="3d">3D Extrusion</button>
+    </div>
+  </aside>
+
+  <!-- ── HUD ── -->
+  <div id="hud">
+    <div id="loading-badge"><div class="spinner"></div>streaming tiles</div>
+    <div id="zoom-display">zoom <span id="zoom-val">--</span></div>
+  </div>
+
+  <div id="zoom-hint" style="opacity:0;">zoom in to see buildings (≥ 12)</div>
+</div>
+
+<script>
+const API_BASE = "{{ api_url }}";
+
+// ── Color schemes ──────────────────────────────────────────────
+const SCHEMES = {
+  default: {
+    fill: '#e8b54a',
+    legend: null,
+  },
+  geometry_source: {
+    label: 'Data Source',
+    // gov-* covers gov-de, gov-fr, gov-nl, etc. — use index-of to match prefix
+    fill: ['case',
+      ['==', ['index-of', 'gov-', ['get', 'geometry_source']], 0], '#7dd3a0',
+      ['==', ['get', 'geometry_source'], 'osm'],       '#e8b54a',
+      ['==', ['get', 'geometry_source'], 'microsoft'], '#5cb1c9',
+      '#9a8fc0'],
+    legend: [
+      { color: '#e8b54a', label: 'OpenStreetMap' },
+      { color: '#7dd3a0', label: 'Government' },
+      { color: '#5cb1c9', label: 'Microsoft' },
+      { color: '#9a8fc0', label: 'Other' },
+    ],
+  },
+  type: {
+    label: 'Building Type',
+    fill: ['match', ['get', 'type'],
+      'residential',     '#4ade80',
+      'non-residential', '#f87171',
+      'industrial',      '#fbbf24',
+      'mixed',           '#a78bfa',
+                         '#6a7180'],
+    legend: [
+      { color: '#4ade80', label: 'Residential' },
+      { color: '#f87171', label: 'Non-residential' },
+      { color: '#fbbf24', label: 'Industrial' },
+      { color: '#a78bfa', label: 'Mixed' },
+      { color: '#6a7180', label: 'Unknown' },
+    ],
+  },
+  height: {
+    label: 'Height (m)',
+    fill: ['interpolate', ['linear'], ['coalesce', ['get', 'height'], 0],
+      0,   '#440154',
+      10,  '#3b528b',
+      25,  '#21908c',
+      50,  '#5ec962',
+      100, '#fde725'],
+    gradient: ['#440154', '#3b528b', '#21908c', '#5ec962', '#fde725'],
+    gradientLabels: ['0 m', '10', '25', '50', '100+ m'],
+    legend: null,
+  },
+  construction_year: {
+    label: 'Construction Year',
+    fill: ['interpolate', ['linear'], ['coalesce', ['get', 'construction_year'], 1970],
+      1850, '#8b1a1a',
+      1918, '#e07b54',
+      1945, '#f5c07a',
+      1980, '#d4d4d4',
+      2000, '#6baed6',
+      2024, '#2171b5'],
+    gradient: ['#8b1a1a', '#e07b54', '#f5c07a', '#d4d4d4', '#6baed6', '#2171b5'],
+    gradientLabels: ['1850', '1918', '1945', '1980', '2000', '2024'],
+    legend: null,
+  },
+};
+
+// ── Source pill helper ─────────────────────────────────────────
+function srcPill(val) {
+  if (!val || val === 'null') return '';
+  // Normalize gov-* variants (gov-de, gov-fr, …) to a single "government" label/class
+  const normalized = val.startsWith('gov-') ? 'government' : val;
+  const knownClass = ['osm', 'government', 'microsoft', 'estimated'].includes(normalized)
+    ? `src-${normalized}` : 'src-other';
+  const label = normalized === 'government' ? `gov (${val.slice(4)})` : val;
+  return `<span class="src-pill ${knownClass}">${label}</span>`;
+}
+
+function fmtVal(v) {
+  if (v == null || v === '' || v === 'null') return '<span class="na">—</span>';
+  return String(v);
+}
+
+// ── Legend renderer ────────────────────────────────────────────
+function renderLegend(key) {
+  const legendEl = document.getElementById('legend');
+  const scheme = SCHEMES[key];
+  legendEl.innerHTML = '';
+  if (!scheme || !scheme.legend && !scheme.gradient) {
+    legendEl.classList.remove('visible');
+    return;
+  }
+  legendEl.classList.add('visible');
+
+  if (scheme.gradient) {
+    const bar = document.createElement('div');
+    bar.className = 'legend-gradient';
+    bar.style.background = `linear-gradient(to right, ${scheme.gradient.join(',')})`;
+    legendEl.appendChild(bar);
+    const lblRow = document.createElement('div');
+    lblRow.className = 'legend-gradient-labels';
+    scheme.gradientLabels.forEach(l => {
+      const s = document.createElement('span');
+      s.className = 'legend-label';
+      s.textContent = l;
+      lblRow.appendChild(s);
+    });
+    legendEl.appendChild(lblRow);
+  } else if (scheme.legend) {
+    scheme.legend.forEach(({ color, label }) => {
+      const row = document.createElement('div');
+      row.className = 'legend-row';
+      row.innerHTML =
+        `<div class="legend-swatch" style="background:${color}"></div>` +
+        `<span class="legend-label">${label}</span>`;
+      legendEl.appendChild(row);
+    });
+  }
+}
+
+// ── Map ────────────────────────────────────────────────────────
+let is3d = false;
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  center: [13.404, 52.520],
+  zoom: 13,
+  pitch: 0,
+  antialias: true,
+});
+
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+
+const zoomHint = document.getElementById('zoom-hint');
+
+map.on('zoom', () => {
+  const z = map.getZoom();
+  document.getElementById('zoom-val').textContent = z.toFixed(1);
+  zoomHint.style.opacity = z < 12 ? '1' : '0';
+});
+
+map.on('dataloading', () => document.getElementById('loading-badge').classList.add('visible'));
+map.on('idle',        () => document.getElementById('loading-badge').classList.remove('visible'));
+
+map.on('load', () => {
+  document.getElementById('zoom-val').textContent = map.getZoom().toFixed(1);
+  zoomHint.style.opacity = map.getZoom() < 12 ? '1' : '0';
+
+  // Remove basemap building layers so our own footprints are the only buildings shown
+  ['building', 'building-top'].forEach(id => {
+    if (map.getLayer(id)) map.removeLayer(id);
+  });
+
+  const tileAttrs = [
+    'id', 'type', 'subtype', 'height', 'floors', 'construction_year',
+    'geometry_source', 'type_source', 'height_source',
+  ].join(',');
+
+  map.addSource('eubucco', {
+    type: 'vector',
+    tiles: [`${API_BASE}/tiles/v0.2/{z}/{x}/{y}.pbf?include_attributes=${tileAttrs}`],
+    minzoom: 12,
+    maxzoom: 18,
+  });
+
+  map.addLayer({
+    id: 'buildings-fill',
+    type: 'fill',
+    source: 'eubucco',
+    'source-layer': 'buildings',
+    paint: {
+      'fill-color': '#e8b54a',
+      'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.6, 14, 0.85],
+      'fill-outline-color': ['interpolate', ['linear'], ['zoom'], 12, 'rgba(0,0,0,0)', 14, 'rgba(0,0,0,0.25)'],
+    },
+  });
+
+  map.addLayer({
+    id: 'buildings-3d',
+    type: 'fill-extrusion',
+    source: 'eubucco',
+    'source-layer': 'buildings',
+    layout: { visibility: 'none' },
+    paint: {
+      'fill-extrusion-color': '#e8b54a',
+      'fill-extrusion-height': ['coalesce', ['get', 'height'], 5],
+      'fill-extrusion-base': 0,
+      'fill-extrusion-opacity': 0.85,
+    },
+  });
+});
+
+// ── Apply color scheme ─────────────────────────────────────────
+function applyColorScheme(key) {
+  if (!map.getLayer('buildings-fill')) return;
+  const scheme = SCHEMES[key] || SCHEMES.default;
+  const color = scheme.fill;
+  map.setPaintProperty('buildings-fill', 'fill-color', color);
+  map.setPaintProperty('buildings-3d',   'fill-extrusion-color', color);
+  renderLegend(key);
+}
+
+// ── Toggle 3D / flat ──────────────────────────────────────────
+function setView(view) {
+  is3d = view === '3d';
+  if (!map.getLayer('buildings-fill')) return;
+  map.setLayoutProperty('buildings-fill', 'visibility', is3d ? 'none' : 'visible');
+  map.setLayoutProperty('buildings-3d',   'visibility', is3d ? 'visible' : 'none');
+  map.easeTo({ pitch: is3d ? 45 : 0, duration: 400 });
+  document.querySelectorAll('#viewSeg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.view === view);
+  });
+}
+
+// ── Hover tooltip ─────────────────────────────────────────────
+const tipEl = document.getElementById('tip');
+
+function updateTip(e) {
+  if (!map.getLayer('buildings-fill')) return;
+  const activeLayer = is3d ? 'buildings-3d' : 'buildings-fill';
+  const features = map.queryRenderedFeatures(e.point, { layers: [activeLayer] });
+  if (!features.length) { hideTip(); return; }
+
+  const p = features[0].properties;
+  const rows = [
+    { k: 'type',    v: fmtVal(p.type),             src: p.type_source },
+    { k: 'subtype', v: fmtVal(p.subtype),           src: null },
+    { k: 'height',  v: p.height != null && p.height !== 'null' ? `${p.height} m` : fmtVal(null), src: p.height_source },
+    { k: 'floors',  v: fmtVal(p.floors),            src: p.floors_source },
+    { k: 'year',    v: fmtVal(p.construction_year), src: p.construction_year_source },
+    { k: 'source',  v: fmtVal(p.geometry_source),   src: null },
+  ];
+
+  const tableHtml = rows.map(r =>
+    `<tr><td class="k">${r.k}</td><td class="v">${r.v}${r.src && r.src !== 'null' ? srcPill(r.src) : ''}</td></tr>`
+  ).join('');
+
+  tipEl.innerHTML =
+    `<div class="tip-id">${p.id || '—'}</div><table>${tableHtml}</table>`;
+
+  positionTip(e.originalEvent);
+  tipEl.style.display = 'block';
+  map.getCanvas().style.cursor = 'crosshair';
+}
+
+function hideTip() {
+  tipEl.style.display = 'none';
+  map.getCanvas().style.cursor = '';
+}
+
+function positionTip(mouseEvent) {
+  const rect = map.getContainer().getBoundingClientRect();
+  const relX = mouseEvent.clientX - rect.left;
+  const relY = mouseEvent.clientY - rect.top;
+  const tw = tipEl.offsetWidth  || 200;
+  const th = tipEl.offsetHeight || 120;
+  let left = relX + 14, top = relY + 14;
+  if (left + tw > rect.width  - 10) left = relX - tw - 10;
+  if (top  + th > rect.height - 10) top  = relY - th - 10;
+  tipEl.style.left = left + 'px';
+  tipEl.style.top  = top  + 'px';
+}
+
+map.on('mousemove', updateTip);
+map.on('mouseout',  hideTip);
+
+// Keep tooltip position synced while it's visible
+map.getContainer().addEventListener('mousemove', e => {
+  if (tipEl.style.display === 'block') positionTip(e);
+});
+
+// ── Controls ──────────────────────────────────────────────────
+document.getElementById('colorSelect').addEventListener('change', e => {
+  applyColorScheme(e.target.value);
+});
+
+document.querySelectorAll('#viewSeg button').forEach(btn => {
+  btn.addEventListener('click', () => setView(btn.dataset.view));
+});
+</script>
+
+{% endblock %}
