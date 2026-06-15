@@ -136,7 +136,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data:Z
       - postgres_data_backups:/backups:z
-      - /home/app/eubucco/export:/export
     networks:
       - default
       - dev-db
@@ -244,7 +243,6 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
-      - /home/app/eubucco/tiles:/tiles:ro
     networks:
       - default
       - proxy
