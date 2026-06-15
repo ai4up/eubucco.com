@@ -32,7 +32,7 @@ An open, non-proprietary, SQLite-based container for geospatial data.
 * **Cons:** Increased file size and slower read speeds compared to Parquet.
 
 !!! warning "Experimental"
-    Provided as a convenience for desktop GIS users. Minor typing discrepancies may occur during the automated conversion from the native Parquet source.
+    Provided as a convenience for desktop GIS users. Minor typing discrepancies may occur during the automated conversion from the native Parquet source. Only available for latest release.
 
 ---
 
@@ -44,6 +44,6 @@ The legacy industry standard for geospatial vector data.
 * **Cons:** Large files, slow reading, and limited to 2GB per file. No querying possible; all data must be read into memory.
 
 !!! warning "Experimental"
-    Provided for legacy GIS software compatibility but generally not recommended. Automated conversion from Parquet may cause minor typing discrepancies. Crucially, some EUBUCCO regions exceed the 2GB limit. Column names differ from Parquet and GeoPackage files due to 10 character limit. Some values have been truncated to 264 characters.
+    Provided for legacy GIS software compatibility but generally not recommended. Automated conversion from Parquet may cause minor typing discrepancies. Crucially, some EUBUCCO regions exceed the 2GB limit. Column names differ from Parquet and GeoPackage files due to 10 character limit. Some values have been truncated to 264 characters. Only available for latest release.
 
 ---
