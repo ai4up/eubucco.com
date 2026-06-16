@@ -5,6 +5,7 @@
 
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
 <script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3.2.0/dist/pmtiles.js"></script>
 
 <style>
   :root {
@@ -216,11 +217,11 @@
     <div id="zoom-display">zoom <span id="zoom-val">--</span></div>
   </div>
 
-  <div id="zoom-hint" style="opacity:0;">zoom in to see buildings (≥ 12)</div>
+  <div id="zoom-hint" style="opacity:0;">zoom in to see buildings (≥ 14)</div>
 </div>
 
 <script>
-const API_BASE = "{{ api_url }}";
+const PMTILES_URL = "{{ pmtiles_url }}";
 
 // ── Color schemes ──────────────────────────────────────────────
 const SCHEMES = {
@@ -339,6 +340,10 @@ function renderLegend(key) {
   }
 }
 
+// ── PMTiles protocol ───────────────────────────────────────────
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol('pmtiles', protocol.tile);
+
 // ── Map ────────────────────────────────────────────────────────
 let is3d = false;
 
@@ -346,7 +351,7 @@ const map = new maplibregl.Map({
   container: 'map',
   style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
   center: [13.404, 52.520],
-  zoom: 13,
+  zoom: 14,
   pitch: 0,
   antialias: true,
 });
@@ -358,7 +363,7 @@ const zoomHint = document.getElementById('zoom-hint');
 map.on('zoom', () => {
   const z = map.getZoom();
   document.getElementById('zoom-val').textContent = z.toFixed(1);
-  zoomHint.style.opacity = z < 12 ? '1' : '0';
+  zoomHint.style.opacity = z < 14 ? '1' : '0';
 });
 
 map.on('dataloading', () => document.getElementById('loading-badge').classList.add('visible'));
@@ -366,23 +371,16 @@ map.on('idle',        () => document.getElementById('loading-badge').classList.r
 
 map.on('load', () => {
   document.getElementById('zoom-val').textContent = map.getZoom().toFixed(1);
-  zoomHint.style.opacity = map.getZoom() < 12 ? '1' : '0';
+  zoomHint.style.opacity = map.getZoom() < 14 ? '1' : '0';
 
   // Remove basemap building layers so our own footprints are the only buildings shown
   ['building', 'building-top'].forEach(id => {
     if (map.getLayer(id)) map.removeLayer(id);
   });
 
-  const tileAttrs = [
-    'id', 'type', 'subtype', 'height', 'floors', 'construction_year',
-    'geometry_source', 'type_source', 'height_source',
-  ].join(',');
-
   map.addSource('eubucco', {
     type: 'vector',
-    tiles: [`${API_BASE}/tiles/v0.2/{z}/{x}/{y}.pbf?include_attributes=${tileAttrs}`],
-    minzoom: 12,
-    maxzoom: 18,
+    url: `pmtiles://${PMTILES_URL}`,
   });
 
   map.addLayer({

@@ -327,6 +327,19 @@ services:
     volumes:
       - /home/eubucco/tiles:/tiles:ro
 
+  tile-generator:
+    image: eubucco/eubucco.com:dev
+    depends_on:
+      minio-setup:
+        condition: service_completed_successfully
+    env_file:
+      - .envs/.dev/.django
+      - .envs/.dev/.postgres
+      - .envs/.dev/.minio
+    ports: []
+    restart: "no"
+    command: python manage.py generate_building_tiles --data-version v0.2 --max-zoom 14
+
 networks:
   default:
   proxy:

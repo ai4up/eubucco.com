@@ -203,3 +203,16 @@ services:
 
       echo 'MinIO setup complete.'
       "
+
+  tile-generator:
+    <<: *django
+    depends_on:
+      minio-setup:
+        condition: service_completed_successfully
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+      - ./.envs/.local/.minio
+    ports: []
+    restart: "no"
+    command: python manage.py generate_building_tiles --data-version v0.2 --max-zoom 14

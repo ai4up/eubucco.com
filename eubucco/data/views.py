@@ -32,9 +32,12 @@ def map(request):
 
 
 def explorer(request):
-    """High-performance building explorer using vector tiles from parquet files."""
-    api_url = os.getenv("API_URL", "http://localhost:8001/v1").rstrip("/")
-    return render(request, "data/explorer.html", {"api_url": api_url})
+    """Building explorer backed by pre-generated PMTiles served from MinIO."""
+    minio_public = os.getenv("MINIO_PUBLIC_ENDPOINT", "http://localhost:9000").rstrip("/")
+    bucket = os.getenv("MINIO_BUCKET", "eubucco")
+    version = os.getenv("BUILDINGS_VERSION", "v0.2")
+    pmtiles_url = f"{minio_public}/{bucket}/{version}/buildings/tiles/buildings.pmtiles"
+    return render(request, "data/explorer.html", {"pmtiles_url": pmtiles_url})
 
 
 @csrf_exempt
