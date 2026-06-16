@@ -316,7 +316,9 @@ def generate_building_tiles(
                         "construction_year": "Number",
                         "geometry_source": "String",
                         "type_source": "String",
+                        "subtype_source": "String",
                         "height_source": "String",
+                        "floors_source": "String",
                     },
                 }
             ],

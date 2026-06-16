@@ -338,7 +338,7 @@ services:
       - .envs/.dev/.minio
     ports: []
     restart: "no"
-    command: python manage.py generate_building_tiles --data-version v0.2 --max-zoom 14
+    command: python manage.py generate_building_tiles --data-version v0.2 --min-zoom 12 --max-zoom 14
 
 networks:
   default:
