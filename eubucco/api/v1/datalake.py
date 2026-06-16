@@ -1,3 +1,4 @@
+import os
 import tempfile
 import zipfile
 from enum import Enum
@@ -6,6 +7,7 @@ from typing import Dict, Iterable, List, Tuple
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from pydantic import BaseModel
 
 from eubucco.data.constants import DATASET_PREFIX
@@ -188,7 +190,7 @@ async def download_bundle(
         zip_path,
         media_type="application/zip",
         filename=filename,
-        background=None
+        background=BackgroundTask(os.unlink, zip_path),
     )
 
 
