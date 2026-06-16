@@ -108,7 +108,7 @@
     background: rgba(19,22,27,.97); border: 1px solid var(--rule);
     border-radius: 2px; padding: 10px 12px;
     font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px;
-    color: var(--ink); max-width: 300px;
+    color: var(--ink); max-width: 310px;
     box-shadow: 0 12px 28px -10px rgba(0,0,0,.7);
     display: none;
   }
@@ -121,6 +121,7 @@
   #tip td { padding: 2px 6px 2px 0; vertical-align: top; }
   #tip td.k { color: var(--ink-dim); text-transform: uppercase; font-size: 9px; letter-spacing: .1em; white-space: nowrap; }
   #tip td.v { color: var(--ink); }
+  #tip .conf { color: #5a6170; font-size: 10px; }
   #tip .src-pill {
     display: inline-block; padding: 1px 5px; border-radius: 2px;
     font-size: 8.5px; letter-spacing: .08em; color: #0d0f12;
@@ -131,6 +132,10 @@
   #tip .src-microsoft  { background: #5cb1c9; }
   #tip .src-estimated  { background: #9a8fc0; color: var(--ink); }
   #tip .na { color: #5a6170; font-style: italic; }
+  #tip .tip-conf-hint {
+    margin-top: 6px; padding-top: 5px; border-top: 1px solid var(--rule);
+    font-size: 9px; color: #3a404e; font-style: italic; line-height: 1.4;
+  }
 
   /* ── Bottom-right HUD ── */
   #hud {
@@ -217,13 +222,11 @@
       <button class="on" data-view="3d">3D Extrusion</button>
     </div>
 
-    <div id="overture-section" style="display:none;">
-      <p class="section-label">Overlays</p>
-      <div class="seg">
-        <button id="overtureBtn">Overture Buildings</button>
-      </div>
-      <p class="overlay-note">Outlines only · release 2026-05-20.0</p>
+    <p class="section-label">Overlays</p>
+    <div class="seg">
+      <button id="overtureBtn">Overture Buildings</button>
     </div>
+    <p class="overlay-note">Outlines only · release 2026-05-20.0</p>
   </aside>
 
   <!-- ── HUD ── -->
@@ -280,7 +283,6 @@ const SCHEMES = {
 
   geometry_source: {
     label: 'Data Source',
-    // Use downcase + slice to handle any capitalisation variants (e.g. 'Microsoft')
     fill: ['case',
       ['==', ['slice', ['downcase', ['coalesce', ['get', 'geometry_source'], '']], 0, 4], 'gov-'], '#7dd3a0',
       ['==', ['downcase', ['coalesce', ['get', 'geometry_source'], '']], 'osm'],       '#e8b54a',
@@ -295,7 +297,6 @@ const SCHEMES = {
 
   height: {
     label: 'Height (m)',
-    // Dense stops in typical city range (3–25 m), sparse above
     fill: ['interpolate', ['linear'], ['coalesce', ['get', 'height'], 0],
       0,   '#2d2d3a',
       3,   '#440154',
@@ -329,7 +330,6 @@ const SCHEMES = {
 
   construction_year: {
     label: 'Construction Year',
-    // Null/missing years coalesce to 0; no real building has year 0
     fill: ['case',
       ['==', ['coalesce', ['get', 'construction_year'], 0], 0], '#1c1c28',
       ['interpolate', ['linear'], ['get', 'construction_year'],
@@ -366,13 +366,39 @@ function fmtGeometrySource(val) {
   const lower = val.toLowerCase();
   if (lower === 'osm')          return 'OpenStreetMap';
   if (lower === 'msft')          return 'Microsoft';
-  if (lower.startsWith('gov-')) return `Government (${val.slice(4)} cadastre)`;
+  if (lower.startsWith('gov-')) return `Government (${val.slice(4)})`;
   return val;
 }
 
 function fmtVal(v) {
   if (v == null || v === '' || v === 'null') return '<span class="na">—</span>';
   return String(v);
+}
+
+// Confidence display helpers
+function _dispNum(v) {
+  // Show as integer if close to one, else 1 decimal place
+  return Math.abs(v - Math.round(v)) < 0.05 ? String(Math.round(v)) : v.toFixed(1);
+}
+
+function fmtNumConf(source, lower, upper, unit) {
+  if (lower == null || upper == null) return '';
+  const lo = parseFloat(lower), hi = parseFloat(upper);
+  if (isNaN(lo) || isNaN(hi) || lo === hi) return '';
+  const u = unit ? ' ' + unit : '';  // narrow no-break space before unit
+  const src = (source || '').toLowerCase();
+  if (src === 'estimated') {
+    const half = _dispNum((hi - lo) / 2);
+    return `<span class="conf"> ± ${half}${u}</span>`;
+  }
+  return `<span class="conf"> [${_dispNum(lo)}–${_dispNum(hi)}${u}]</span>`;
+}
+
+function fmtCatConf(confidence) {
+  if (confidence == null) return '';
+  const v = parseFloat(confidence);
+  if (isNaN(v)) return '';
+  return `<span class="conf"> (${Math.round(v * 100)}%)</span>`;
 }
 
 // ── Legend renderer ────────────────────────────────────────────
@@ -489,7 +515,7 @@ map.on('load', () => {
     },
   });
 
-  // Overture buildings — outlines only, toggled separately
+  // Overture buildings — rendered as line outlines for visual differentiation
   map.addSource('overture', {
     type: 'vector',
     url: `pmtiles://${OVERTURE_URL}`,
@@ -497,13 +523,14 @@ map.on('load', () => {
 
   map.addLayer({
     id: 'overture-outline',
-    type: 'fill',
+    type: 'line',
     source: 'overture',
     'source-layer': 'building',
     layout: { visibility: 'none' },
     paint: {
-      'fill-color': 'rgba(0,0,0,0)',
-      'fill-outline-color': 'rgba(192,168,255,0.75)',
+      'line-color': '#c4b5fd',
+      'line-width': 1.8,
+      'line-opacity': 0.9,
     },
   });
 
@@ -525,7 +552,7 @@ function setView(view) {
   document.querySelectorAll('#viewSeg button').forEach(b => {
     b.classList.toggle('on', b.dataset.view === view);
   });
-  document.getElementById('overture-section').style.display = is3d ? 'none' : '';
+  // Hide Overture when manually entering 3D (outlines float oddly on extrusions)
   if (is3d && overtureVisible) setOverture(false);
   if (!map.getLayer('buildings-fill')) return;
   map.setLayoutProperty('buildings-fill', 'visibility', is3d ? 'none' : 'visible');
@@ -542,7 +569,11 @@ function setOverture(show) {
   document.getElementById('overtureBtn').classList.toggle('on', show);
 }
 
-document.getElementById('overtureBtn').addEventListener('click', () => setOverture(!overtureVisible));
+document.getElementById('overtureBtn').addEventListener('click', () => {
+  // Auto-switch to flat when enabling Overture (outlines work poorly on 3D extrusions)
+  if (is3d) setView('flat');
+  setOverture(!overtureVisible);
+});
 
 // ── Hover tooltip ─────────────────────────────────────────────
 const tipEl = document.getElementById('tip');
@@ -554,21 +585,44 @@ function updateTip(e) {
   if (!features.length) { hideTip(); return; }
 
   const p = features[0].properties;
+
+  // Confidence annotations
+  const typeConf    = fmtCatConf(p.type_confidence);
+  const subtypeConf = fmtCatConf(p.subtype_confidence);
+  const heightConf  = p.height != null && p.height !== 'null'
+    ? fmtNumConf(p.height_source, p.height_confidence_lower, p.height_confidence_upper, 'm')
+    : '';
+  const floorsConf  = fmtNumConf(p.floors_source, p.floors_confidence_lower, p.floors_confidence_upper, '');
+  const yearConf    = fmtNumConf(p.construction_year_source,
+      p.construction_year_confidence_lower, p.construction_year_confidence_upper, '');
+
+  const heightVal = p.height != null && p.height !== 'null'
+    ? `${p.height} m${heightConf}`
+    : fmtVal(null);
+
   const rows = [
-    { k: 'type',    v: fmtVal(p.type),             src: p.type_source },
-    { k: 'subtype', v: fmtVal(p.subtype),           src: p.subtype_source },
-    { k: 'height',  v: p.height != null && p.height !== 'null' ? `${p.height} m` : fmtVal(null), src: p.height_source },
-    { k: 'floors',  v: fmtVal(p.floors),            src: p.floors_source },
-    { k: 'year',    v: fmtVal(p.construction_year), src: null },
-    { k: 'source',  v: fmtGeometrySource(p.geometry_source), src: null },
+    { k: 'type',    v: `${fmtVal(p.type)}${typeConf}`,                 src: p.type_source },
+    { k: 'subtype', v: `${fmtVal(p.subtype)}${subtypeConf}`,           src: p.subtype_source },
+    { k: 'height',  v: heightVal,                                      src: p.height_source },
+    { k: 'floors',  v: `${fmtVal(p.floors)}${floorsConf}`,             src: p.floors_source },
+    { k: 'year',    v: `${fmtVal(p.construction_year)}${yearConf}`,    src: p.construction_year_source },
+    { k: 'source',  v: fmtGeometrySource(p.geometry_source),           src: null },
   ];
 
   const tableHtml = rows.map(r =>
     `<tr><td class="k">${r.k}</td><td class="v">${r.v}${r.src && r.src !== 'null' ? srcPill(r.src) : ''}</td></tr>`
   ).join('');
 
+  const hasConf = typeConf || subtypeConf || heightConf || floorsConf || yearConf;
+  const confHint = hasConf
+    ? `<div class="tip-conf-hint">Confidence assessments:<ul>
+            <li><em>(%)</em> classification probability</li>
+            <li><em>±</em> bootstrapped prediction</li>
+            <li><em>[range]</em> of merged attributes</li>
+          </ul></div>`    : '';
+
   tipEl.innerHTML =
-    `<div class="tip-id">${p.id || '—'}</div><table>${tableHtml}</table>`;
+    `<div class="tip-id">${p.id || '—'}</div><table>${tableHtml}</table>${confHint}`;
 
   positionTip(e.originalEvent);
   tipEl.style.display = 'block';
@@ -596,7 +650,6 @@ function positionTip(mouseEvent) {
 map.on('mousemove', updateTip);
 map.on('mouseout',  hideTip);
 
-// Keep tooltip position synced while it's visible
 map.getContainer().addEventListener('mousemove', e => {
   if (tipEl.style.display === 'block') positionTip(e);
 });

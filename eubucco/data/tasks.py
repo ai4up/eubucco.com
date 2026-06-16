@@ -143,7 +143,16 @@ _TILE_ATTR_SELECT = (
     " CAST(height AS DOUBLE) AS height,"
     " CAST(floors AS DOUBLE) AS floors,"
     " CAST(construction_year AS INTEGER) AS construction_year,"
-    " geometry_source, type_source, height_source"
+    " subtype_raw, geometry_source, type_source, subtype_source,"
+    " height_source, floors_source, construction_year_source,"
+    " CAST(type_confidence AS DOUBLE) AS type_confidence,"
+    " CAST(subtype_confidence AS DOUBLE) AS subtype_confidence,"
+    " CAST(height_confidence_lower AS DOUBLE) AS height_confidence_lower,"
+    " CAST(height_confidence_upper AS DOUBLE) AS height_confidence_upper,"
+    " CAST(floors_confidence_lower AS DOUBLE) AS floors_confidence_lower,"
+    " CAST(floors_confidence_upper AS DOUBLE) AS floors_confidence_upper,"
+    " CAST(construction_year_confidence_lower AS INTEGER) AS construction_year_confidence_lower,"
+    " CAST(construction_year_confidence_upper AS INTEGER) AS construction_year_confidence_upper"
 )
 
 
@@ -311,6 +320,7 @@ def generate_building_tiles(
                         "id": "String",
                         "type": "String",
                         "subtype": "String",
+                        "subtype_raw": "String",
                         "height": "Number",
                         "floors": "Number",
                         "construction_year": "Number",
@@ -319,6 +329,15 @@ def generate_building_tiles(
                         "subtype_source": "String",
                         "height_source": "String",
                         "floors_source": "String",
+                        "construction_year_source": "String",
+                        "type_confidence": "Number",
+                        "subtype_confidence": "Number",
+                        "height_confidence_lower": "Number",
+                        "height_confidence_upper": "Number",
+                        "floors_confidence_lower": "Number",
+                        "floors_confidence_upper": "Number",
+                        "construction_year_confidence_lower": "Number",
+                        "construction_year_confidence_upper": "Number",
                     },
                 }
             ],
