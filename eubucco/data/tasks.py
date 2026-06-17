@@ -28,8 +28,6 @@ r = redis.Redis(
 )
 
 # --- PHASE 1: PARQUET UPLOADS ---
-
-
 @celery_app.task(soft_time_limit=600, queue="io_tasks")
 def upload_parquet_task(version_tag: str, file_path: str, reupload: bool = False):
     """Stage 1: Individual task to upload a single Parquet file."""
@@ -50,8 +48,6 @@ def upload_parquet_task(version_tag: str, file_path: str, reupload: bool = False
 
 
 # --- PHASE 2: CONVERSIONS ---
-
-
 @celery_app.task(soft_time_limit=3000, acks_late=True, queue="heavy_tasks")
 def convert_spatial_task(version_tag: str, file_path: str, reupload: bool = False):
     """Stage 2: Heavy-duty conversion task. Isolated for OOM protection."""
@@ -182,6 +178,7 @@ def _lon_lat_to_tile(lon: float, lat: float, z: int) -> tuple:
 
 
 def _make_mvt(con, s3_path: str, z: int, x: int, y: int):
+    log = logging.getLogger(__name__)
     query = f"""
     WITH env AS (
         SELECT ST_Transform(ST_TileEnvelope({z},{x},{y}), 'EPSG:3857', '{_LAEA}') AS env_laea
@@ -207,7 +204,11 @@ def _make_mvt(con, s3_path: str, z: int, x: int, y: int):
     SELECT ST_AsMVT(rd, 'buildings')
     FROM (SELECT * FROM raw_data WHERE geom IS NOT NULL) rd
     """
-    row = con.execute(query).fetchone()
+    try:
+        row = con.execute(query).fetchone()
+    except Exception:
+        log.exception("MVT query failed for tile z=%d x=%d y=%d", z, x, y)
+        raise
     if not row or not row[0]:
         return None
     return bytes(row[0])
@@ -412,6 +413,17 @@ def generate_building_tiles(
             content_type="application/x-protobuf",
         )
         log.info("Uploaded to %s/%s", s.bucket, object_key)
+
+    except Exception:
+        log.exception(
+            "generate_building_tiles FAILED: version=%s z%d–%d, progress=%d/%d tiles",
+            version,
+            min_zoom,
+            max_zoom,
+            non_empty,
+            total,
+        )
+        raise
 
     finally:
         if os.path.exists(tmp_path):
