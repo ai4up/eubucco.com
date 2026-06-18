@@ -2,6 +2,7 @@ import hashlib
 import json
 import logging
 import os
+from datetime import timedelta
 from urllib.parse import quote, unquote
 
 import requests
@@ -63,6 +64,12 @@ def coverage(request):
             "nuts_names_url": static("metadata/nuts_names.json"),
         },
     )
+
+def conflation(request):
+    """Walkthrough of the building conflation/enrichment pipeline on the
+    static sample-erfurt dataset (served from eubucco/static/conflation/)."""
+    return render(request, "data/conflation.html")
+
 
 @csrf_exempt
 @require_POST
