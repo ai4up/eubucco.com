@@ -1,8 +1,9 @@
 import logging
-import math
 import os
+import subprocess
 import tempfile
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import redis
@@ -13,7 +14,12 @@ from config import celery_app
 
 from .constants import DATASET_PREFIX
 from .converters import GeoPackageConverter, ShapefileConverter
-from .minio_client import build_client, file_exists, upload_file
+from .minio_client import (
+    build_client,
+    extract_partitions_from_key,
+    file_exists,
+    upload_file,
+)
 
 RAW_FILES_DIR = Path("data/s3")
 SPATIAL_FORMATS = {
@@ -149,7 +155,8 @@ def on_pipeline_failure(request, exc, traceback):
     logging.error(f"Data ingestion pipeline failed: {exc}")
 
 
-_LAEA = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs"
+# Building geometries are stored in EPSG:3035 (ETRS89-LAEA Europe); tiles need WGS84.
+_SOURCE_CRS = "EPSG:3035"
 
 _TILE_ATTR_SELECT = (
     "id, type, subtype,"
@@ -169,275 +176,318 @@ _TILE_ATTR_SELECT = (
 )
 
 
-def _lon_lat_to_tile(lon: float, lat: float, z: int) -> tuple:
-    lat_r = math.radians(lat)
-    n = 2**z
-    x = max(0, min(n - 1, int((lon + 180) / 360 * n)))
-    y = max(0, min(n - 1, int((1 - math.asinh(math.tan(lat_r)) / math.pi) / 2 * n)))
-    return x, y
+# Numeric attribute types passed to tippecanoe. FlatGeobuf is already typed, so
+# these are mostly belt-and-suspenders, but they guarantee the explorer popup
+# receives numbers (not strings) for every measured/confidence field.
+_TIPPECANOE_ATTR_TYPES = [
+    "--attribute-type=height:float",
+    "--attribute-type=floors:float",
+    "--attribute-type=construction_year:int",
+    "--attribute-type=type_confidence:float",
+    "--attribute-type=subtype_confidence:float",
+    "--attribute-type=height_confidence_lower:float",
+    "--attribute-type=height_confidence_upper:float",
+    "--attribute-type=floors_confidence_lower:float",
+    "--attribute-type=floors_confidence_upper:float",
+    "--attribute-type=construction_year_confidence_lower:int",
+    "--attribute-type=construction_year_confidence_upper:int",
+]
 
 
-def _make_mvt(con, s3_path: str, z: int, x: int, y: int):
-    log = logging.getLogger(__name__)
-    query = f"""
-    WITH env AS (
-        SELECT ST_Transform(ST_TileEnvelope({z},{x},{y}), 'EPSG:3857', '{_LAEA}') AS env_laea
-    ),
-    filtered AS (
-        SELECT geometry, {_TILE_ATTR_SELECT}
-        FROM read_parquet('{s3_path}', hive_partitioning=true), env
-        WHERE
-            bbox.xmin <= ST_XMax(env_laea) AND bbox.xmax >= ST_XMin(env_laea)
-            AND bbox.ymin <= ST_YMax(env_laea) AND bbox.ymax >= ST_YMin(env_laea)
-            AND ST_Intersects(geometry, env_laea)
-    ),
-    raw_data AS (
-        SELECT
-            ST_AsMVTGeom(
-                ST_Transform(geometry, '{_LAEA}', 'EPSG:3857'),
-                ST_Extent(ST_TileEnvelope({z},{x},{y})),
-                4096, 64, true
-            ) AS geom,
-            {_TILE_ATTR_SELECT}
-        FROM filtered
-    )
-    SELECT ST_AsMVT(rd, 'buildings')
-    FROM (SELECT * FROM raw_data WHERE geom IS NOT NULL) rd
-    """
-    try:
-        row = con.execute(query).fetchone()
-    except Exception:
-        log.exception("MVT query failed for tile z=%d x=%d y=%d", z, x, y)
-        raise
-    if not row or not row[0]:
-        return None
-    return bytes(row[0])
+def _esc(v: str) -> str:
+    return v.replace("'", "''")
 
 
-@celery_app.task(
-    bind=True,
-    soft_time_limit=14400,
-    time_limit=15000,
-    queue="heavy_tasks",
-)
-def generate_building_tiles(
-    self,
-    version: str = "v0.2",
-    min_zoom: int = 14,
-    max_zoom: int = 15,
+def _tile_one_region(
+    region_id: str,
+    source: str,
+    fgb_path: str,
+    pmtiles_path: str,
+    min_zoom: int,
+    max_zoom: int,
+    s3_cfg: dict = None,
+    force: bool = False,
 ):
-    """
-    Pre-generate vector tiles from Parquet building data and store as a PMTiles
-    archive in MinIO. Runs on the heavy_tasks queue; expect 30–90 min per run
-    depending on dataset size and zoom range.
+    """Tile a single NUTS region: parquet -> FlatGeobuf (DuckDB) -> PMTiles (tippecanoe).
 
-    After running, the explorer will serve tiles in <10 ms from MinIO instead of
-    computing them on-the-fly with DuckDB.
+    Self-contained and picklable so it can run inside a ProcessPoolExecutor *or*
+    a Celery worker. Reprojects EPSG:3035 -> EPSG:4326.
+
+    Resumable: a finished ``region.pmtiles`` is reused as-is (whole region
+    skipped); a finished ``region.fgb`` is reused to skip the DuckDB COPY. Both
+    artifacts are written atomically (temp file + rename) so an interrupted run
+    never leaves a half-written file that the skip-logic would wrongly trust.
     """
     import duckdb
-    from pmtiles.tile import Compression, TileType, zxy_to_tileid
-    from pmtiles.writer import Writer
-    from pyproj import Transformer
-
-    from .minio_client import _normalize_endpoint, build_client, settings_from_django
 
     log = logging.getLogger(__name__)
-    log.info(
-        "generate_building_tiles start: version=%s z%d–%d", version, min_zoom, max_zoom
+    pmtiles_path = Path(pmtiles_path)
+    fgb_path = Path(fgb_path)
+    fgb_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if pmtiles_path.exists() and not force:
+        log.info("Region %s already tiled, skipping", region_id)
+        return str(pmtiles_path)
+
+    # --- Stage 1: parquet -> FlatGeobuf (reuse if a complete FGB is present) ---
+    # NB: temp files MUST keep the real extension — tippecanoe (and GDAL) pick the
+    # output format from it, so e.g. a ".tmp" suffix would silently emit MBTiles.
+    if force or not fgb_path.exists():
+        fgb_tmp = fgb_path.with_name(fgb_path.stem + ".tmp" + fgb_path.suffix)
+        fgb_tmp.unlink(missing_ok=True)
+        con = duckdb.connect()
+        con.execute("INSTALL spatial")
+        con.execute("LOAD spatial")
+        if s3_cfg:
+            con.execute("INSTALL httpfs")
+            con.execute("LOAD httpfs")
+            con.execute(f"SET s3_endpoint='{_esc(s3_cfg['endpoint'])}'")
+            con.execute(f"SET s3_access_key_id='{_esc(s3_cfg['access_key'])}'")
+            con.execute(f"SET s3_secret_access_key='{_esc(s3_cfg['secret_key'])}'")
+            con.execute("SET s3_url_style='path'")
+            con.execute(f"SET s3_use_ssl={str(s3_cfg['secure']).lower()}")
+            con.execute(f"SET s3_region='{_esc(s3_cfg['region'])}'")
+
+        log.info("Region %s: DuckDB COPY parquet -> %s", region_id, fgb_path.name)
+        con.execute(
+            f"""
+            COPY (
+                SELECT
+                    ST_Transform(geometry, '{_SOURCE_CRS}', 'EPSG:4326', always_xy := true) AS geometry,
+                    {_TILE_ATTR_SELECT}
+                FROM read_parquet('{_esc(source)}', hive_partitioning=true)
+            ) TO '{fgb_tmp}' (FORMAT GDAL, DRIVER 'FlatGeobuf');
+            """
+        )
+        con.close()
+        os.replace(fgb_tmp, fgb_path)  # atomic publish of a complete FGB
+    else:
+        log.info("Region %s: reusing existing FGB, skipping COPY", region_id)
+
+    # --- Stage 2: FlatGeobuf -> PMTiles ---
+    log.info("Region %s: tippecanoe -> %s", region_id, pmtiles_path.name)
+    pmtiles_tmp = pmtiles_path.with_name(pmtiles_path.stem + ".tmp" + pmtiles_path.suffix)
+    pmtiles_tmp.unlink(missing_ok=True)
+    cmd = [
+        "tippecanoe",
+        "-o", str(pmtiles_tmp),
+        "-l", "buildings",
+        "-Z", str(min_zoom),
+        "-z", str(max_zoom),
+        "--drop-densest-as-needed",
+        "--extend-zooms-if-still-dropping",
+        "--read-parallel",
+        "--force",
+        # NB: deliberately NO --generate-ids — independent per-region runs would
+        # assign colliding feature ids that tile-join cannot reconcile. The
+        # explorer keys off the `id` attribute, not the MVT feature id.
+        *_TIPPECANOE_ATTR_TYPES,
+        str(fgb_path),
+    ]
+    subprocess.run(cmd, check=True)
+    os.replace(pmtiles_tmp, pmtiles_path)  # atomic publish of a complete tileset
+    fgb_path.unlink(missing_ok=True)  # FGB no longer needed once the region is done
+    return str(pmtiles_path)
+
+
+def _run_tile_join_and_upload(version: str, pmtiles_paths: list, out_path: str):
+    """Merge per-region PMTiles with tile-join and upload to MinIO."""
+    log = logging.getLogger(__name__)
+    valid = [str(p) for p in pmtiles_paths if p and Path(p).exists()]
+    if not valid:
+        raise RuntimeError("No region PMTiles available to join.")
+
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    log.info("tile-join: merging %d region PMTiles -> %s", len(valid), out_path.name)
+    subprocess.run(
+        [
+            "tile-join",
+            "-f",
+            "-pk",
+            "-n", "EUBUCCO Buildings",
+            "-N", f"EUBUCCO building stock characteristics {version}",
+            "-A", "EUBUCCO",
+            "-o", str(out_path),
+            *valid,
+        ],
+        check=True,
     )
 
-    s = settings_from_django()
-    client, _ = build_client(s)
-    endpoint, secure = _normalize_endpoint(s.endpoint, s.secure)
-    s3_path = f"s3://{s.bucket}/{version}/{DATASET_PREFIX}/parquet/**/*.parquet"
+    size_mb = out_path.stat().st_size / 1024 / 1024
+    object_key = f"{version}/{DATASET_PREFIX}/tiles/buildings.pmtiles"
+    client, settings = build_client()
+    log.info("Uploading %.1f MB -> %s/%s", size_mb, settings.bucket, object_key)
+    # A PMTiles archive is a binary container read via HTTP range requests (its
+    # inner tiles are already gzipped) — serve it as octet-stream so proxies/CDNs
+    # don't try to re-compress it.
+    upload_file(
+        client, settings, object_key, str(out_path),
+        content_type="application/octet-stream",
+    )
 
-    def esc(v: str) -> str:
-        return v.replace("'", "''")
-
-    con = duckdb.connect()
-    con.execute("INSTALL spatial")
-    con.execute("LOAD spatial")
-    con.execute("INSTALL httpfs")
-    con.execute("LOAD httpfs")
-    con.execute(f"SET s3_endpoint='{esc(endpoint)}'")
-    con.execute(f"SET s3_access_key_id='{esc(s.access_key)}'")
-    con.execute(f"SET s3_secret_access_key='{esc(s.secret_key)}'")
-    con.execute("SET s3_url_style='path'")
-    con.execute(f"SET s3_use_ssl={str(secure).lower()}")
-    con.execute(f"SET s3_region='{esc(s.region)}'")
-    con.execute("SET threads TO 4")
-    con.execute("SET memory_limit='16GB'")
-
-    proj = Transformer.from_crs("EPSG:3035", "EPSG:4326", always_xy=True)
-
-    # Per-region bboxes: avoids enumerating the entire European bounding box
-    # (~13M tiles at z12–14) by only considering tiles that touch a real NUTS region.
-    log.info("Querying per-region bboxes…")
-    region_rows = con.execute(
-        f"""
-        SELECT nuts_id,
-               MIN(bbox.xmin), MIN(bbox.ymin),
-               MAX(bbox.xmax), MAX(bbox.ymax)
-        FROM read_parquet('{s3_path}', hive_partitioning=true)
-        GROUP BY nuts_id
-    """
-    ).fetchall()
-    log.info("Found %d NUTS regions", len(region_rows))
-
-    # Build de-duplicated tile list sorted by Hilbert tile ID so we can write
-    # directly to PMTiles in one pass without buffering tile data in RAM.
-    seen_ids = set()
-    tiles_sorted = []  # list of (tile_id, z, x, y)
-    xmin_all = ymin_all = float("inf")
-    xmax_all = ymax_all = float("-inf")
-
-    for (_, xmin_l, ymin_l, xmax_l, ymax_l) in region_rows:
-        xmin_all = min(xmin_all, xmin_l)
-        ymin_all = min(ymin_all, ymin_l)
-        xmax_all = max(xmax_all, xmax_l)
-        ymax_all = max(ymax_all, ymax_l)
-        west_r, south_r = proj.transform(xmin_l, ymin_l)
-        east_r, north_r = proj.transform(xmax_l, ymax_l)
-        for z in range(min_zoom, max_zoom + 1):
-            x0, y1 = _lon_lat_to_tile(west_r, south_r, z)
-            x1, y0 = _lon_lat_to_tile(east_r, north_r, z)
-            for x in range(x0, x1 + 1):
-                for y in range(y0, y1 + 1):
-                    tid = zxy_to_tileid(z, x, y)
-                    if tid not in seen_ids:
-                        seen_ids.add(tid)
-                        tiles_sorted.append((tid, z, x, y))
-
-    tiles_sorted.sort()
-    total = len(tiles_sorted)
-    log.info("Unique tile candidates after region-bbox dedup: %d", total)
-
-    west, south = proj.transform(xmin_all, ymin_all)
-    east, north = proj.transform(xmax_all, ymax_all)
-
-    # Stream tiles directly to a temp file — never buffer all MVT bytes in RAM.
-    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".pmtiles")
-    os.close(tmp_fd)
-    non_empty = 0
-
-    try:
-        with open(tmp_path, "wb") as f:
-            writer = Writer(f)
-            for i, (tid, z, x, y) in enumerate(tiles_sorted):
-                data = _make_mvt(con, s3_path, z, x, y)
-                if data:
-                    writer.write_tile(tid, data)
-                    non_empty += 1
-                if i % 500 == 0:
-                    pct = round(100 * i / total)
-                    self.update_state(
-                        state="PROGRESS",
-                        meta={
-                            "done": i + 1,
-                            "total": total,
-                            "non_empty": non_empty,
-                            "pct": pct,
-                        },
-                    )
-                    log.info(
-                        "Progress %d/%d (%d%%) — %d non-empty",
-                        i + 1,
-                        total,
-                        pct,
-                        non_empty,
-                    )
-
-            log.info("Generation complete: %d/%d tiles non-empty", non_empty, total)
-            writer.finalize(
-                {
-                    "tile_type": TileType.MVT,
-                    "tile_compression": Compression.NONE,
-                    "min_zoom": min_zoom,
-                    "max_zoom": max_zoom,
-                    "min_lon_e7": int(west * 1e7),
-                    "min_lat_e7": int(south * 1e7),
-                    "max_lon_e7": int(east * 1e7),
-                    "max_lat_e7": int(north * 1e7),
-                    "center_zoom": (min_zoom + max_zoom) // 2,
-                    "center_lon_e7": int(((west + east) / 2) * 1e7),
-                    "center_lat_e7": int(((south + north) / 2) * 1e7),
-                },
-                {
-                    "name": "EUBUCCO Buildings",
-                    "description": f"EUBUCCO building stock characteristics {version}",
-                    "format": "pbf",
-                    "type": "overlay",
-                    "version": version,
-                    "vector_layers": [
-                        {
-                            "id": "buildings",
-                            "minzoom": min_zoom,
-                            "maxzoom": max_zoom,
-                            "fields": {
-                                "id": "String",
-                                "type": "String",
-                                "subtype": "String",
-                                "subtype_raw": "String",
-                                "height": "Number",
-                                "floors": "Number",
-                                "construction_year": "Number",
-                                "geometry_source": "String",
-                                "type_source": "String",
-                                "subtype_source": "String",
-                                "height_source": "String",
-                                "floors_source": "String",
-                                "construction_year_source": "String",
-                                "type_confidence": "Number",
-                                "subtype_confidence": "Number",
-                                "height_confidence_lower": "Number",
-                                "height_confidence_upper": "Number",
-                                "floors_confidence_lower": "Number",
-                                "floors_confidence_upper": "Number",
-                                "construction_year_confidence_lower": "Number",
-                                "construction_year_confidence_upper": "Number",
-                            },
-                        }
-                    ],
-                },
-            )
-
-        size_mb = os.path.getsize(tmp_path) / 1024 / 1024
-        log.info("PMTiles archive: %.1f MB", size_mb)
-
-        # Stream upload from disk — no second in-memory copy.
-        object_key = f"{version}/{DATASET_PREFIX}/tiles/buildings.pmtiles"
-        client.fput_object(
-            s.bucket,
-            object_key,
-            tmp_path,
-            content_type="application/x-protobuf",
-        )
-        log.info("Uploaded to %s/%s", s.bucket, object_key)
-
-    except Exception:
-        log.exception(
-            "generate_building_tiles FAILED: version=%s z%d–%d, progress=%d/%d tiles",
-            version,
-            min_zoom,
-            max_zoom,
-            non_empty,
-            total,
-        )
-        raise
-
-    finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
+    # Clean up intermediates to protect disk space.
+    for p in valid:
+        Path(p).unlink(missing_ok=True)
+    out_path.unlink(missing_ok=True)
 
     return {
         "version": version,
-        "min_zoom": min_zoom,
-        "max_zoom": max_zoom,
-        "non_empty_tiles": non_empty,
-        "total_coords": total,
+        "regions": len(valid),
         "size_mb": round(size_mb, 2),
         "object_key": object_key,
     }
+
+
+def _resolve_region_sources(version: str, local_data_root: str):
+    """Resolve per-region parquet sources.
+
+    Prefers local files (``{local_data_root}/{version}/*.parquet``, one per
+    region, no network). Falls back to MinIO Hive-partitioned parquet via DuckDB
+    httpfs. Returns ``(sources, s3_cfg)`` where ``sources`` is a list of
+    ``(region_id, source_path_or_glob, s3_cfg_or_None)``.
+    """
+    local_root = Path(local_data_root) / version
+    local_files = sorted(local_root.glob("*.parquet"))
+    if local_files:
+        return [(p.stem, str(p), None) for p in local_files], None
+
+    from .minio_client import _normalize_endpoint, settings_from_django
+
+    s = settings_from_django()
+    endpoint, secure = _normalize_endpoint(s.endpoint, s.secure)
+    s3_cfg = {
+        "endpoint": endpoint,
+        "access_key": s.access_key,
+        "secret_key": s.secret_key,
+        "secure": secure,
+        "region": s.region,
+    }
+    client, _ = build_client(s)
+    prefix = f"{version}/{DATASET_PREFIX}/parquet/"
+    region_ids = set()
+    for obj in client.list_objects(s.bucket, prefix=prefix, recursive=True):
+        if obj.object_name.endswith(".parquet"):
+            parts = extract_partitions_from_key(obj.object_name)
+            region_ids.add(parts.get("nuts_id") or Path(obj.object_name).stem)
+
+    sources = [
+        (
+            rid,
+            f"s3://{s.bucket}/{prefix}nuts_id={rid}/*.parquet",
+            s3_cfg,
+        )
+        for rid in sorted(region_ids)
+    ]
+    return sources, s3_cfg
+
+
+# --- PHASE 3: VECTOR TILES (per-region tippecanoe + tile-join) ---
+@celery_app.task(acks_late=True, soft_time_limit=7200, queue="tiling")
+def tile_region_task(
+    region_id, source, fgb_path, pmtiles_path, min_zoom, max_zoom, s3_cfg=None, force=False
+):
+    """Celery wrapper around :func:`_tile_one_region` (one task per NUTS region)."""
+    return _tile_one_region(
+        region_id, source, fgb_path, pmtiles_path, min_zoom, max_zoom, s3_cfg, force
+    )
+
+
+@celery_app.task(soft_time_limit=7200, queue="tiling")
+def tile_join_and_upload(pmtiles_paths, version, out_path):
+    """Chord callback: merge all region PMTiles and upload the archive."""
+    return _run_tile_join_and_upload(version, pmtiles_paths, out_path)
+
+
+def run_tile_pipeline(
+    version: str = "v0.2",
+    min_zoom: int = 12,
+    max_zoom: int = 14,
+    executor: str = "local",
+    local_data_root: str = "data/s3",
+    tmp_dir: str = "data/tile_tmp",
+    workers: int = None,
+    force: bool = False,
+):
+    """Generate ``buildings.pmtiles`` by tiling each NUTS region in parallel,
+    then merging with tile-join.
+
+    ``executor="local"`` runs a ``ProcessPoolExecutor`` in-process (no broker —
+    ideal for the one-off ``tile-generator`` container and local validation).
+    ``executor="celery"`` dispatches a ``group`` -> ``chord`` onto the ``tiling``
+    queue (requires workers that share the ``tmp_dir`` filesystem).
+    """
+    log = logging.getLogger(__name__)
+    sources, _ = _resolve_region_sources(version, local_data_root)
+    if not sources:
+        raise RuntimeError(f"No parquet regions found for {version}.")
+
+    base = Path(tmp_dir) / version
+    region_dir = base / "regions"
+    region_dir.mkdir(parents=True, exist_ok=True)
+    out_path = base / "buildings.pmtiles"
+    log.info(
+        "Tiling %d regions for %s z%d-%d via %s executor",
+        len(sources), version, min_zoom, max_zoom, executor,
+    )
+
+    def _paths(rid):
+        return str(region_dir / f"{rid}.fgb"), str(region_dir / f"{rid}.pmtiles")
+
+    if executor == "celery":
+        header = group(
+            tile_region_task.s(
+                rid, src, *_paths(rid), min_zoom, max_zoom, s3_cfg, force
+            )
+            for rid, src, s3_cfg in sources
+        )
+        result = chord(header, tile_join_and_upload.s(version, str(out_path)))()
+        return result.get()
+
+    workers = workers or os.cpu_count() or 4
+    pmtiles = []
+    # Prefer fork so children inherit the initialised Django/module state instead
+    # of re-importing it (spawn re-runs module-level redis/Celery setup).
+    import multiprocessing
+
+    try:
+        mp_ctx = multiprocessing.get_context("fork")
+    except ValueError:  # platform without fork
+        mp_ctx = None
+    failures = {}
+    with ProcessPoolExecutor(max_workers=workers, mp_context=mp_ctx) as pool:
+        futures = {}
+        for rid, src, s3_cfg in sources:
+            fgb, pmt = _paths(rid)
+            futures[
+                pool.submit(
+                    _tile_one_region,
+                    rid, src, fgb, pmt, min_zoom, max_zoom, s3_cfg, force,
+                )
+            ] = rid
+        done = 0
+        for fut in as_completed(futures):
+            rid = futures[fut]
+            done += 1
+            try:
+                pmtiles.append(fut.result())
+                log.info("Region %s done (%d/%d)", rid, done, len(sources))
+            except Exception as exc:
+                # Don't abort the batch — let the other regions finish and cache
+                # their PMTiles so a rerun resumes instead of starting over.
+                failures[rid] = repr(exc)
+                log.error("Region %s FAILED (%d/%d): %r", rid, done, len(sources), exc)
+
+    if failures:
+        # Successful regions are cached on disk; rerunning the command skips them
+        # and only retries the failed ones, then proceeds to tile-join.
+        raise RuntimeError(
+            f"{len(failures)}/{len(sources)} region(s) failed: "
+            f"{', '.join(sorted(failures))}. Completed regions are cached — "
+            f"fix the cause and rerun to resume (no --force)."
+        )
+
+    return _run_tile_join_and_upload(version, pmtiles, str(out_path))
 
 
 def main():

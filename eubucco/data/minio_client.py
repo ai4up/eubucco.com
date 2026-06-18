@@ -121,9 +121,14 @@ def file_exists(client: Minio, settings: MinioSettings, object_name: str) -> boo
 
 
 def upload_file(
-    client: Minio, settings: MinioSettings, object_name: str, file_path: str
+    client: Minio,
+    settings: MinioSettings,
+    object_name: str,
+    file_path: str,
+    content_type: Optional[str] = None,
 ) -> None:
-    client.fput_object(settings.bucket, object_name, file_path)
+    kwargs = {"content_type": content_type} if content_type else {}
+    client.fput_object(settings.bucket, object_name, file_path, **kwargs)
 
 
 def presign_get_url(

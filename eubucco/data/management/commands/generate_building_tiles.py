@@ -1,20 +1,47 @@
 from django.core.management.base import BaseCommand
 
 from eubucco.data.minio_client import build_client, file_exists
-from eubucco.data.tasks import generate_building_tiles
+from eubucco.data.tasks import run_tile_pipeline
 
 
 class Command(BaseCommand):
-    help = "Pre-generate building PMTiles archive and upload to MinIO."
+    help = (
+        "Generate the building PMTiles archive by tiling each NUTS region in "
+        "parallel (DuckDB -> FlatGeobuf -> tippecanoe) and merging with tile-join, "
+        "then upload to MinIO."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument("--data-version", default="v0.2")
-        parser.add_argument("--min-zoom", type=int, default=14)
+        parser.add_argument("--min-zoom", type=int, default=12)
         parser.add_argument("--max-zoom", type=int, default=14)
+        parser.add_argument(
+            "--executor",
+            choices=["local", "celery"],
+            default="local",
+            help="local = in-process ProcessPoolExecutor (no broker); "
+            "celery = dispatch a group/chord onto the 'tiling' queue.",
+        )
+        parser.add_argument(
+            "--local-data-root",
+            default="data/s3",
+            help="Root holding {version}/*.parquet region files (preferred over MinIO).",
+        )
+        parser.add_argument(
+            "--tmp-dir",
+            default="data/tile_tmp",
+            help="Scratch dir for per-region FGB/PMTiles intermediates.",
+        )
+        parser.add_argument(
+            "--workers",
+            type=int,
+            default=None,
+            help="Parallel regions for the local executor (default: CPU count).",
+        )
         parser.add_argument(
             "--force",
             action="store_true",
-            help="Re-generate even if PMTiles already exist in MinIO.",
+            help="Re-generate even if PMTiles already exist in MinIO / scratch.",
         )
 
     def handle(self, *args, **options):
@@ -24,46 +51,36 @@ class Command(BaseCommand):
         force = options["force"]
 
         object_key = f"{version}/buildings/tiles/buildings.pmtiles"
-
         client, settings = build_client()
-
-        # Check whether there is any parquet data to tile at all.
-        try:
-            objects = list(
-                client.list_objects(
-                    settings.bucket,
-                    prefix=f"{version}/buildings/parquet/",
-                    recursive=False,
-                )
-            )
-        except Exception:
-            objects = []
-
-        if not objects:
-            self.stdout.write(
-                self.style.WARNING(
-                    f"No parquet data found for {version} — skipping tile generation."
-                )
-            )
-            return
 
         if not force and file_exists(client, settings, object_key):
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"PMTiles already present at {object_key} — skipping (use --force to overwrite)."
+                    f"PMTiles already present at {object_key} — skipping "
+                    "(use --force to overwrite)."
                 )
             )
             return
 
-        self.stdout.write(f"Generating tiles for {version} z{min_zoom}–{max_zoom} …")
+        self.stdout.write(
+            f"Generating tiles for {version} z{min_zoom}-{max_zoom} "
+            f"via {options['executor']} executor …"
+        )
 
-        result = generate_building_tiles.apply(
-            kwargs={"version": version, "min_zoom": min_zoom, "max_zoom": max_zoom}
-        ).get()
+        result = run_tile_pipeline(
+            version=version,
+            min_zoom=min_zoom,
+            max_zoom=max_zoom,
+            executor=options["executor"],
+            local_data_root=options["local_data_root"],
+            tmp_dir=options["tmp_dir"],
+            workers=options["workers"],
+            force=force,
+        )
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Done — {result['non_empty_tiles']}/{result['total_coords']} tiles, "
+                f"Done — merged {result['regions']} regions, "
                 f"{result['size_mb']} MB → {result['object_key']}"
             )
         )

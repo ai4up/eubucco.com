@@ -23,6 +23,15 @@ RUN pip wheel --wheel-dir /usr/src/app/wheels  \
   -r ${BUILD_ENVIRONMENT}.txt
 
 
+# tippecanoe + tile-join build stage
+FROM debian:bullseye-slim AS tippecanoe-build
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    git make g++ libsqlite3-dev zlib1g-dev ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch 2.79.0 https://github.com/felt/tippecanoe.git /tippecanoe \
+    && cd /tippecanoe && make -j"$(nproc)" && make install
+
+
 # Python 'run' stage
 FROM python as python-run-stage
 
@@ -52,6 +61,10 @@ RUN apt-get update \
 
 RUN apt-get update \
     && apt-get install -y binutils libproj-dev gdal-bin python3-gdal proj-bin
+
+# tippecanoe + tile-join for fast PMTiles generation
+COPY --from=tippecanoe-build /usr/local/bin/tippecanoe /usr/local/bin/tippecanoe
+COPY --from=tippecanoe-build /usr/local/bin/tile-join /usr/local/bin/tile-join
 
 # install zip
 RUN apt-get -y install zip
@@ -95,8 +108,9 @@ RUN chmod +x /start-tailwind
 
 COPY ./compose/local/django/celery/worker/start-io /start-celeryworker-io
 COPY ./compose/local/django/celery/worker/start-heavy /start-celeryworker-heavy
-RUN sed -i 's/\r$//g' /start-celeryworker-io /start-celeryworker-heavy
-RUN chmod +x /start-celeryworker-io /start-celeryworker-heavy
+COPY ./compose/local/django/celery/worker/start-tiling /start-celeryworker-tiling
+RUN sed -i 's/\r$//g' /start-celeryworker-io /start-celeryworker-heavy /start-celeryworker-tiling
+RUN chmod +x /start-celeryworker-io /start-celeryworker-heavy /start-celeryworker-tiling
 
 COPY ./compose/local/django/celery/beat/start /start-celerybeat
 RUN sed -i 's/\r$//g' /start-celerybeat

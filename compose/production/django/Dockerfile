@@ -21,6 +21,15 @@ RUN pip wheel --wheel-dir /usr/src/app/wheels \
   -r ${BUILD_ENVIRONMENT}.txt
 
 
+# --- tippecanoe + tile-join build stage ---
+FROM debian:bullseye-slim AS tippecanoe-build
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    git make g++ libsqlite3-dev zlib1g-dev ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN git clone --depth 1 --branch 2.79.0 https://github.com/felt/tippecanoe.git /tippecanoe \
+    && cd /tippecanoe && make -j"$(nproc)" && make install
+
+
 # --- Python 'run' stage ---
 FROM python AS python-run-stage
 
@@ -66,6 +75,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   && rm -rf /var/lib/apt/lists/* /usr/share/doc /usr/share/man \
   && apt-get clean
 
+# tippecanoe + tile-join for fast PMTiles generation
+COPY --from=tippecanoe-build /usr/local/bin/tippecanoe /usr/local/bin/tippecanoe
+COPY --from=tippecanoe-build /usr/local/bin/tile-join /usr/local/bin/tile-join
+
 # Copy python dependency wheels from build stage
 COPY --from=python-build-stage /usr/src/app/wheels /wheels/
 
@@ -79,12 +92,13 @@ COPY --chown=django:django ./compose/production/django/entrypoint /entrypoint
 COPY --chown=django:django ./compose/production/django/start /start
 COPY --chown=django:django ./compose/production/django/celery/worker/start-io /start-celeryworker-io
 COPY --chown=django:django ./compose/production/django/celery/worker/start-heavy /start-celeryworker-heavy
+COPY --chown=django:django ./compose/production/django/celery/worker/start-tiling /start-celeryworker-tiling
 COPY --chown=django:django ./compose/production/django/celery/beat/start /start-celerybeat
 COPY --chown=django:django ./compose/production/django/api/start /start-api
 COPY --chown=django:django ./compose/production/django/celery/flower/start /start-flower
 
-RUN sed -i 's/\r$//g' /entrypoint /start /start-celeryworker-io /start-celeryworker-heavy /start-celerybeat /start-api /start-flower \
-    && chmod +x /entrypoint /start /start-celeryworker-io /start-celeryworker-heavy /start-celerybeat /start-api /start-flower
+RUN sed -i 's/\r$//g' /entrypoint /start /start-celeryworker-io /start-celeryworker-heavy /start-celeryworker-tiling /start-celerybeat /start-api /start-flower \
+    && chmod +x /entrypoint /start /start-celeryworker-io /start-celeryworker-heavy /start-celeryworker-tiling /start-celerybeat /start-api /start-flower
 
 # Copy application code to WORKDIR
 COPY --chown=django:django . ${APP_HOME}

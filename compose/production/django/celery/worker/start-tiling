@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+# Tiling tasks each spawn tippecanoe (~4 cores). Keep concurrency modest so we
+# fill the box without heavy oversubscription; tune via TILING_CONCURRENCY.
+exec celery -A config.celery_app worker -l INFO -Q tiling --concurrency="${TILING_CONCURRENCY:-4}"
