@@ -14,25 +14,31 @@
   #conflation-root *{box-sizing:border-box}
   /* Fill the viewport below the 64px sticky navbar; becomes the positioning
      context for the absolutely-positioned map / pipeline / panel below.
-     Chrome colors map onto the site's DaisyUI theme tokens (base-100 /
-     base-content / primary) so the pipeline + panel match the navbar and
-     follow the light/dark theme toggle. */
+     Map canvas, pipeline, panel, tooltip and MapLibre controls all inherit
+     DaisyUI theme tokens and switch together with the site theme. */
   #conflation-root{
     position:fixed; top:64px; left:0; right:0; bottom:0;
-    /* themed tokens, inherited by the map / pipeline / panel / tooltip below */
-    --bg:#0a0c0f;                      /* map canvas backdrop, under the dark basemap */
+    --bg:hsl(var(--b1));
     --ink:hsl(var(--bc));
     --ink-dim:hsl(var(--bc) / 0.6);
     --rule:hsl(var(--bc) / 0.12);
     --accent:hsl(var(--p));
     --accent-soft:hsl(var(--p) / 0.18);
     --accent-ink:hsl(var(--pc));
+    --map-control-bg:hsl(var(--b1) / 0.82);
     background:var(--bg); color:var(--ink);
     font-family:inherit;
   }
+  #conflation-root.theme-dark{ --bg:#0a0c0f; }
+  #conflation-root.theme-light{ --bg:hsl(var(--b1)); }
   #map{position:absolute;inset:0;background:var(--bg)}
-  .maplibregl-ctrl-attrib{background:rgba(13,15,18,.7)!important;color:var(--ink-dim)!important;font-size:10px}
-  .maplibregl-ctrl-attrib a{color:var(--ink-dim)!important}
+  .maplibregl-ctrl-attrib{background:var(--map-control-bg)!important;color:var(--ink-dim)!important;font-size:10px}
+  .maplibregl-ctrl-attrib a,.maplibregl-ctrl-attrib-inner{color:var(--ink-dim)!important;font-size:10px!important}
+  .maplibregl-ctrl-group{background:hsl(var(--b1)/0.95)!important;border:1px solid var(--rule)!important;border-radius:2px!important}
+  .maplibregl-ctrl-group button{background:transparent!important;border-bottom:1px solid var(--rule)!important}
+  .maplibregl-ctrl-group button:last-child{border-bottom:none!important}
+  #conflation-root.theme-dark .maplibregl-ctrl-group button .maplibregl-ctrl-icon{filter:invert(.72)}
+  #conflation-root.theme-light .maplibregl-ctrl-group button .maplibregl-ctrl-icon{filter:none;opacity:.68}
 
   #pipeline{
     position:absolute; top:0; left:0; right:0;
@@ -181,7 +187,7 @@
   #tip td.v{color:var(--ink)}
   #tip td.s{color:var(--ink-dim);font-size:9.5px;text-align:right}
   #tip .pill{display:inline-block;padding:1px 5px;border-radius:2px;font-size:9px;letter-spacing:.08em;color:#0d0f12;font-weight:600;text-transform:uppercase}
-  #tip .na{color:#6a7180;font-style:italic}
+  #tip .na{color:hsl(var(--bc)/0.42);font-style:italic}
 </style>
 
 <div id="conflation-root">
@@ -785,17 +791,52 @@ window.DATA={};
   // ============================================================
   // MAP
   // ============================================================
+  const BASE_STYLES = {
+    dark:  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+  };
+  let currentBaseTheme = null;
+  let themeObserver = null;
+
+  function isDarkTheme() {
+    return !!(document.documentElement.classList.contains('dark') ||
+              document.querySelector('[data-theme="night"]'));
+  }
+
+  function applyThemeClass(){
+    const root = document.getElementById('conflation-root');
+    if(!root) return;
+    const dark = isDarkTheme();
+    root.classList.toggle('theme-dark', dark);
+    root.classList.toggle('theme-light', !dark);
+  }
+
   function makeBaseStyle(){
-    // CARTO Dark Matter vector style. Building polygons are stripped on load
-    // (see removeBasemapBuildings() in startMap) so they don't compete with
-    // our overlay buildings. If the style fails to load for any reason, the
-    // map falls back to its background color (#0e0e0e dark gray).
-    return 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+    return isDarkTheme() ? BASE_STYLES.dark : BASE_STYLES.light;
+  }
+
+  function syncBaseStyle(){
+    applyThemeClass();
+    if(!map) return;
+    const nextBaseTheme = isDarkTheme() ? 'dark' : 'light';
+    if(nextBaseTheme === currentBaseTheme) return;
+    currentBaseTheme = nextBaseTheme;
+    map.setStyle(makeBaseStyle());
+  }
+
+  function watchThemeChanges(){
+    if(themeObserver) return;
+    themeObserver = new MutationObserver(syncBaseStyle);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'data-theme'],
+      subtree: true
+    });
   }
 
   function removeBasemapBuildings(){
-    // Drop any layer whose source-layer is 'building'. Dark Matter has
-    // a couple of these (footprint + extruded variants); we remove them all.
+    // Drop any layer whose source-layer is 'building'. The CARTO basemaps have
+    // building footprint / extrusion layers; we remove them all.
     try {
       const style = map.getStyle();
       if(!style || !style.layers) return;
@@ -810,6 +851,7 @@ window.DATA={};
   }
 
   async function init(){
+    applyThemeClass();
     await loadRemoteData();
     startMap();
   }
@@ -818,12 +860,16 @@ window.DATA={};
       document.getElementById('loading').textContent = 'No data loaded';
       return;
     }
+    applyThemeClass();
+    currentBaseTheme = isDarkTheme() ? 'dark' : 'light';
     map = new maplibregl.Map({
       container:'map',
       style: makeBaseStyle(),
       center: DATA.meta.center, zoom:16.2, pitch:0, bearing:0,
       attributionControl:{compact:true}
     });
+    map.on('style.load', removeBasemapBuildings);
+    watchThemeChanges();
     map.on('load', () => {
       document.getElementById('loading').classList.add('hidden');
       removeBasemapBuildings();
