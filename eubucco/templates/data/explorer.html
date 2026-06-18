@@ -8,33 +8,36 @@
 <script src="https://unpkg.com/pmtiles@3.2.0/dist/pmtiles.js"></script>
 
 <style>
-  :root {
-    --bg: #0d0f12;
-    --panel: #15181d;
-    --ink: #e6e8eb;
-    --ink-dim: #9aa1ad;
-    --rule: #262b33;
-    --accent: #e8b54a;
-  }
   body { overflow: hidden !important; }
 
-  #map { position: absolute; inset: 0; background: var(--bg); }
-
-  /* ── Floating Panel ──
-     Themed to match the conflation demo: DaisyUI tokens (base-100 /
-     base-content / primary) are overridden *scoped to #panel*, so the map,
-     hover tooltip and HUD keep their existing dark styling untouched. */
-  #panel {
+  /* Scoped demo chrome. All overlay UI inherits the site's DaisyUI tokens so
+     the map canvas, panel, tooltip, HUD and MapLibre controls follow the
+     active light/dark theme together. */
+  #explorer-root {
+    position: relative; width: 100%; height: calc(100vh - 64px);
+    --bg: hsl(var(--b1));
+    --panel: hsl(var(--b1) / 0.95);
     --ink: hsl(var(--bc));
     --ink-dim: hsl(var(--bc) / 0.6);
+    --ink-muted: hsl(var(--bc) / 0.42);
     --rule: hsl(var(--bc) / 0.12);
     --accent: hsl(var(--p));
     --accent-ink: hsl(var(--pc));
+    background: var(--bg);
+    color: var(--ink);
+  }
+  #explorer-root.theme-dark { --bg: #0d0f12; }
+  #explorer-root * { box-sizing: border-box; }
+
+  #map { position: absolute; inset: 0; background: var(--bg); }
+
+  /* ── Floating Panel ── */
+  #panel {
     position: absolute; top: 20px; left: 20px;
     width: 340px; max-width: calc(100vw - 40px);
     max-height: calc(100vh - 104px);
-    background: hsl(var(--b1) / 0.95);
-    border: 1px solid hsl(var(--bc) / 0.1);
+    background: var(--panel);
+    border: 1px solid var(--rule);
     border-radius: 1rem;
     padding: 20px 22px 18px;
     box-shadow: 0 10px 30px -12px rgba(0,0,0,.5);
@@ -114,7 +117,7 @@
   .legend-row:last-child { margin-bottom: 0; }
   .legend-swatch {
     width: 12px; height: 10px; border-radius: 1px; flex-shrink: 0;
-    border: 1px solid rgba(255,255,255,.08);
+    border: 1px solid hsl(var(--bc) / 0.16);
   }
   .legend-label {
     font-family: "JetBrains Mono", ui-monospace, monospace;
@@ -122,7 +125,7 @@
   }
   .legend-gradient {
     height: 8px; border-radius: 1px; flex: 1;
-    border: 1px solid rgba(255,255,255,.08);
+    border: 1px solid hsl(var(--bc) / 0.16);
   }
   .legend-gradient-labels {
     display: flex; justify-content: space-between; margin-top: 3px;
@@ -132,11 +135,12 @@
   /* ── Hover Tooltip ── */
   #tip {
     position: absolute; pointer-events: none; z-index: 9;
-    background: rgba(19,22,27,.97); border: 1px solid var(--rule);
-    border-radius: 2px; padding: 10px 12px;
+    background: var(--panel); border: 1px solid var(--rule);
+    border-radius: .5rem; padding: 10px 12px;
+    backdrop-filter: blur(8px);
     font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px;
     color: var(--ink); max-width: 310px;
-    box-shadow: 0 12px 28px -10px rgba(0,0,0,.7);
+    box-shadow: 0 12px 28px -10px rgba(0,0,0,.35);
     display: none;
   }
   #tip .tip-id {
@@ -148,7 +152,7 @@
   #tip td { padding: 2px 6px 2px 0; vertical-align: top; }
   #tip td.k { color: var(--ink-dim); text-transform: uppercase; font-size: 9px; letter-spacing: .1em; white-space: nowrap; }
   #tip td.v { color: var(--ink); }
-  #tip .conf { color: #5a6170; font-size: 10px; }
+  #tip .conf { color: var(--ink-muted); font-size: 10px; }
   #tip .src-pill {
     display: inline-block; padding: 1px 5px; border-radius: 2px;
     font-size: 8.5px; letter-spacing: .08em; color: #0d0f12;
@@ -158,10 +162,10 @@
   #tip .src-government { background: #7dd3a0; }
   #tip .src-microsoft  { background: #5cb1c9; }
   #tip .src-estimated  { background: #9a8fc0; color: var(--ink); }
-  #tip .na { color: #5a6170; font-style: italic; }
+  #tip .na { color: var(--ink-muted); font-style: italic; }
   #tip .tip-conf-hint {
     margin-top: 6px; padding-top: 5px; border-top: 1px solid var(--rule);
-    font-size: 9px; color: #3a404e; font-style: italic; line-height: 1.4;
+    font-size: 9px; color: var(--ink-muted); font-style: italic; line-height: 1.4;
   }
   #tip .tip-conf-hint ul {
     margin: 3px 0 0; padding-left: 14px; list-style: disc;
@@ -208,8 +212,8 @@
     font-size: 9px; color: var(--ink-dim); margin: 5px 0 0; line-height: 1.5;
   }
 
-  /* MapLibre overrides */
-  .maplibregl-ctrl-attrib { background: rgba(13,15,18,.7) !important; }
+  /* MapLibre controls */
+  .maplibregl-ctrl-attrib { background: hsl(var(--b1) / 0.82) !important; color: var(--ink-dim) !important; }
   .maplibregl-ctrl-attrib a,
   .maplibregl-ctrl-attrib-inner { color: var(--ink-dim) !important; font-size: 10px !important; }
   .maplibregl-ctrl-group {
@@ -219,11 +223,13 @@
     background: transparent !important; border-bottom: 1px solid var(--rule) !important;
   }
   .maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
-  .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(0.6); }
-  .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon { filter: invert(0.9); }
+  #explorer-root.theme-dark .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(0.72); }
+  #explorer-root.theme-dark .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon { filter: invert(0.95); }
+  #explorer-root.theme-light .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: none; opacity: .68; }
+  #explorer-root.theme-light .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon { filter: none; opacity: .9; }
 </style>
 
-<div style="position:relative; width:100%; height:calc(100vh - 64px);">
+<div id="explorer-root">
   <div id="map"></div>
   <div id="tip"></div>
 
@@ -493,9 +499,30 @@ maplibregl.addProtocol('pmtiles', protocol.tile);
 let is3d = true;
 let overtureVisible = false;
 
+const MAP_STYLES = {
+  dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+};
+
+function isDarkTheme() {
+  return !!(document.documentElement.classList.contains('dark') ||
+            document.querySelector('[data-theme="night"]'));
+}
+
+function applyThemeClass() {
+  const root = document.getElementById('explorer-root');
+  if (!root) return;
+  const dark = isDarkTheme();
+  root.classList.toggle('theme-dark', dark);
+  root.classList.toggle('theme-light', !dark);
+}
+
+let currentMapLightMode = !isDarkTheme();
+applyThemeClass();
+
 const map = new maplibregl.Map({
   container: 'map',
-  style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  style: currentMapLightMode ? MAP_STYLES.light : MAP_STYLES.dark,
   center: [13.404, 52.520],
   zoom: 15,
   pitch: 45,
@@ -515,67 +542,138 @@ map.on('zoom', () => {
 map.on('dataloading', () => document.getElementById('loading-badge').classList.add('visible'));
 map.on('idle',        () => document.getElementById('loading-badge').classList.remove('visible'));
 
+const CUSTOM_SOURCE_IDS = new Set(['eubucco', 'overture']);
+const CUSTOM_LAYER_IDS = new Set(['buildings-fill', 'buildings-3d', 'overture-outline']);
+let pendingLayerRebuild = false;
+
+function removeBasemapBuildings() {
+  // Remove basemap building layers only. Do not touch our PMTiles overlays.
+  try {
+    const style = map.getStyle();
+    if (!style || !style.layers) return;
+    for (const layer of [...style.layers]) {
+      if (CUSTOM_LAYER_IDS.has(layer.id) || CUSTOM_SOURCE_IDS.has(layer.source)) continue;
+      if (layer['source-layer'] === 'building' || /^building/i.test(layer.id)) {
+        if (map.getLayer(layer.id)) map.removeLayer(layer.id);
+      }
+    }
+  } catch (e) {
+    console.warn('Could not strip basemap buildings:', e);
+  }
+}
+
+function scheduleMapLayerRebuild() {
+  // setStyle() replaces the full style tree and removes custom PMTiles
+  // sources/layers. Re-add them once after the new style has loaded.
+  if (pendingLayerRebuild) return;
+  pendingLayerRebuild = true;
+  requestAnimationFrame(() => {
+    pendingLayerRebuild = false;
+    addMapLayers();
+  });
+}
+
+function addMapLayers() {
+  try {
+    removeBasemapBuildings();
+
+    const selectedScheme = document.getElementById('colorSelect').value || 'subtype';
+    const color = (SCHEMES[selectedScheme] || SCHEMES.default).fill;
+
+    if (!map.getSource('eubucco')) {
+      map.addSource('eubucco', {
+        type: 'vector',
+        url: `pmtiles://${PMTILES_URL}`,
+      });
+    }
+
+    if (!map.getLayer('buildings-fill')) {
+      map.addLayer({
+        id: 'buildings-fill',
+        type: 'fill',
+        source: 'eubucco',
+        'source-layer': 'buildings',
+        layout: { visibility: is3d ? 'none' : 'visible' },
+        paint: {
+          'fill-color': color,
+          'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.6, 14, 0.85],
+          'fill-outline-color': ['interpolate', ['linear'], ['zoom'], 12, 'rgba(0,0,0,0)', 14, 'rgba(0,0,0,0.25)'],
+        },
+      });
+    }
+
+    if (!map.getLayer('buildings-3d')) {
+      map.addLayer({
+        id: 'buildings-3d',
+        type: 'fill-extrusion',
+        source: 'eubucco',
+        'source-layer': 'buildings',
+        layout: { visibility: is3d ? 'visible' : 'none' },
+        paint: {
+          'fill-extrusion-color': color,
+          'fill-extrusion-height': ['coalesce', ['get', 'height'], 5],
+          'fill-extrusion-base': 0,
+          'fill-extrusion-opacity': 0.85,
+        },
+      });
+    }
+
+    // Overture buildings — rendered as line outlines for visual differentiation
+    if (!map.getSource('overture')) {
+      map.addSource('overture', {
+        type: 'vector',
+        url: `pmtiles://${OVERTURE_URL}`,
+      });
+    }
+
+    if (!map.getLayer('overture-outline')) {
+      map.addLayer({
+        id: 'overture-outline',
+        type: 'line',
+        source: 'overture',
+        'source-layer': 'building',
+        layout: { visibility: overtureVisible ? 'visible' : 'none' },
+        paint: {
+          'line-color': '#c4b5fd',
+          'line-width': 1.8,
+          'line-opacity': 0.9,
+        },
+      });
+    }
+
+    renderLegend(selectedScheme);
+  } catch (e) {
+    // Some browsers can fire style events before MapLibre accepts layer
+    // mutations. Retry on the next style.load instead of leaving overlays gone.
+    console.warn('Could not rebuild PMTiles overlay layers yet:', e);
+    map.once('style.load', scheduleMapLayerRebuild);
+  }
+}
+
+function syncMapTheme() {
+  applyThemeClass();
+  const nextLightMode = !isDarkTheme();
+  if (nextLightMode === currentMapLightMode) return;
+  currentMapLightMode = nextLightMode;
+  hideTip();
+  map.setStyle(currentMapLightMode ? MAP_STYLES.light : MAP_STYLES.dark);
+  // setStyle() drops our PMTiles overlays and brings the basemap's own building
+  // layers back. style.load isn't reliable across a style swap, so re-add the
+  // overlays (and re-strip basemap buildings) once the new style has settled.
+  map.once('idle', addMapLayers);
+}
+
 map.on('load', () => {
   document.getElementById('zoom-val').textContent = map.getZoom().toFixed(1);
   zoomHint.style.opacity = map.getZoom() < 12 ? '1' : '0';
-  // Remove basemap building layers so our own footprints are the only buildings shown
-  ['building', 'building-top'].forEach(id => {
-    if (map.getLayer(id)) map.removeLayer(id);
-  });
-
-  map.addSource('eubucco', {
-    type: 'vector',
-    url: `pmtiles://${PMTILES_URL}`,
-  });
-
-  map.addLayer({
-    id: 'buildings-fill',
-    type: 'fill',
-    source: 'eubucco',
-    'source-layer': 'buildings',
-    layout: { visibility: 'none' },
-    paint: {
-      'fill-color': SCHEMES.subtype.fill,
-      'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.6, 14, 0.85],
-      'fill-outline-color': ['interpolate', ['linear'], ['zoom'], 12, 'rgba(0,0,0,0)', 14, 'rgba(0,0,0,0.25)'],
-    },
-  });
-
-  map.addLayer({
-    id: 'buildings-3d',
-    type: 'fill-extrusion',
-    source: 'eubucco',
-    'source-layer': 'buildings',
-    layout: { visibility: 'visible' },
-    paint: {
-      'fill-extrusion-color': SCHEMES.subtype.fill,
-      'fill-extrusion-height': ['coalesce', ['get', 'height'], 5],
-      'fill-extrusion-base': 0,
-      'fill-extrusion-opacity': 0.85,
-    },
-  });
-
-  // Overture buildings — rendered as line outlines for visual differentiation
-  map.addSource('overture', {
-    type: 'vector',
-    url: `pmtiles://${OVERTURE_URL}`,
-  });
-
-  map.addLayer({
-    id: 'overture-outline',
-    type: 'line',
-    source: 'overture',
-    'source-layer': 'building',
-    layout: { visibility: 'none' },
-    paint: {
-      'line-color': '#c4b5fd',
-      'line-width': 1.8,
-      'line-opacity': 0.9,
-    },
-  });
-
-  renderLegend('subtype');
+  scheduleMapLayerRebuild();
 });
+
+map.on('style.load', scheduleMapLayerRebuild);
+
+const themeObserver = new MutationObserver(syncMapTheme);
+themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
 
 // ── Apply color scheme ─────────────────────────────────────────
 function applyColorScheme(key) {
