@@ -4,7 +4,6 @@
 {% block content %}
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="https://unpkg.com/h3-js"></script>
 <script src="https://unpkg.com/deck.gl@9.0.38/dist.min.js"></script>
 <script src="https://unpkg.com/@deck.gl/[email protected]/dist.min.js"></script>
 <script src="https://unpkg.com/@deck.gl/[email protected]/dist.min.js"></script>
@@ -14,8 +13,8 @@
   #conflation-root *{box-sizing:border-box}
   /* Fill the viewport below the 64px sticky navbar; becomes the positioning
      context for the absolutely-positioned map / pipeline / panel below.
-     Map canvas, pipeline, panel, tooltip and MapLibre controls all inherit
-     DaisyUI theme tokens and switch together with the site theme. */
+     Theme tokens are inherited by the map canvas, pipeline, panel, tooltip
+     and MapLibre chrome so all demo UI follows the light/dark toggle. */
   #conflation-root{
     position:fixed; top:64px; left:0; right:0; bottom:0;
     --bg:hsl(var(--b1));
@@ -25,20 +24,13 @@
     --accent:hsl(var(--p));
     --accent-soft:hsl(var(--p) / 0.18);
     --accent-ink:hsl(var(--pc));
-    --map-control-bg:hsl(var(--b1) / 0.82);
     background:var(--bg); color:var(--ink);
     font-family:inherit;
   }
-  #conflation-root.theme-dark{ --bg:#0a0c0f; }
-  #conflation-root.theme-light{ --bg:hsl(var(--b1)); }
+  #conflation-root.theme-dark{--bg:#0a0c0f}
   #map{position:absolute;inset:0;background:var(--bg)}
-  .maplibregl-ctrl-attrib{background:var(--map-control-bg)!important;color:var(--ink-dim)!important;font-size:10px}
-  .maplibregl-ctrl-attrib a,.maplibregl-ctrl-attrib-inner{color:var(--ink-dim)!important;font-size:10px!important}
-  .maplibregl-ctrl-group{background:hsl(var(--b1)/0.95)!important;border:1px solid var(--rule)!important;border-radius:2px!important}
-  .maplibregl-ctrl-group button{background:transparent!important;border-bottom:1px solid var(--rule)!important}
-  .maplibregl-ctrl-group button:last-child{border-bottom:none!important}
-  #conflation-root.theme-dark .maplibregl-ctrl-group button .maplibregl-ctrl-icon{filter:invert(.72)}
-  #conflation-root.theme-light .maplibregl-ctrl-group button .maplibregl-ctrl-icon{filter:none;opacity:.68}
+  .maplibregl-ctrl-attrib{background:hsl(var(--b1)/0.82)!important;color:var(--ink-dim)!important;font-size:10px}
+  .maplibregl-ctrl-attrib a,.maplibregl-ctrl-attrib-inner{color:var(--ink-dim)!important}
 
   #pipeline{
     position:absolute; top:0; left:0; right:0;
@@ -154,14 +146,29 @@
     #panel h1{font-size:16px}
     #panel p.body{font-size:12px;line-height:1.5;margin:0 0 10px}
     #panelToggle{display:inline-flex}
-    /* Color-by toggles are power-user controls — drop them on small screens. */
+    /* Color-by toggles are power-user controls — drop them on small screens,
+       along with the body sentence that points at them. */
     #panel #toggles{display:none}
+    #panel .ctrl-hint{display:none}
     /* Collapsed: keep only the title and the step nav (so the map stays usable
        while still steppable / swipeable). */
     #panel.collapsed #panel-body{display:none}
     #panel.collapsed #panelHead{margin-bottom:0}
     /* Arrow-key hint is irrelevant on touch. */
     .hint{display:none}
+
+    /* Pipeline scrolls horizontally; the active step is scrolled to center
+       (see scrollActivePipelineNode) so later steps stay reachable. Inactive
+       steps keep a fixed width (label truncated); the active step grows to fit
+       its full label so it's never cropped. */
+    #pipeline{overflow-x:auto; overflow-y:hidden; padding:7px 12px; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+    #pipeline::-webkit-scrollbar{display:none}
+    #pipeline .track{display:flex; max-width:none; margin:0}
+    #pipeline .node{flex:0 0 124px}
+    /* Active step grows only when its label needs more than the fixed width;
+       short labels keep 124px so spacing to neighbours stays even. */
+    #pipeline .node.cur{flex:0 0 auto; min-width:124px}
+    #pipeline .node.cur .label{overflow:visible; text-overflow:clip}
   }
 
   #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:10;color:var(--ink-dim);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase}
@@ -187,7 +194,7 @@
   #tip td.v{color:var(--ink)}
   #tip td.s{color:var(--ink-dim);font-size:9.5px;text-align:right}
   #tip .pill{display:inline-block;padding:1px 5px;border-radius:2px;font-size:9px;letter-spacing:.08em;color:#0d0f12;font-weight:600;text-transform:uppercase}
-  #tip .na{color:hsl(var(--bc)/0.42);font-style:italic}
+  #tip .na{color:#6a7180;font-style:italic}
 </style>
 
 <div id="conflation-root">
@@ -532,7 +539,7 @@ window.DATA={};
     {
       shortLabel:'Attribute Enrichment',
       title:'Attribute Enrichment via Merging',
-      body:'Attributes are transferred between matched buildings, allowing missing information to be filled from complementary datasets. Switch <b>Color by attribute source</b> to see which dataset each value came from.',
+      body:'Attributes are transferred between matched buildings, allowing missing information to be filled from complementary datasets. <span class="ctrl-hint">Switch <b>Color by attribute source</b> to see which dataset each value came from.</span>',
       view:{ pitch:55, bearing:-30, zoom:17, center: [11.028494, 50.986653] },
       legend:[],
       showToggles:true, attrStage:'real',
@@ -542,7 +549,7 @@ window.DATA={};
     {
       shortLabel:'ML Estimation',
       title:'Attribute Enrichment via ML Estimation',
-      body:'Remaining missing attributes are estimated using a ML model that learns from the spatial context. Switch <b>Color by attribute source</b> to see which were reported vs. <i>estimated</i>.',
+      body:'Remaining missing attributes are estimated using a ML model that learns from the spatial context. <span class="ctrl-hint">Switch <b>Color by attribute source</b> to see which were reported vs. <i>estimated</i>.</span>',
       view:{ pitch:55, bearing:-30, zoom:16.2, center: [11.029734175, 50.99054165] },
       legend:[],
       showToggles:true, attrStage:'all',
@@ -659,38 +666,6 @@ window.DATA={};
     });
   }
 
-  function h3GridLayer(){
-    const cells = computeH3Aggregate(h3Resolution);
-    const records = Object.entries(cells).map(([id, c]) => ({
-      hex: id,
-      value: h3CellValue(c),
-      count: c.count,
-      area_m2: c.area_m2,
-      sums: c.sums
-    })).filter(r => r.value != null);
-
-    // Find max for legend scaling
-    const maxV = records.reduce((m,r) => Math.max(m, r.value), 0) || 1;
-
-    return new deck.H3HexagonLayer({
-      id:'h3', data:records,
-      pickable:true,
-      filled:true, stroked:true, extruded:false,
-      getHexagon: d => d.hex,
-      getFillColor: d => {
-        const t = Math.sqrt(Math.min(1, d.value / maxV));
-        const c = interpColor(MATERIAL_SCALE[activeMaterial], t);
-        return [c[0],c[1],c[2], 200];
-      },
-      getLineColor: [255,255,255,30],
-      lineWidthMinPixels: 0.4,
-      onHover: info => showH3Tip(info, maxV),
-      updateTriggers:{
-        getFillColor:[activeMaterial, materialUnit, h3Resolution]
-      }
-    });
-  }
-
   // ============================================================
   // TOOLTIP
   // ============================================================
@@ -768,26 +743,6 @@ window.DATA={};
     tip.style.top  = (info.y + 14) + 'px';
   }
 
-  function showH3Tip(info, maxV){
-    const tip = document.getElementById('tip');
-    if(!info.object){ tip.style.display='none'; return; }
-    const d = info.object;
-    let rows = `<tr><td class="k">Cell</td><td class="v" colspan="2" style="word-break:break-all">${d.hex}</td></tr>`;
-    rows += `<tr><td class="k">Resolution</td><td class="v" colspan="2">${h3Resolution}</td></tr>`;
-    rows += `<tr><td class="k">Buildings</td><td class="v" colspan="2">${d.count}</td></tr>`;
-    rows += `<tr><td colspan="3" style="padding-top:6px;border-top:1px solid hsl(var(--bc)/0.12)"></td></tr>`;
-    for(const m of MATERIALS){
-      const kg = d.sums[m] || 0;
-      const mi = d.area_m2 > 0 ? kg / d.area_m2 : 0;
-      const hl = (m === activeMaterial) ? ' style="color:var(--accent)"' : '';
-      rows += `<tr${hl}><td class="k">${m}</td><td class="v">${fmtVal(mi)} kg/m²</td><td class="s">${fmtVal(kg)} kg</td></tr>`;
-    }
-    tip.innerHTML = `<div class="tid">H3 aggregate</div><table>${rows}</table>`;
-    tip.style.display = 'block';
-    tip.style.left = (info.x + 14) + 'px';
-    tip.style.top  = (info.y + 14) + 'px';
-  }
-
   // ============================================================
   // MAP
   // ============================================================
@@ -815,6 +770,11 @@ window.DATA={};
     return isDarkTheme() ? BASE_STYLES.dark : BASE_STYLES.light;
   }
 
+  // Mobile shows less detail per step — pull the camera back by 1 zoom levels.
+  function zoomOffset(){
+    return window.matchMedia('(max-width: 768px)').matches ? 1 : 0;
+  }
+
   function syncBaseStyle(){
     applyThemeClass();
     if(!map) return;
@@ -822,6 +782,10 @@ window.DATA={};
     if(nextBaseTheme === currentBaseTheme) return;
     currentBaseTheme = nextBaseTheme;
     map.setStyle(makeBaseStyle());
+    // setStyle reloads the basemap (re-introducing its building layers); strip
+    // them again once the new style has settled. style.load alone isn't reliable
+    // across a style swap, so re-run on idle too.
+    map.once('idle', removeBasemapBuildings);
   }
 
   function watchThemeChanges(){
@@ -851,7 +815,6 @@ window.DATA={};
   }
 
   async function init(){
-    applyThemeClass();
     await loadRemoteData();
     startMap();
   }
@@ -865,7 +828,7 @@ window.DATA={};
     map = new maplibregl.Map({
       container:'map',
       style: makeBaseStyle(),
-      center: DATA.meta.center, zoom:16.2, pitch:0, bearing:0,
+      center: DATA.meta.center, zoom:16.2 - zoomOffset(), pitch:0, bearing:0,
       attributionControl:{compact:true}
     });
     map.on('style.load', removeBasemapBuildings);
@@ -876,17 +839,6 @@ window.DATA={};
       deckOverlay = new deck.MapboxOverlay({ interleaved:false, layers:[] });
       map.addControl(deckOverlay);
       buildPipeline();
-      // Re-render H3 grid on zoom change (resolution updates)
-      map.on('zoomend', () => {
-        if(STEPS[activeStep].h3Mode){
-          const z = map.getZoom();
-          const newRes = resolutionForZoom(z);
-          if(newRes !== h3Resolution){
-            h3Resolution = newRes;
-            renderPanel(); renderLayers();
-          }
-        }
-      });
       goto(0, false);
     });
     map.getCanvas().addEventListener('mouseleave', () => {
@@ -933,6 +885,18 @@ window.DATA={};
       n.classList.toggle('cur', i===activeStep);
       n.classList.toggle('done', i<activeStep);
     });
+    scrollActivePipelineNode();
+  }
+  // On mobile the pipeline scrolls horizontally; keep the active step centered
+  // so steps on either side stay reachable.
+  function scrollActivePipelineNode(){
+    const pipeline = document.getElementById('pipeline');
+    const cur = document.querySelector('#pipelineTrack .node.cur');
+    if(!pipeline || !cur || pipeline.scrollWidth <= pipeline.clientWidth) return;
+    const pRect = pipeline.getBoundingClientRect();
+    const cRect = cur.getBoundingClientRect();
+    const delta = (cRect.left + cRect.width / 2) - (pRect.left + pRect.width / 2);
+    pipeline.scrollTo({ left: pipeline.scrollLeft + delta, behavior: 'smooth' });
   }
 
   // ============================================================
@@ -940,11 +904,8 @@ window.DATA={};
   // ============================================================
   function legendItems(){
     const s = STEPS[activeStep];
-    if(s.materialMode || s.h3Mode){
-      const max = s.h3Mode
-        ? (() => { const c = computeH3Aggregate(h3Resolution);
-                   let m=0; for(const id in c){ const v = h3CellValue(c[id]); if(v!=null && v>m) m=v; } return m||1; })()
-        : materialMaxFor(activeMaterial, materialUnit);
+    if(s.materialMode){
+      const max = materialMaxFor(activeMaterial, materialUnit);
       const stops = MATERIAL_SCALE[activeMaterial];
       const unit = materialUnit==='MI' ? 'kg/m²' : 'kg';
       return [
@@ -1018,7 +979,7 @@ window.DATA={};
     document.getElementById('legend').innerHTML = legHtml;
 
     const tEl = document.getElementById('toggles');
-    if(s.materialMode || s.h3Mode){
+    if(s.materialMode){
       const mats = MATERIALS;
       tEl.innerHTML = `
         <div class="toggles">
@@ -1034,20 +995,11 @@ window.DATA={};
             <button data-u="kg" class="${materialUnit==='kg'?'on':''}">Mass (kg)</button>
           </div>
         </div>
-        ${s.h3Mode ? `
-        <div class="toggles">
-          <div class="lbl">H3 resolution <span class="badge on">${h3Resolution}</span></div>
-          <div class="seg" data-mode="res">
-            ${[6,7,8,9,10].map(r => `<button data-r="${r}" class="${h3Resolution===r?'on':''}">res ${r}</button>`).join('')}
-          </div>
-          <div style="font-size:10px;color:var(--ink-dim);margin-top:6px;font-family:'JetBrains Mono',monospace">Auto-adjusts with zoom (${resolutionForZoom(map?.getZoom() || 14)} now)</div>
-        </div>` : ''}
       `;
       tEl.querySelectorAll('button').forEach(b => {
         b.addEventListener('click', () => {
           if(b.dataset.m){ activeMaterial = b.dataset.m; }
           if(b.dataset.u){ materialUnit  = b.dataset.u; }
-          if(b.dataset.r){ h3Resolution  = +b.dataset.r; }
           renderPanel(); renderLayers();
         });
       });
@@ -1141,12 +1093,13 @@ window.DATA={};
 
   const stepCenter = s.view.center || DATA.meta.center;
 
-  map.flyTo({ 
-    ...s.view, 
+  map.flyTo({
+    ...s.view,
     center: stepCenter,
-    duration: 1100, 
-    essential: true, 
-    curve: 1.2 
+    zoom: (s.view.zoom ?? map.getZoom()) - zoomOffset(),
+    duration: 1100,
+    essential: true,
+    curve: 1.2
   });
     // Animation policy — heights are CUMULATIVE/persistent.
     //   Forward: animate from prev-step-visible-height to current-step-visible-height
@@ -1157,12 +1110,11 @@ window.DATA={};
     //            handles this), so the rise is a no-op.
     const prevStage = heightStageFor(prevStep);
     const curStage  = heightStageFor(s);
-    const isBuildingStep = !s.h3Mode;
 
     // Determine if any per-feature height actually changes. If not, skip animation.
     const stagesEqual = prevStage === curStage;
 
-    if(animate && !goingBack && isBuildingStep && !stagesEqual){
+    if(animate && !goingBack && !stagesEqual){
       animFrom = f => effectiveHeightAtStage(f, prevStage);
       animTo   = f => effectiveHeightAtStage(f, curStage);
       animStart = performance.now() + 700;
