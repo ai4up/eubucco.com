@@ -469,18 +469,18 @@ window.DATA={};
   // ============================================================
   const BASE_STEPS = [
     {
-      shortLabel:'Single source',
-      title:'A single source',
-      body:'Any individual source is typically incomplete — it covers only a subset of the buildings, and often captures just a few of the important characteristics such as building type, number of floors, or height.',
+      shortLabel:'Single Dataset',
+      title:'A Single Dataset',
+      body:'Individual building datasets are often incomplete, covering only a subset of existing buildings and lacking important attributes such as building type, number of floors, or height.',
       view:{ pitch:0, bearing:0, zoom:16.4, center: [11.029403, 50.995342] },
       legend:[],
       attrStage:'own',
       build(){ return sourceLayers(['gov'], { fill:0.35, line:1 }); }
     },
     {
-      shortLabel:'Overlay',
-      title:'Overlaying all available sources',
-      body:"Overlaying governmental cadaster, OpenStreetMap (community-mapped), and Microsoft's ML-derived roofprints. Each has its own coverage, geometry quirks and attribute completeness, and they overlap heavily.",
+      shortLabel:'Overlap',
+      title:'Combining Available Sources',
+      body:'Governmental cadaster data, OpenStreetMap (community-mapped), and Microsoft’s ML-derived building footprints provide complementary information, but they also overlap heavily. Many buildings appear multiple times, making matching necessary before the datasets can be combined.',
       view:{ pitch:0, bearing:0, zoom:16.4, center: [11.029403, 50.995342] },
       legend:[ ['gov',SRC_LABELS.gov], ['osm',SRC_LABELS.osm], ['msft',SRC_LABELS.msft] ],
       attrStage:'own',
@@ -488,8 +488,8 @@ window.DATA={};
     },
     {
       shortLabel:'Matching',
-      title:'Linking identical building across datasets',
-      body:'Spatial matching produces edges between every pair of source polygons that represent the same real-world building. The amber lines connect linked footprints across datasets.',
+      title:'Finding Corresponding Buildings',
+      body:'Buildings representing the same real-world structure are identified across datasets. Amber lines show the resulting matches.',
       view:{ pitch:0, bearing:0, zoom:16.6, center: [11.029403, 50.995342] },
       legend:[],
       attrStage:'own',
@@ -505,8 +505,8 @@ window.DATA={};
     },
     {
       shortLabel:'Merging',
-      title:'Selecting best source',
-      body:"Conflation produces one polygon per real-world building. Each merged footprint inherits geometry from a single chosen source.",
+      title:'Selecting Best Source',
+      body:"For each real-world building, conflation selects the best available source and adopts its geometry.",
       view:{ pitch:0, bearing:0, zoom:16.6, center: [11.029403, 50.995342] },
       legend:[ ['gov',SRC_LABELS.gov], ['osm',SRC_LABELS.osm], ['msft',SRC_LABELS.msft] ],
       showToggles:false, defaultColorMode:'geom_source',
@@ -514,9 +514,9 @@ window.DATA={};
       build(){ return [ mergedDynamicLayer( { fill:0.35, line:1 }) ]; }
     },
     {
-      shortLabel:'Attribute coverage',
-      title:'Ground-truth attribute coverage',
-      body:'Only a fraction of buildings have attributes in their own source dataset.',
+      shortLabel:'Attribute Coverage',
+      title:'Observed Attribute Coverage',
+      body:'Many buildings lack important attributes in their original source dataset.',
       view:{ pitch:55, bearing:-30, zoom:17, center: [11.028494, 50.986653] },
       legend:[],
       showToggles:true, attrStage:'own',
@@ -524,9 +524,9 @@ window.DATA={};
       build(){ return [ mergedDynamicLayer() ]; }
     },
     {
-      shortLabel:'Enriched via merge',
-      title:'Attribute enrichment via merging',
-      body:'Matched pairs share their attributes. A building whose own source lacks a value now inherits it from a matched sibling in another dataset. Switch <b>Color by attribute source</b> to see which dataset each value came from.',
+      shortLabel:'Attribute Enrichment',
+      title:'Attribute Enrichment via Merging',
+      body:'Attributes are transferred between matched buildings, allowing missing information to be filled from complementary datasets. Switch <b>Color by attribute source</b> to see which dataset each value came from.',
       view:{ pitch:55, bearing:-30, zoom:17, center: [11.028494, 50.986653] },
       legend:[],
       showToggles:true, attrStage:'real',
@@ -534,9 +534,9 @@ window.DATA={};
       build(){ return [ mergedDynamicLayer() ]; }
     },
     {
-      shortLabel:'Enriched via ML',
-      title:'Attribute enrichment via ML estimation',
-      body:'The remaining missing attributes are estimated using a ML model that learns from the spatial context. Switch <b>Color by attribute source</b> to see which were reported vs. <i>estimated</i>.',
+      shortLabel:'ML Estimation',
+      title:'Attribute Enrichment via ML Estimation',
+      body:'Remaining missing attributes are estimated using a ML model that learns from the spatial context. Switch <b>Color by attribute source</b> to see which were reported vs. <i>estimated</i>.',
       view:{ pitch:55, bearing:-30, zoom:16.2, center: [11.029734175, 50.99054165] },
       legend:[],
       showToggles:true, attrStage:'all',
@@ -547,9 +547,9 @@ window.DATA={};
 
   const MATERIAL_STEPS = [
     {
-      shortLabel:'Material intensities',
-      title:'Material intensities & masses',
-      body:'Material intensities (kg/m²) are mapped to each building by allocating <b>RASMI</b> reference values onto archetypes defined by location, use type, structural type, and number of storeys. Multiplied by gross floor area, this yields the total material mass per building (kg).',
+      shortLabel:'Material Stocks',
+      title:'Estimating Building Material Stocks',
+      body:'The enriched building dataset enables downstream analyses such as material stock estimation. Material intensities (kg/m²) are assigned using <a href="https://www.nature.com/articles/s41597-024-03190-7" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; font-weight: 600;">RASMI</a> reference archetypes and combined with gross floor area to estimate total material mass (kg).',
       view:{ pitch:55, bearing:-30, zoom:16.2, center: [11.029734175, 50.99054165] },
       legend:[], materialMode:true, showToggles:true,
       attrStage:'all',
