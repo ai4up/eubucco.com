@@ -20,15 +20,26 @@
 
   #map { position: absolute; inset: 0; background: var(--bg); }
 
-  /* ── Floating Panel ── */
+  /* ── Floating Panel ──
+     Themed to match the conflation demo: DaisyUI tokens (base-100 /
+     base-content / primary) are overridden *scoped to #panel*, so the map,
+     hover tooltip and HUD keep their existing dark styling untouched. */
   #panel {
+    --ink: hsl(var(--bc));
+    --ink-dim: hsl(var(--bc) / 0.6);
+    --rule: hsl(var(--bc) / 0.12);
+    --accent: hsl(var(--p));
+    --accent-ink: hsl(var(--pc));
     position: absolute; top: 20px; left: 20px;
-    width: 340px; max-height: calc(100vh - 104px);
-    background: linear-gradient(180deg, #171a1f 0%, #13161b 100%);
-    border: 1px solid var(--rule);
-    border-radius: 2px;
+    width: 340px; max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 104px);
+    background: hsl(var(--b1) / 0.95);
+    border: 1px solid hsl(var(--bc) / 0.1);
+    border-radius: 1rem;
     padding: 20px 22px 18px;
-    box-shadow: 0 24px 60px -20px rgba(0,0,0,.7), 0 2px 0 rgba(255,255,255,.02) inset;
+    box-shadow: 0 10px 30px -12px rgba(0,0,0,.5);
+    backdrop-filter: blur(12px);
+    color: var(--ink);
     overflow-y: auto; z-index: 5;
   }
   #panel::-webkit-scrollbar { width: 5px; }
@@ -36,10 +47,26 @@
   #panel::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
 
   #panel h1 {
-    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-    font-weight: 500; font-size: 18px; line-height: 1.2;
+    font-family: inherit;
+    font-weight: 600; font-size: 18px; line-height: 1.2;
     margin: 0 0 4px; letter-spacing: -.01em; color: var(--ink);
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  #panel h1 .h1-right { display: flex; align-items: center; gap: 8px; }
+
+  /* Collapse toggle — only shown on mobile */
+  #panelToggle {
+    display: none; background: transparent; border: none; padding: 2px;
+    color: var(--ink-dim); cursor: pointer; line-height: 0;
+    transition: transform .2s ease;
+  }
+  #panelToggle:hover { color: var(--ink); }
+  #panel.collapsed #panelToggle { transform: rotate(-90deg); }
+  @media (max-width: 768px) {
+    #panel { top: 12px; left: 12px; }
+    #panelToggle { display: inline-flex; }
+    #panel.collapsed { padding-bottom: 16px; }
+    #panel.collapsed #panel-body { display: none; }
   }
   .version-badge {
     font-family: "JetBrains Mono", ui-monospace, monospace;
@@ -64,7 +91,7 @@
     transition: border-color .15s ease;
   }
   #panel select:focus { border-color: var(--accent); }
-  #panel select option { background: #1a1d23; }
+  #panel select option { background: hsl(var(--b1)); color: var(--ink); }
 
   .seg { display: flex; gap: 4px; flex-wrap: wrap; }
   .seg button {
@@ -73,13 +100,13 @@
     letter-spacing: .05em; border-radius: 2px; padding: 5px 10px; cursor: pointer;
     transition: all .15s ease;
   }
-  .seg button:hover { color: var(--ink); border-color: #3a414c; }
-  .seg button.on { background: var(--accent); border-color: var(--accent); color: #0d0f12; font-weight: 600; }
+  .seg button:hover { color: var(--ink); border-color: hsl(var(--bc) / 0.3); }
+  .seg button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
 
   /* ── Legend ── */
   #legend {
     margin-top: 8px; padding: 10px 12px;
-    background: rgba(255,255,255,.02); border: 1px solid var(--rule); border-radius: 2px;
+    background: hsl(var(--bc) / 0.04); border: 1px solid var(--rule); border-radius: .5rem;
     display: none;
   }
   #legend.visible { display: block; }
@@ -203,34 +230,43 @@
   <!-- ── Control Panel ── -->
   <aside id="panel">
     <h1>
-      EUBUCCO Explorer
-      <span class="version-badge">v0.2</span>
+      <span>Explorer</span>
+      <span class="h1-right">
+        <span class="version-badge">v0.2</span>
+        <button id="panelToggle" type="button" aria-label="Collapse panel" aria-expanded="true">
+          <svg style="width:16px;height:16px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </span>
     </h1>
 
-    <p class="section-label">Color by</p>
-    <select id="colorSelect">
-      <option value="subtype" selected>Building Subtype</option>
-      <option value="type">Building Type</option>
-      <option value="geometry_source">Data Source</option>
-      <option value="height">Height (m)</option>
-      <option value="floors">Floors</option>
-      <option value="construction_year">Construction Year</option>
-      <option value="default">Uniform (accent)</option>
-    </select>
+    <div id="panel-body">
+      <p class="section-label">Color by</p>
+      <select id="colorSelect">
+        <option value="subtype" selected>Building Subtype</option>
+        <option value="type">Building Type</option>
+        <option value="geometry_source">Data Source</option>
+        <option value="height">Height (m)</option>
+        <option value="floors">Floors</option>
+        <option value="construction_year">Construction Year</option>
+        <option value="default">Uniform (accent)</option>
+      </select>
 
-    <div id="legend"></div>
+      <div id="legend"></div>
 
-    <p class="section-label">View</p>
-    <div class="seg" id="viewSeg">
-      <button data-view="flat">Flat</button>
-      <button class="on" data-view="3d">3D Extrusion</button>
+      <p class="section-label">View</p>
+      <div class="seg" id="viewSeg">
+        <button data-view="flat">Flat</button>
+        <button class="on" data-view="3d">3D Extrusion</button>
+      </div>
+
+      <p class="section-label">Overlays</p>
+      <div class="seg">
+        <button id="overtureBtn">Overture Buildings</button>
+      </div>
+      <p class="overlay-note">Outlines only · release 2026-05-20.0</p>
     </div>
-
-    <p class="section-label">Overlays</p>
-    <div class="seg">
-      <button id="overtureBtn">Overture Buildings</button>
-    </div>
-    <p class="overlay-note">Outlines only · release 2026-05-20.0</p>
   </aside>
 
   <!-- ── HUD ── -->
@@ -665,6 +701,13 @@ document.getElementById('colorSelect').addEventListener('change', e => {
 
 document.querySelectorAll('#viewSeg button').forEach(btn => {
   btn.addEventListener('click', () => setView(btn.dataset.view));
+});
+
+// ── Collapse panel (mobile) ───────────────────────────────────
+document.getElementById('panelToggle').addEventListener('click', () => {
+  const panel = document.getElementById('panel');
+  const collapsed = panel.classList.toggle('collapsed');
+  document.getElementById('panelToggle').setAttribute('aria-expanded', String(!collapsed));
 });
 </script>
 
