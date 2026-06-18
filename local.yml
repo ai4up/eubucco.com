@@ -111,22 +111,6 @@ services:
       - ./.envs/.local/.minio
     ports: []
     command: /start-celeryworker-heavy
-
-  celeryworker-tiling:
-    <<: *django
-    image: celeryworker
-    depends_on:
-      - redis
-      - postgres
-      - mailhog
-      - minio
-    env_file:
-      - ./.envs/.local/.django
-      - ./.envs/.local/.postgres
-      - ./.envs/.local/.minio
-    ports: []
-    command: /start-celeryworker-tiling
-
   celerybeat:
     <<: *django
     image: celerybeat

@@ -189,27 +189,6 @@ services:
     networks:
       - default
       - dev-db
-
-  celeryworker-tiling:
-    image: eubucco/eubucco.com:dev
-    restart: unless-stopped
-    depends_on:
-      - postgres
-      - redis
-      - minio
-    env_file:
-      - .envs/.dev/.django
-      - .envs/.dev/.postgres
-      - .envs/.dev/.minio
-    volumes:
-      - /home/eubucco-data:/app/data
-    command: /start-celeryworker-tiling
-    labels:
-      - "com.centurylinklabs.watchtower.enable=true"
-    networks:
-      - default
-      - dev-db
-
   celerybeat:
     image: eubucco/eubucco.com:dev
     depends_on:
@@ -348,6 +327,7 @@ services:
       - /home/eubucco/tiles:/tiles:ro
 
   tile-generator:
+    user: root
     image: eubucco/eubucco.com:dev
     depends_on:
       minio-setup:

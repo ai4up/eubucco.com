@@ -192,7 +192,6 @@ services:
     command: /start-celeryworker-heavy
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
-
   celerybeat:
     image: eubucco/eubucco.com:production
     depends_on:
@@ -336,6 +335,20 @@ services:
     volumes:
       - /home/eubucco/tiles:/tiles:ro
 
+  tile-generator:
+    user: root
+    image: eubucco/eubucco.com:production
+    depends_on:
+      minio-setup:
+        condition: service_completed_successfully
+    env_file:
+      - .envs/.production/.django
+      - .envs/.production/.postgres
+      - .envs/.production/.minio
+    restart: "no"
+    volumes:
+      - /home/eubucco-data:/app/data
+    command: python manage.py generate_building_tiles --data-version v0.2 --min-zoom 12 --max-zoom 14 --executor local --local-data-root /app/data/s3 --tmp-dir /app/data/tile_tmp
 networks:
   default:
   proxy:
