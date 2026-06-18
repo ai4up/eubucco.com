@@ -96,9 +96,15 @@
     backdrop-filter:blur(12px);
     overflow:auto; z-index:5;
   }
-  #panel h1{font-family:inherit;font-weight:600;font-size:20px;line-height:1.2;margin:0 0 12px;letter-spacing:-.01em}
+  #panelHead{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin:0 0 12px}
+  #panel h1{font-family:inherit;font-weight:600;font-size:20px;line-height:1.2;margin:0;letter-spacing:-.01em}
   #panel p.body{font-size:13px;line-height:1.55;color:var(--ink-dim);margin:0 0 14px}
   #panel p.body b{color:var(--ink);font-weight:600}
+
+  /* Collapse toggle — only shown on mobile */
+  #panelToggle{display:none;background:transparent;border:none;padding:2px;margin-top:1px;color:var(--ink-dim);cursor:pointer;line-height:0;transition:transform .2s ease}
+  #panelToggle:hover{color:var(--ink)}
+  #panel.collapsed #panelToggle{transform:rotate(-90deg)}
 
   .legend{display:flex;flex-direction:column;gap:6px;margin:10px 0 4px;padding:10px 12px;background:hsl(var(--bc)/0.04);border:1px solid var(--rule);border-radius:.5rem}
   .legend .row{display:flex;align-items:center;gap:9px;font-size:11.5px;color:var(--ink-dim);font-family:"JetBrains Mono",ui-monospace,monospace}
@@ -130,6 +136,27 @@
   #nav button{background:transparent;border:1px solid var(--rule);color:var(--ink);padding:7px 14px;border-radius:2px;cursor:pointer;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.08em;transition:all .15s ease}
   #nav button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
   #nav button:disabled{opacity:.3;cursor:not-allowed}
+
+  /* ── Mobile: compact, collapsible panel ── */
+  @media (max-width: 768px){
+    #panel{
+      top:72px; left:12px; right:12px; width:auto;
+      max-height:calc(100% - 150px);
+      padding:14px 16px 12px; border-radius:.75rem;
+    }
+    #panelHead{margin-bottom:10px}
+    #panel h1{font-size:16px}
+    #panel p.body{font-size:12px;line-height:1.5;margin:0 0 10px}
+    #panelToggle{display:inline-flex}
+    /* Color-by toggles are power-user controls — drop them on small screens. */
+    #panel #toggles{display:none}
+    /* Collapsed: keep only the title and the step nav (so the map stays usable
+       while still steppable / swipeable). */
+    #panel.collapsed #panel-body{display:none}
+    #panel.collapsed #panelHead{margin-bottom:0}
+    /* Arrow-key hint is irrelevant on touch. */
+    .hint{display:none}
+  }
 
   #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:10;color:var(--ink-dim);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase}
   #loading.hidden{display:none}
@@ -165,10 +192,19 @@
   <header id="pipeline"><div class="track" id="pipelineTrack"></div></header>
 
   <aside id="panel">
-    <h1 id="title"></h1>
-    <p class="body" id="body"></p>
-    <div id="toggles"></div>
-    <div id="legend"></div>
+    <div id="panelHead">
+      <h1 id="title"></h1>
+      <button id="panelToggle" type="button" aria-label="Collapse panel" aria-expanded="true">
+        <svg style="width:16px;height:16px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+    <div id="panel-body">
+      <p class="body" id="body"></p>
+      <div id="toggles"></div>
+      <div id="legend"></div>
+    </div>
     <div id="nav">
       <div class="counter" id="counter"></div>
       <div class="btns">
@@ -278,14 +314,10 @@ window.DATA={};
   let activeAttr = 'type';
   let activeMaterial = 'Glass';
   let materialUnit  = 'MI';         // 'MI' (kg/m²) | 'kg' (total mass)
-  let h3Resolution  = 9;
 
   let map, deckOverlay;
   let animFrame = 0, animStart = 0, animDuration = 0;
   let animFrom = null, animTo = null;
-
-  // Cached H3 aggregates per resolution. Computed lazily.
-  const H3_CACHE = {};   // { res: { cellId: { count, sum: {Mat: kg}, area: m² } } }
 
   // ============================================================
   // ATTRIBUTE-AVAILABILITY POLICY
@@ -384,79 +416,6 @@ window.DATA={};
   }
 
   // ============================================================
-  // POLYGON AREA (approximate, in m²) — for H3 weighted aggregation
-  // ============================================================
-  function ringAreaM2(ring){
-    // Shoelace in lon/lat scaled by latitude — adequate for small areas
-    if(ring.length < 4) return 0;
-    const R = 6378137;
-    let area = 0;
-    for(let i=0; i<ring.length-1; i++){
-      const [x1,y1] = ring[i], [x2,y2] = ring[i+1];
-      area += (x2-x1) * (2 + Math.sin(y1*Math.PI/180) + Math.sin(y2*Math.PI/180));
-    }
-    return Math.abs(area * R*R / 2 * (Math.PI/180));
-  }
-  function polygonArea(g){
-    if(g.type === 'Polygon')      return ringAreaM2(g.coordinates[0]);
-    if(g.type === 'MultiPolygon') return g.coordinates.reduce((s,p) => s + ringAreaM2(p[0]), 0);
-    return 0;
-  }
-  function featureCentroid(f){
-    const g = f.geometry;
-    const ring = g.type === 'Polygon' ? g.coordinates[0] : g.coordinates[0][0];
-    let x=0, y=0;
-    for(const p of ring){ x += p[0]; y += p[1]; }
-    return [x/ring.length, y/ring.length];
-  }
-
-  // ============================================================
-  // H3 AGGREGATION (step 8)
-  // ============================================================
-  function computeH3Aggregate(resolution){
-    if(H3_CACHE[resolution]) return H3_CACHE[resolution];
-    if(!window.h3) return {};
-    const cells = {};
-    for(const f of DATA.merged.features){
-      const mat = DATA.materials && DATA.materials[f.properties.id];
-      if(!mat) continue;
-      const [lon,lat] = featureCentroid(f);
-      const cellId = h3.latLngToCell(lat, lon, resolution);
-      if(!cells[cellId]) cells[cellId] = { count:0, sums:{}, area_m2:0 };
-      const c = cells[cellId];
-      c.count++;
-      const area = polygonArea(f.geometry);
-      const floors = f.properties.floors || 1;
-      const floor_area = area * floors;
-      c.area_m2 += floor_area;
-      for(const m of MATERIALS){
-        const kg = mat[m + '_kg50'];
-        if(kg != null){ c.sums[m] = (c.sums[m] || 0) + kg; }
-      }
-    }
-    H3_CACHE[resolution] = cells;
-    return cells;
-  }
-  function h3CellValue(cell){
-    // Return the value of activeMaterial in the chosen unit
-    if(!cell || !cell.sums) return null;
-    const kg = cell.sums[activeMaterial];
-    if(kg == null) return null;
-    if(materialUnit === 'kg') return kg;
-    // MI: total kg / total floor area
-    return cell.area_m2 > 0 ? kg / cell.area_m2 : null;
-  }
-  function resolutionForZoom(z){
-    // Keep finer resolutions across a wider zoom band. Res 6 only at
-    // continental/country zoom; res 10 from city-block zoom down.
-    if(z >= 14) return 10;
-    if(z >= 11) return 9;
-    if(z >= 9)  return 8;
-    if(z >= 7)  return 7;
-    return 6;
-  }
-
-  // ============================================================
   // HEIGHT ACCESSOR
   // ============================================================
   // The merged dataset has a single `height` column. Whether it's rendered
@@ -490,11 +449,9 @@ window.DATA={};
     return 0;
   }
   // Steps 1-3 don't render the merged layer at all → no heights.
-  // Step 7 (material) and step 8 (h3) inherit step 6's "all heights visible".
-  // Step 8 doesn't extrude buildings (top-down hex grid) but we never animate to it.
+  // The material step inherits the prior step's "all heights visible".
   function heightStageFor(step){
     if(!step) return null;
-    if(step.h3Mode) return null;
     if(step.materialMode) return 'all';   // materials keep all heights
     if(step.attrStage === 'own' || step.attrStage === 'real' || step.attrStage === 'all'){
       // Only steps with showToggles render the merged extrusion. Steps 1-3
@@ -516,7 +473,7 @@ window.DATA={};
       title:'A single source',
       body:'Any individual source is typically incomplete — it covers only a subset of the buildings, and often captures just a few of the important characteristics such as building type, number of floors, or height.',
       view:{ pitch:0, bearing:0, zoom:16.4, center: [11.029403, 50.995342] },
-      legend:[ ['gov',SRC_LABELS.gov] ],
+      legend:[],
       attrStage:'own',
       build(){ return sourceLayers(['gov'], { fill:0.35, line:1 }); }
     },
@@ -534,7 +491,7 @@ window.DATA={};
       title:'Linking identical building across datasets',
       body:'Spatial matching produces edges between every pair of source polygons that represent the same real-world building. The amber lines connect linked footprints across datasets.',
       view:{ pitch:0, bearing:0, zoom:16.6, center: [11.029403, 50.995342] },
-      legend:[ ['gov',SRC_LABELS.gov], ['osm',SRC_LABELS.osm], ['msft',SRC_LABELS.msft], ['link','Matched pair'] ],
+      legend:[],
       attrStage:'own',
       build(){
         return [
@@ -551,7 +508,7 @@ window.DATA={};
       title:'Selecting best source',
       body:"Conflation produces one polygon per real-world building. Each merged footprint inherits geometry from a single chosen source.",
       view:{ pitch:0, bearing:0, zoom:16.6, center: [11.029403, 50.995342] },
-      legend:[],
+      legend:[ ['gov',SRC_LABELS.gov], ['osm',SRC_LABELS.osm], ['msft',SRC_LABELS.msft] ],
       showToggles:false, defaultColorMode:'geom_source',
       attrStage:'own',
       build(){ return [ mergedDynamicLayer( { fill:0.35, line:1 }) ]; }
@@ -563,7 +520,7 @@ window.DATA={};
       view:{ pitch:55, bearing:-30, zoom:17, center: [11.028494, 50.986653] },
       legend:[],
       showToggles:true, attrStage:'own',
-      defaultAttr:'subtype',
+      defaultAttr:'type',
       build(){ return [ mergedDynamicLayer() ]; }
     },
     {
@@ -573,7 +530,7 @@ window.DATA={};
       view:{ pitch:55, bearing:-30, zoom:17, center: [11.028494, 50.986653] },
       legend:[],
       showToggles:true, attrStage:'real',
-      defaultAttr:'subtype',
+      defaultAttr:'type',
       build(){ return [ mergedDynamicLayer() ]; }
     },
     {
@@ -583,7 +540,7 @@ window.DATA={};
       view:{ pitch:55, bearing:-30, zoom:16.2, center: [11.029734175, 50.99054165] },
       legend:[],
       showToggles:true, attrStage:'all',
-      defaultAttr:'subtype',
+      defaultAttr:'type',
       build(){ return [ mergedDynamicLayer() ]; }
     }
   ];
@@ -971,22 +928,22 @@ window.DATA={};
       return [
         {col:`rgb(${TYPE_COLORS['residential'].join(',')})`,     label:'Residential'},
         {col:`rgb(${TYPE_COLORS['non-residential'].join(',')})`, label:'Non-residential'},
-        {col:'rgb(80,80,90)', label:'Not available at this stage'},
+        {col:'rgb(80,80,90)', label:'Unknown / Missing'},
       ];
     }
     if(activeAttr==='subtype'){
       return Object.entries(SUBTYPE_COLORS).map(([k,c])=>({
         col:`rgb(${c.join(',')})`,
         label: k.charAt(0).toUpperCase() + k.slice(1)
-      })).concat([{col:'rgb(80,80,90)', label:'Not available'}]);
+      })).concat([{col:'rgb(80,80,90)', label:'Unknown / Missing'}]);
     }
     if(activeAttr==='floors'){
       return FLOOR_RANGES.map(r => ({col:`rgb(${r.color.join(',')})`, label:r.label}))
-        .concat([{col:'rgb(80,80,90)', label:'Not available'}]);
+        .concat([{col:'rgb(80,80,90)', label:'Unknown / Missing'}]);
     }
     if(activeAttr==='height'){
       return HEIGHT_RANGES.map(r => ({col:`rgb(${r.color.join(',')})`, label:r.label}))
-        .concat([{col:'rgb(80,80,90)', label:'Not available'}]);
+        .concat([{col:'rgb(80,80,90)', label:'Unknown / Missing'}]);
     }
     return [];
   }
@@ -1183,6 +1140,34 @@ window.DATA={};
     if(e.key==='ArrowRight') goto(Math.min(activeStep+1, STEPS.length-1));
     if(e.key==='ArrowLeft')  goto(Math.max(activeStep-1, 0));
   });
+
+  // Collapse the panel (mobile only — toggle is hidden on desktop).
+  document.getElementById('panelToggle').addEventListener('click', () => {
+    const panel = document.getElementById('panel');
+    const collapsed = panel.classList.toggle('collapsed');
+    document.getElementById('panelToggle').setAttribute('aria-expanded', String(!collapsed));
+  });
+
+  // Swipe the panel left/right to step through. Bound to the panel (not the
+  // map) so it never fights map pan/zoom; horizontal intent only.
+  (function enablePanelSwipe(){
+    const panel = document.getElementById('panel');
+    let x0 = null, y0 = null;
+    panel.addEventListener('touchstart', e => {
+      if(e.touches.length !== 1){ x0 = null; return; }
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+    }, {passive:true});
+    panel.addEventListener('touchend', e => {
+      if(x0 === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - x0, dy = t.clientY - y0;
+      x0 = y0 = null;
+      if(Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5){
+        if(dx < 0) goto(Math.min(activeStep + 1, STEPS.length - 1));
+        else       goto(Math.max(activeStep - 1, 0));
+      }
+    }, {passive:true});
+  })();
 
   init();
   </script>
