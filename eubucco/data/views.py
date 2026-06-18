@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.templatetags.static import static
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -39,6 +40,29 @@ def explorer(request):
     pmtiles_url = f"{minio_public}/{bucket}/{version}/buildings/tiles/buildings.pmtiles"
     return render(request, "data/explorer.html", {"pmtiles_url": pmtiles_url})
 
+
+def coverage(request):
+    """Regional coverage and quality visualization."""
+    # Use direct MinIO URL instead of presigned URL
+    # Since the PMTiles file is served from MinIO, construct a direct URL
+    minio_public_endpoint = os.getenv("MINIO_PUBLIC_ENDPOINT", "http://localhost:9000")
+    minio_bucket = os.getenv("MINIO_BUCKET", "eubucco")
+    version = os.getenv("BUILDINGS_VERSION", "v0.2")
+    base = f"{minio_public_endpoint}/{minio_bucket}/{version}/coverage"
+    pmtiles_url = f"{base}/coverage-stats.pmtiles"
+    summary_url = f"{base}/coverage-summary.json"
+
+    logger.info(f"Coverage PMTiles URL: {pmtiles_url}")
+
+    return render(
+        request,
+        "data/coverage.html",
+        {
+            "pmtiles_url": pmtiles_url,
+            "summary_url": summary_url,
+            "nuts_names_url": static("metadata/nuts_names.json"),
+        },
+    )
 
 @csrf_exempt
 @require_POST

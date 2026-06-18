@@ -215,3 +215,16 @@ services:
     ports: []
     restart: "no"
     command: python manage.py generate_building_tiles --data-version v0.2 --min-zoom 12 --max-zoom 14 --executor local --local-data-root /app/data/s3 --tmp-dir /app/data/tile_tmp
+
+  coverage-generator:
+    <<: *django
+    depends_on:
+      minio-setup:
+        condition: service_completed_successfully
+    env_file:
+      - ./.envs/.local/.django
+      - ./.envs/.local/.postgres
+      - ./.envs/.local/.minio
+    ports: []
+    restart: "no"
+    command: python manage.py generate_coverage_tiles --data-version v0.2 --min-zoom 3 --max-zoom 8 --tmp-dir /app/data/tile_tmp
