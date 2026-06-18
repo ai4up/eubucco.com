@@ -401,6 +401,24 @@ def tile_join_and_upload(pmtiles_paths, version, out_path):
     return _run_tile_join_and_upload(version, pmtiles_paths, out_path)
 
 
+def _ensure_spatial_extension():
+    """Install + load the DuckDB spatial extension once, up front.
+
+    Each worker process calls INSTALL/LOAD; when several start at once they race
+    on the shared extension dir (~/.duckdb/extensions), which surfaces as
+    'cannot open shared object file' / 'Extension "spatial" not found'. Installing
+    once in the parent before the pool fans out makes the workers' INSTALL a no-op.
+    """
+    import duckdb
+
+    con = duckdb.connect()
+    try:
+        con.execute("INSTALL spatial")
+        con.execute("LOAD spatial")
+    finally:
+        con.close()
+
+
 def run_tile_pipeline(
     version: str = "v0.2",
     min_zoom: int = 12,
@@ -446,7 +464,13 @@ def run_tile_pipeline(
         result = chord(header, tile_join_and_upload.s(version, str(out_path)))()
         return result.get()
 
-    workers = workers or os.cpu_count() or 4
+    # Install the spatial extension once before fanning out so the workers don't
+    # race on a concurrent INSTALL.
+    _ensure_spatial_extension()
+
+    # Each region's tippecanoe is itself multi-threaded, so default to half the
+    # cores to avoid heavy oversubscription/thrash (override with workers=).
+    workers = workers or max(1, (os.cpu_count() or 4) // 2)
     pmtiles = []
     # Prefer fork so children inherit the initialised Django/module state instead
     # of re-importing it (spawn re-runs module-level redis/Celery setup).
