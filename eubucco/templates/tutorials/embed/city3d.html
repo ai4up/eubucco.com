@@ -1,0 +1,173 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EUBUCCO — Zürich in 3D</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.2.0/dist/pmtiles.js"></script>
+  <style>
+    :root {
+      --panel-bg: rgba(255,255,255,0.82); --panel-fg: #1f2328; --panel-line: rgba(0,0,0,0.10);
+    }
+    html.dark {
+      --panel-bg: rgba(17,24,39,0.72); --panel-fg: #e6edf3; --panel-line: rgba(255,255,255,0.12);
+    }
+    html, body { margin: 0; height: 100%; background: #0f1623; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+    #map { position: absolute; inset: 0; }
+    .overlay {
+      position: absolute; z-index: 2; backdrop-filter: blur(8px);
+      background: var(--panel-bg); color: var(--panel-fg);
+      border: 1px solid var(--panel-line); border-radius: 12px;
+    }
+    #title {
+      top: 12px; left: 12px; padding: 9px 13px; max-width: 60%;
+    }
+    #title .eyebrow { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.6; font-weight: 700; }
+    #title .name { font-size: 15px; font-weight: 750; line-height: 1.2; margin-top: 1px; }
+    #title .sub { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+    #legend { bottom: 14px; left: 12px; padding: 9px 12px; }
+    #legend .lbl { font-size: 10px; font-weight: 600; opacity: 0.75; margin-bottom: 5px; }
+    #legend .bar { width: 168px; height: 9px; border-radius: 3px;
+      background: linear-gradient(90deg,#440154,#3b4a6b,#2a6485,#1e7f8a,#1a9c7a,#35b779,#6ece58,#fde725); }
+    #legend .ticks { display: flex; justify-content: space-between; font-size: 9px; opacity: 0.6; margin-top: 3px; }
+    #loading {
+      position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center;
+      background: #0f1623; color: #9fb0cc; font-size: 13px; gap: 9px; transition: opacity .4s ease;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .spinner { width: 16px; height: 16px; border: 2px solid rgba(159,176,204,0.3); border-top-color: #9fb0cc;
+      border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .maplibregl-ctrl-attrib { font-size: 10px !important; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="title" class="overlay">
+    <div class="eyebrow">EUBUCCO · live 3D</div>
+    <div class="name">Zürich, extruded by height</div>
+    <div class="sub">322M European buildings · drag to orbit, scroll to zoom</div>
+  </div>
+  <div id="legend" class="overlay">
+    <div class="lbl">Building height</div>
+    <div class="bar"></div>
+    <div class="ticks"><span>0&nbsp;m</span><span>25</span><span>50</span><span>100+&nbsp;m</span></div>
+  </div>
+  <div id="loading"><span class="spinner"></span>Loading 3D buildings…</div>
+
+<script>
+const PMTILES_URL = "{{ pmtiles_url }}";
+const MAP_STYLES = {
+  dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+};
+const HEIGHT_COLOR = ['interpolate', ['linear'], ['coalesce', ['get', 'height'], 0],
+  0,'#2d2d3a', 3,'#440154', 6,'#3b4a6b', 9,'#2a6485', 12,'#1e7f8a',
+  17,'#1a9c7a', 25,'#35b779', 40,'#6ece58', 75,'#b5de2b', 100,'#fde725'];
+
+function storedTheme() {
+  try {
+    const q = new URLSearchParams(location.search).get('theme');
+    if (q === 'light' || q === 'dark') return q;
+    const t = localStorage.getItem('ui-theme');
+    if (t === 'light' || t === 'dark') return t;
+  } catch (e) {}
+  return 'dark';
+}
+function applyHtmlTheme(mode) { document.documentElement.classList.toggle('dark', mode === 'dark'); }
+applyHtmlTheme(storedTheme());
+
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol('pmtiles', protocol.tile);
+
+const BASEMAP_BUILDING_LAYERS = new Set();
+function styleUrl() { return storedTheme() === 'dark' ? MAP_STYLES.dark : MAP_STYLES.light; }
+
+const _q = new URLSearchParams(location.search);
+const map = new maplibregl.Map({
+  container: 'map',
+  style: styleUrl(),
+  center: [8.5417, 47.3769],   // Zürich
+  zoom: 15.2,
+  pitch: 58,
+  bearing: -20,
+  antialias: true,
+});
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+
+function removeBasemapBuildings() {
+  const style = map.getStyle();
+  if (!style || !style.layers) return;
+  for (const layer of [...style.layers]) {
+    const sl = (layer['source-layer'] || '').toLowerCase();
+    const id = (layer.id || '').toLowerCase();
+    if ((sl === 'building' || sl === 'building_part' || (id.includes('building') && id !== 'buildings-3d')) && map.getLayer(layer.id)) {
+      try { map.removeLayer(layer.id); } catch (e) {}
+    }
+  }
+}
+
+function addBuildings() {
+  if (!map.getSource('eubucco')) {
+    map.addSource('eubucco', { type: 'vector', url: `pmtiles://${PMTILES_URL}` });
+  }
+  if (!map.getLayer('buildings-3d')) {
+    map.addLayer({
+      id: 'buildings-3d', type: 'fill-extrusion', source: 'eubucco', 'source-layer': 'buildings',
+      paint: {
+        'fill-extrusion-color': HEIGHT_COLOR,
+        'fill-extrusion-height': ['coalesce', ['get', 'height'], 5],
+        'fill-extrusion-base': 0,
+        'fill-extrusion-opacity': 0.9,
+      },
+    });
+  }
+}
+
+function buildScene() { removeBasemapBuildings(); addBuildings(); }
+map.on('style.load', buildScene);
+
+// Hide the loading overlay once our buildings tiles are in (the continuous
+// orbit below means the map is never truly `idle`, so don't wait for that).
+let revealed = false;
+function reveal() {
+  if (revealed) return;
+  revealed = true;
+  document.getElementById('loading').classList.add('hidden');
+  if (new URLSearchParams(location.search).get('orbit') !== '0') {
+    requestAnimationFrame(orbit);  // start orbiting only after first paint
+  }
+}
+map.on('sourcedata', (e) => {
+  if (e.sourceId === 'eubucco' && map.isSourceLoaded('eubucco')) reveal();
+});
+map.on('load', () => setTimeout(reveal, 2000));  // fallback: basemap is up
+setTimeout(reveal, 8000);  // safety: never leave the loading overlay up indefinitely
+map.on('error', (e) => console.error('map error', e && e.error));
+
+// ── Gentle auto-orbit, paused while the user interacts ─────────────
+let orbiting = true, idleTimer = null;
+function pauseOrbit() {
+  orbiting = false;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => { orbiting = true; }, 4500);
+}
+['mousedown','touchstart','wheel','dragstart'].forEach(ev => map.on(ev, pauseOrbit));
+function orbit() {
+  if (orbiting && map.isStyleLoaded()) {
+    map.setBearing((map.getBearing() + 0.06) % 360);
+  }
+  requestAnimationFrame(orbit);
+}
+
+// ── Follow the site's light/dark toggle (same-origin localStorage) ──
+window.addEventListener('storage', (e) => {
+  if (e.key !== 'ui-theme') return;
+  applyHtmlTheme(storedTheme());
+  map.setStyle(styleUrl());  // style.load re-adds our layers
+});
+</script>
+</body>
+</html>

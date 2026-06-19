@@ -305,20 +305,26 @@
   .nb-folium-load:hover { background: hsl(var(--p) / 0.12); }
   .nb-folium-load svg { width: 1.1rem; height: 1.1rem; color: var(--gs-primary); }
 
-  /* Interactive widget placeholder (Lonboard etc.) */
-  .nb-widget {
-    display: flex; gap: 1rem; align-items: center; padding: 1.1rem 1.25rem;
-    border-radius: 0.8rem; border: 1px dashed hsl(var(--p) / 0.4);
-    background: hsl(var(--p) / 0.06);
+  /* Live 3D city embed (lazy-loaded MapLibre + PMTiles) */
+  .nb-embed3d {
+    position: relative; border-radius: 0.8rem; overflow: hidden;
+    border: 1px solid hsl(var(--p) / 0.35); min-height: 360px;
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(120% 120% at 50% 0%, hsl(var(--p) / 0.14), transparent 60%),
+      var(--gs-card-2);
   }
-  .nb-widget-icon {
-    flex: none; width: 2.6rem; height: 2.6rem; border-radius: 0.6rem;
-    display: grid; place-items: center; color: var(--gs-primary);
-    background: hsl(var(--p) / 0.12);
+  .nb-embed3d iframe { width: 100%; height: 520px; border: 0; display: block; }
+  .nb-embed-cta { text-align: center; padding: 1.5rem; max-width: 26rem; }
+  .nb-embed-cta > svg { width: 2.2rem; height: 2.2rem; color: var(--gs-primary); margin-bottom: 0.6rem; }
+  .nb-embed-load {
+    display: inline-block; cursor: pointer; font-size: 0.95rem; font-weight: 650;
+    color: hsl(var(--pc)); background: var(--gs-primary);
+    padding: 0.65rem 1.25rem; border-radius: 0.7rem; border: 0;
+    box-shadow: 0 8px 22px -10px hsl(var(--p) / 0.7); transition: transform .12s ease;
   }
-  .nb-widget-icon svg { width: 1.5rem; height: 1.5rem; }
-  .nb-widget-title { font-weight: 650; font-size: 0.95rem; }
-  .nb-widget-sub { font-size: 0.85rem; color: var(--gs-muted); margin-top: 0.15rem; }
+  .nb-embed-load:hover { transform: translateY(-1px); }
+  .nb-embed-note { font-size: 0.84rem; color: var(--gs-muted); margin-top: 0.7rem; line-height: 1.5; }
 </style>
 {% endblock content %}
 
@@ -347,6 +353,23 @@
       frame.setAttribute("loading", "lazy");
       frame.setAttribute("title", "Interactive building map");
       frame.src = src;
+      wrap.innerHTML = "";
+      wrap.appendChild(frame);
+    });
+  });
+
+  // Lazy-load the live 3D city embed, passing the current theme through
+  document.querySelectorAll(".nb-embed-load").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var wrap = btn.closest(".nb-embed3d");
+      var base = wrap.getAttribute("data-embed");
+      var theme = "dark";
+      try { if (localStorage.getItem("ui-theme") === "light") theme = "light"; } catch (e) {}
+      var frame = document.createElement("iframe");
+      frame.setAttribute("loading", "lazy");
+      frame.setAttribute("title", "Interactive 3D city");
+      frame.setAttribute("allow", "fullscreen");
+      frame.src = base + "?theme=" + theme;
       wrap.innerHTML = "";
       wrap.appendChild(frame);
     });

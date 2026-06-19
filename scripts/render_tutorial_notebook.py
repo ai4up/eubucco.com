@@ -147,7 +147,25 @@ def _clean_stream(text: str) -> str | None:
     return text.rstrip()
 
 
-def render_outputs(outputs: list, idx: int, assets: dict, is_lonboard: bool = False) -> str:
+def render_city3d_embed() -> str:
+    """A lazy-loaded, live 3D city scene (MapLibre + PMTiles) — the web-native
+    replacement for the Lonboard widget, whose state can't be serialized."""
+    return (
+        '<div class="nb-out"><span class="nb-out-label">Live output</span>'
+        '<div class="nb-embed3d" data-embed="/tutorials/embed/city3d">'
+        '  <div class="nb-embed-cta">'
+        '    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">'
+        '      <path d="M3 7l9-4 9 4-9 4-9-4Z" stroke-linejoin="round"/>'
+        '      <path d="M3 7v10l9 4 9-4V7M12 11v10" stroke-linejoin="round"/></svg>'
+        '    <button class="nb-embed-load" type="button">Load interactive 3D city</button>'
+        '    <p class="nb-embed-note">Live GPU render of EUBUCCO buildings in Zürich, '
+        "extruded by height &mdash; the web-native version of the Lonboard view above.</p>"
+        "  </div>"
+        "</div></div>"
+    )
+
+
+def render_outputs(outputs: list, idx: int, assets: dict) -> str:
     blocks: list[str] = []
     for out in outputs:
         otype = out.get("output_type")
@@ -179,10 +197,8 @@ def render_outputs(outputs: list, idx: int, assets: dict, is_lonboard: bool = Fa
             continue
 
         if "application/vnd.jupyter.widget-view+json" in data:
-            # Widget state isn't serialized. Only the Lonboard GPU map is worth a
-            # placeholder; tqdm/aws progress widgets are transient noise -> drop.
-            if is_lonboard:
-                blocks.append(render_widget_placeholder(idx))
+            # Widget state isn't serialized (tqdm/aws progress, etc.) -> drop.
+            # The Lonboard cell is handled separately as a live 3D embed.
             continue
 
         if "text/plain" in data:
@@ -194,24 +210,6 @@ def render_outputs(outputs: list, idx: int, assets: dict, is_lonboard: bool = Fa
     if not blocks:
         return ""
     return '<div class="nb-out"><span class="nb-out-label">Output</span>' + "\n".join(blocks) + "</div>"
-
-
-def render_widget_placeholder(idx: int) -> str:
-    """Lonboard / interactive widgets don't serialize state -> show a tasteful note."""
-    return (
-        '<div class="nb-widget">'
-        '  <div class="nb-widget-icon" aria-hidden="true">'
-        '    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'
-        '      <path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3Z" stroke-linejoin="round"/>'
-        '      <path d="M9 3v15M15 6v15" stroke-linejoin="round"/></svg>'
-        "  </div>"
-        "  <div>"
-        '    <p class="nb-widget-title">Interactive GPU map (Lonboard / deck.gl)</p>'
-        '    <p class="nb-widget-sub">This view renders live in the notebook. '
-        'Download the notebook below to explore it in 3D yourself.</p>'
-        "  </div>"
-        "</div>"
-    )
 
 
 def extract_folium(outputs: list) -> str | None:
@@ -280,9 +278,11 @@ def main(src_path: str) -> None:
                         "  </button>"
                         "</div></div>"
                     )
+            elif "lonboard" in src.lower():
+                # Widget state isn't serialized; show a live web-native 3D scene instead.
+                cell_html.append(render_city3d_embed())
             else:
-                is_lonboard = "lonboard" in src.lower()
-                cell_html.append(render_outputs(outputs, idx, assets, is_lonboard=is_lonboard))
+                cell_html.append(render_outputs(outputs, idx, assets))
 
             cell_html.append("</div>")
             body.append("\n".join(p for p in cell_html if p))
