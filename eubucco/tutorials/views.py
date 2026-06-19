@@ -10,7 +10,16 @@ def getting_started(request):
     # Rendered from eubucco/static/notebooks/getting-started.ipynb via
     # scripts/render_tutorial_notebook.py into a theme-adaptive page
     # (no iframe, single file for both light/dark).
-    return render(request, "pages/tutorial-getting-started.html")
+    endpoint = os.getenv("MINIO_PUBLIC_ENDPOINT", "http://localhost:9000").rstrip("/")
+    use_ssl = endpoint.startswith("https://")
+    host = endpoint.split("://", 1)[-1]
+    return render(request, "pages/tutorial-getting-started.html", {
+        # Config for the in-browser DuckDB-WASM "query the data lake live" demo.
+        "duckdb_s3_endpoint": host,
+        "duckdb_s3_use_ssl": "true" if use_ssl else "false",
+        "duckdb_bucket": os.getenv("MINIO_BUCKET", "eubucco"),
+        "duckdb_version": os.getenv("BUILDINGS_VERSION", "v0.2"),
+    })
 
 
 def _buildings_pmtiles_url() -> str:

@@ -70,6 +70,32 @@
     {% include "tutorials/_getting_started_notebook.html" %}
   </div>
 
+  {# ---------------------------------------------------------------- Live SQL (DuckDB-WASM) #}
+  <section class="gs-live" id="gs-live"
+           data-endpoint="{{ duckdb_s3_endpoint }}" data-ssl="{{ duckdb_s3_use_ssl }}"
+           data-bucket="{{ duckdb_bucket }}" data-version="{{ duckdb_version }}">
+    <div class="gs-live-inner">
+      <p class="gs-glance-eyebrow">Run it yourself — no install</p>
+      <h2 class="gs-live-title">Live SQL on the data lake, straight from your browser</h2>
+      <p class="gs-live-lead">
+        This runs <a href="https://duckdb.org/docs/api/wasm/overview" target="_blank" rel="noopener">DuckDB-WASM</a>
+        in your browser and queries the EUBUCCO parquet files directly over HTTP &mdash; no download, no backend.
+        Edit the SQL and hit run.
+      </p>
+      <div class="gs-live-chips">
+        <button class="gs-chip" data-q="country">Buildings per country</button>
+        <button class="gs-chip" data-q="height">Height distribution</button>
+        <button class="gs-chip" data-q="source">Source &amp; quality</button>
+      </div>
+      <textarea id="gs-sql" spellcheck="false" rows="8"></textarea>
+      <div class="gs-live-bar">
+        <button id="gs-run" class="gs-run">▶ Run query</button>
+        <span id="gs-status" class="gs-live-status"></span>
+      </div>
+      <div id="gs-result" class="gs-live-result"></div>
+    </div>
+  </section>
+
 </div>
 
 {# ---------------------------------------------------------------- Styles #}
@@ -186,6 +212,43 @@
   }
   .gs-europe-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
   .gs-europe-ph { color: var(--gs-muted); font-size: 0.9rem; }
+
+  /* ---------- Live SQL (DuckDB-WASM) ---------- */
+  .gs-live { border-top: 1px solid var(--gs-line); background: hsl(var(--bc) / 0.02); }
+  .gs-live-inner { max-width: 60rem; margin: 0 auto; padding: 3rem 1.5rem 3.5rem; }
+  .gs-live-title { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 800; letter-spacing: -0.02em; margin: 0.3rem 0 0.5rem; }
+  .gs-live-lead { font-size: 0.98rem; color: var(--gs-muted); line-height: 1.6; max-width: 42rem; margin-bottom: 1.25rem; }
+  .gs-live-lead a { color: var(--gs-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .gs-live-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.85rem; }
+  .gs-chip {
+    font-size: 0.82rem; font-weight: 600; color: var(--gs-fg); cursor: pointer;
+    padding: 0.35rem 0.8rem; border-radius: 999px; border: 1px solid var(--gs-line);
+    background: hsl(var(--bc) / 0.04); transition: background .12s ease;
+  }
+  .gs-chip:hover, .gs-chip.active { background: hsl(var(--p) / 0.14); border-color: hsl(var(--p) / 0.4); }
+  #gs-sql {
+    width: 100%; box-sizing: border-box; resize: vertical; min-height: 9rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.84rem; line-height: 1.6;
+    color: #e6edf3; background: #0f1623; border: 1px solid hsl(220 30% 30% / 0.5);
+    border-radius: 0.7rem; padding: 0.9rem 1rem; tab-size: 2;
+  }
+  .gs-live-bar { display: flex; align-items: center; gap: 0.9rem; margin: 0.85rem 0; }
+  .gs-run {
+    font-size: 0.92rem; font-weight: 700; cursor: pointer; color: hsl(var(--pc));
+    background: var(--gs-primary); border: 0; border-radius: 0.6rem; padding: 0.6rem 1.2rem;
+    box-shadow: 0 8px 22px -10px hsl(var(--p) / 0.7);
+  }
+  .gs-run:disabled { opacity: 0.55; cursor: default; box-shadow: none; }
+  .gs-live-status { font-size: 0.84rem; color: var(--gs-muted); font-variant-numeric: tabular-nums; }
+  .gs-live-result { overflow-x: auto; border-radius: 0.7rem; }
+  .gs-live-result table {
+    border-collapse: collapse; width: 100%; font-size: 0.82rem; font-variant-numeric: tabular-nums;
+    border: 1px solid var(--gs-line);
+  }
+  .gs-live-result th, .gs-live-result td { padding: 0.45rem 0.8rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--gs-line); }
+  .gs-live-result thead th { position: sticky; top: 0; background: var(--gs-card-2); color: var(--gs-fg); font-weight: 650; }
+  .gs-live-result td { color: var(--gs-fg); }
+  .gs-live-result tbody tr:hover td { background: hsl(var(--p) / 0.06); }
 
   /* ---------- Layout ---------- */
   .gs-body { max-width: 72rem; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
@@ -587,5 +650,129 @@
     document.querySelectorAll(".nb-h2[id]").forEach(function (h) { obs.observe(h); });
   }
 })();
+</script>
+
+<script type="module">
+// ── Live SQL on the data lake via DuckDB-WASM ───────────────────────
+import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm";
+
+const sec = document.getElementById("gs-live");
+if (sec) {
+  const cfg = {
+    endpoint: sec.dataset.endpoint, ssl: sec.dataset.ssl,
+    bucket: sec.dataset.bucket, version: sec.dataset.version,
+  };
+  const SRC = `s3://${cfg.bucket}/${cfg.version}/buildings/parquet/*/*.parquet`;
+  const QUERIES = {
+    country:
+`-- Buildings, by country, computed live in your browser
+SELECT LEFT(region_id, 2)      AS country,
+       count(*)                AS buildings,
+       round(avg(height), 1)   AS avg_height_m
+FROM read_parquet('${SRC}', hive_partitioning => true)
+GROUP BY country
+ORDER BY buildings DESC;`,
+    height:
+`-- Height distribution across all loaded buildings
+SELECT CASE WHEN height < 5  THEN '0-5 m'
+            WHEN height < 10 THEN '5-10 m'
+            WHEN height < 20 THEN '10-20 m'
+            ELSE '20 m+' END        AS height_band,
+       count(*)                     AS buildings
+FROM read_parquet('${SRC}', hive_partitioning => true)
+WHERE height IS NOT NULL
+GROUP BY height_band
+ORDER BY min(height);`,
+    source:
+`-- Data source mix and how much height is actually measured (not estimated)
+SELECT geometry_source                                              AS source,
+       count(*)                                                     AS buildings,
+       round(100.0 * count(*) FILTER (WHERE height_source <> 'estimated')
+             / count(*), 1)                                         AS pct_measured_height
+FROM read_parquet('${SRC}', hive_partitioning => true)
+GROUP BY source
+ORDER BY buildings DESC;`,
+  };
+
+  const sql = document.getElementById("gs-sql");
+  const runBtn = document.getElementById("gs-run");
+  const statusEl = document.getElementById("gs-status");
+  const resultEl = document.getElementById("gs-result");
+  sql.value = QUERIES.country;
+
+  document.querySelectorAll(".gs-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".gs-chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      sql.value = QUERIES[chip.dataset.q];
+    });
+  });
+  document.querySelector('.gs-chip[data-q="country"]').classList.add("active");
+
+  let connPromise = null;
+  function getConn() {
+    if (connPromise) return connPromise;
+    connPromise = (async () => {
+      statusEl.textContent = "loading DuckDB-WASM…";
+      const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
+      const workerUrl = URL.createObjectURL(
+        new Blob([`importScripts("${bundle.mainWorker}");`], { type: "text/javascript" }));
+      const worker = new Worker(workerUrl);
+      const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
+      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+      URL.revokeObjectURL(workerUrl);
+      const conn = await db.connect();
+      await conn.query("INSTALL httpfs; LOAD httpfs;");
+      await conn.query(
+        `SET s3_endpoint='${cfg.endpoint}'; SET s3_use_ssl=${cfg.ssl}; ` +
+        `SET s3_url_style='path'; SET s3_region='eu'; ` +
+        `SET s3_access_key_id=''; SET s3_secret_access_key='';`);
+      return conn;
+    })();
+    return connPromise;
+  }
+
+  function renderTable(table) {
+    const fields = table.schema.fields.map((f) => f.name);
+    const rows = table.toArray();
+    const fmtVal = (v) => {
+      if (v === null || v === undefined) return "—";
+      if (typeof v === "bigint") return Number(v).toLocaleString();
+      if (typeof v === "number") return Number.isInteger(v) ? v.toLocaleString() : String(v);
+      return String(v);
+    };
+    let html = "<table><thead><tr>" + fields.map((f) => `<th>${f}</th>`).join("") + "</tr></thead><tbody>";
+    for (const r of rows) {
+      const o = r.toJSON();
+      html += "<tr>" + fields.map((f) => `<td>${fmtVal(o[f])}</td>`).join("") + "</tr>";
+    }
+    html += "</tbody></table>";
+    resultEl.innerHTML = html;
+    return rows.length;
+  }
+
+  runBtn.addEventListener("click", async () => {
+    runBtn.disabled = true;
+    statusEl.textContent = "running…";
+    resultEl.innerHTML = "";
+    const t0 = performance.now();
+    try {
+      const conn = await getConn();
+      const table = await conn.query(sql.value);
+      const n = renderTable(table);
+      statusEl.textContent = `${n} rows · ${((performance.now() - t0) / 1000).toFixed(1)}s`;
+    } catch (e) {
+      statusEl.textContent = "error";
+      resultEl.innerHTML = `<pre style="white-space:pre-wrap;color:#f87171;font-size:0.82rem">${String(e.message || e)}</pre>`;
+      console.error(e);
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+
+  if (new URLSearchParams(location.search).get("autorun") === "1") {
+    setTimeout(() => runBtn.click(), 500);
+  }
+}
 </script>
 {% endblock %}
