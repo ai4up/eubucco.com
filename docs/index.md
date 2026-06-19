@@ -36,4 +36,4 @@ The data is stored as `.parquet` files on a S3-compatible object storage (MinIO)
 Check out our getting started example Jupyter notebook [tutorial](https://github.com/ai4up/eubucco/blob/main/tutorials/getting-started.ipynb) on GitHub. -->
 
 ## Contribute
-You know of an open dataset that is not yet included or you've spotted a bug? Drop us an email at info(at)eubucco.com or open an issue in our GitHub [repository](https://github.com/ai4up/eubucco).
+You know of an open dataset that is not yet included or you've spotted a bug? Drop us an email at nachtigall(at)tu-berlin.de or open an issue in our GitHub [repository](https://github.com/ai4up/eubucco).

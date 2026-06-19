@@ -268,7 +268,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-- **Email**: info@eubucco.com
+- **Email**: nachtigall@tu-berlin.de
 - **Website**: https://eubucco.com
 - **Documentation**: https://docs.eubucco.com
 - **Issues**: https://github.com/ai4up/eubucco/issues

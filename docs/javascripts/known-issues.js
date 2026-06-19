@@ -161,7 +161,7 @@
 
     root.appendChild(el("p", "ki-note",
       'Spotted something not listed here? <a href="https://github.com/' + REPO +
-      '/issues/new" target="_blank" rel="noopener">Open an issue</a> or email info(at)eubucco.com.'));
+      '/issues/new" target="_blank" rel="noopener">Open an issue</a> or email nachtigall(at)tu-berlin.de.'));
   }
 
   function init() {
