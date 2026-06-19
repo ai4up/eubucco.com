@@ -123,6 +123,14 @@ map.on('load', () => setTimeout(() => document.getElementById('loading').classLi
 setTimeout(() => document.getElementById('loading').classList.add('hidden'), 9000);
 map.on('error', e => console.error('map error', e && e.error));
 
+// Survive a lost WebGL context gracefully (no error cascade)
+map.getCanvas().addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  const el = document.getElementById('loading');
+  el.classList.remove('hidden');
+  el.textContent = 'Map paused (graphics context lost) — reload the page to view.';
+}, false);
+
 // Hover tooltip
 const tip = document.getElementById('tip');
 map.on('mousemove', 'cities', (e) => {

@@ -61,7 +61,7 @@
     <div class="gs-europe-inner">
       <p class="gs-glance-eyebrow">Explore across Europe</p>
       <p class="gs-europe-lead">Every one of ~97,000 cities, colored by its main data source. Hover for counts, zoom in for street-level detail.</p>
-      <div class="gs-europe-frame"><span class="gs-europe-ph">Loading map…</span></div>
+      <div class="gs-europe-frame"><button type="button" class="gs-europe-load">▶ Load the map</button></div>
     </div>
   </section>
 
@@ -211,7 +211,12 @@
     height: 540px; display: flex; align-items: center; justify-content: center;
   }
   .gs-europe-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
-  .gs-europe-ph { color: var(--gs-muted); font-size: 0.9rem; }
+  .gs-europe-load {
+    font-size: 0.95rem; font-weight: 650; cursor: pointer; color: hsl(var(--pc));
+    background: var(--gs-primary); border: 0; border-radius: 0.7rem; padding: 0.7rem 1.3rem;
+    box-shadow: 0 8px 22px -10px hsl(var(--p) / 0.7); transition: transform .12s ease;
+  }
+  .gs-europe-load:hover { transform: translateY(-1px); }
 
   /* ---------- Live SQL (DuckDB-WASM) ---------- */
   .gs-live { border-top: 1px solid var(--gs-line); background: hsl(var(--bc) / 0.02); }
@@ -561,15 +566,14 @@
     .observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 })();
 
-// ── Auto-load the continental cities map when it scrolls into view ──
+// ── Load the continental cities map on demand (one WebGL context at a time) ──
 (function () {
   var sec = document.getElementById("gs-europe");
   if (!sec) return;
   var frame = sec.querySelector(".gs-europe-frame");
-  var loaded = false;
-  function load() {
-    if (loaded) return;
-    loaded = true;
+  var btn = sec.querySelector(".gs-europe-load");
+  if (!btn) return;
+  btn.addEventListener("click", function () {
     var theme = "dark";
     try { if (localStorage.getItem("ui-theme") === "light") theme = "light"; } catch (e) {}
     var f = document.createElement("iframe");
@@ -578,13 +582,7 @@
     f.src = sec.getAttribute("data-embed") + "?theme=" + theme;
     frame.innerHTML = "";
     frame.appendChild(f);
-  }
-  if ("IntersectionObserver" in window) {
-    var obs = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { if (e.isIntersecting) { load(); obs.disconnect(); } });
-    }, { rootMargin: "200px" });
-    obs.observe(sec);
-  } else { load(); }
+  });
 })();
 </script>
 <script>
@@ -722,11 +720,15 @@ ORDER BY buildings DESC;`,
       await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
       URL.revokeObjectURL(workerUrl);
       const conn = await db.connect();
-      await conn.query("INSTALL httpfs; LOAD httpfs;");
-      await conn.query(
-        `SET s3_endpoint='${cfg.endpoint}'; SET s3_use_ssl=${cfg.ssl}; ` +
-        `SET s3_url_style='path'; SET s3_region='eu'; ` +
-        `SET s3_access_key_id=''; SET s3_secret_access_key='';`);
+      // DuckDB-WASM runs ONE statement per query() call — set each separately.
+      await conn.query("INSTALL httpfs;");
+      await conn.query("LOAD httpfs;");
+      await conn.query(`SET s3_endpoint='${cfg.endpoint}';`);
+      await conn.query(`SET s3_use_ssl=${cfg.ssl};`);
+      await conn.query("SET s3_url_style='path';");
+      await conn.query("SET s3_region='eu';");
+      await conn.query("SET s3_access_key_id='';");
+      await conn.query("SET s3_secret_access_key='';");
       return conn;
     })();
     return connPromise;

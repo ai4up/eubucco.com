@@ -129,15 +129,15 @@ function addBuildings() {
 function buildScene() { removeBasemapBuildings(); addBuildings(); }
 map.on('style.load', buildScene);
 
-// Hide the loading overlay once our buildings tiles are in (the continuous
-// orbit below means the map is never truly `idle`, so don't wait for that).
+// Hide the loading overlay once our buildings tiles are in (during the intro
+// orbit the map isn't `idle`, so don't wait for that).
 let revealed = false;
 function reveal() {
   if (revealed) return;
   revealed = true;
   document.getElementById('loading').classList.add('hidden');
   if (new URLSearchParams(location.search).get('orbit') !== '0') {
-    requestAnimationFrame(orbit);  // start orbiting only after first paint
+    requestAnimationFrame(orbit);  // start the intro orbit after first paint
   }
 }
 map.on('sourcedata', (e) => {
@@ -147,20 +147,34 @@ map.on('load', () => setTimeout(reveal, 2000));  // fallback: basemap is up
 setTimeout(reveal, 8000);  // safety: never leave the loading overlay up indefinitely
 map.on('error', (e) => console.error('map error', e && e.error));
 
-// ── Gentle auto-orbit, paused while the user interacts ─────────────
-let orbiting = true, idleTimer = null;
+// ── Finite intro orbit — rotates briefly, then lets the map go idle so the
+//    GPU rests (an endless render loop can trigger context loss). ──────────
+let orbiting = true, idleTimer = null, orbitStart = null, dead = false;
+const ORBIT_MS = 22000;
 function pauseOrbit() {
   orbiting = false;
   clearTimeout(idleTimer);
   idleTimer = setTimeout(() => { orbiting = true; }, 4500);
 }
-['mousedown','touchstart','wheel','dragstart'].forEach(ev => map.on(ev, pauseOrbit));
-function orbit() {
-  if (orbiting && map.isStyleLoaded()) {
-    map.setBearing((map.getBearing() + 0.06) % 360);
+['mousedown', 'touchstart', 'wheel', 'dragstart'].forEach((ev) => map.on(ev, pauseOrbit));
+function orbit(ts) {
+  if (dead) return;
+  if (orbitStart === null) orbitStart = ts;
+  if (ts - orbitStart > ORBIT_MS) return;  // stop -> map idles -> GPU rests
+  if (orbiting && !document.hidden && map.isStyleLoaded()) {
+    try { map.setBearing((map.getBearing() + 0.05) % 360); } catch (e) { return; }
   }
   requestAnimationFrame(orbit);
 }
+
+// ── Survive a lost WebGL context gracefully (no error cascade) ──────────────
+map.getCanvas().addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  dead = true;
+  const el = document.getElementById('loading');
+  el.classList.remove('hidden');
+  el.textContent = 'Map paused (graphics context lost) — reload the page to view.';
+}, false);
 
 // ── Follow the site's light/dark toggle (same-origin localStorage) ──
 window.addEventListener('storage', (e) => {
