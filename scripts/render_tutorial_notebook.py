@@ -13,7 +13,9 @@ Usage:
 Outputs (paths are repo-relative, hardcoded for the getting-started tutorial):
     eubucco/templates/tutorials/_getting_started_notebook.html   (Django include fragment)
     eubucco/static/notebooks/getting-started/*.png|*.html         (extracted assets)
-    eubucco/static/notebooks/getting-started.ipynb               (cleaned, downloadable copy)
+
+The downloadable eubucco/static/notebooks/getting-started.ipynb is curated by hand and is
+intentionally NOT (re)written here, so regenerating never clobbers manual edits to it.
 """
 from __future__ import annotations
 
@@ -304,15 +306,15 @@ def main(src_path: str) -> None:
 
     FRAGMENT_OUT.write_text(fragment, encoding="utf-8")
 
-    # Cleaned, downloadable notebook: drop boilerplate cells, clear widget metadata.
-    clean_nb = dict(nb)
-    clean_nb["cells"] = [c for i, c in enumerate(cells) if i not in SKIP_CELL_INDICES]
-    IPYNB_OUT.write_text(json.dumps(clean_nb, indent=1), encoding="utf-8")
+    # NOTE: the downloadable notebook (eubucco/static/notebooks/getting-started.ipynb)
+    # is curated MANUALLY and intentionally diverges from the source notebook, so this
+    # script deliberately does NOT (re)write it — regenerating must never clobber it.
+    # To refresh the download, edit that file by hand and commit it separately.
 
     print(f"fragment   -> {FRAGMENT_OUT.relative_to(REPO)}  ({FRAGMENT_OUT.stat().st_size//1024} KB)")
     print(f"sections   -> {[t for _, t in sections]}")
     print(f"assets     -> {sorted(p.name for p in ASSET_DIR.iterdir())}")
-    print(f"notebook   -> {IPYNB_OUT.relative_to(REPO)}  ({IPYNB_OUT.stat().st_size//1024} KB)")
+    print(f"download   -> {IPYNB_OUT.relative_to(REPO)} (curated manually, left untouched)")
 
 
 if __name__ == "__main__":

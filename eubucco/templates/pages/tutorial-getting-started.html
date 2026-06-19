@@ -154,14 +154,15 @@
   .nb-h2 {
     position: relative;
     font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;
-    margin: 4.5rem 0 0.6rem; padding-top: 2.5rem; scroll-margin-top: 5.5rem;
-    border-top: 1px solid var(--gs-line);
+    margin: 5rem 0 0.6rem; padding-top: 2.75rem; scroll-margin-top: 5.5rem;
+    border-top: 2px solid hsl(var(--bc) / 0.16);
   }
   /* accent tick that sits on the divider line */
   .nb-h2::before {
-    content: ""; position: absolute; top: -1px; left: 0;
-    width: 3rem; height: 3px; border-radius: 3px;
+    content: ""; position: absolute; top: -2px; left: 0;
+    width: 4.5rem; height: 4px; border-radius: 4px;
     background: linear-gradient(90deg, hsl(var(--p)), hsl(var(--a)));
+    box-shadow: 0 0 14px hsl(var(--p) / 0.55);
   }
   .nb-md:first-child .nb-h2 {
     margin-top: 0; padding-top: 0.5rem; border-top: 0;
@@ -180,45 +181,65 @@
     background: hsl(var(--bc) / 0.08); padding: 0.12em 0.4em; border-radius: 0.35rem;
   }
 
-  /* ---------- Code cells (always dark, modern editor look) ---------- */
+  /* ---------- Code cells (light-mode friendly; dark in night theme) ---------- */
   .nb-cell { margin: 1.4rem 0; }
   .nb-code {
-    border-radius: 0.8rem; overflow: hidden; background: #0f1623;
-    border: 1px solid hsl(220 30% 30% / 0.5);
-    box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+    border-radius: 0.8rem; overflow: hidden; background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
   }
   .nb-code-bar {
     display: flex; align-items: center; gap: 0.55rem;
-    padding: 0.5rem 0.9rem; background: #121b2c; border-bottom: 1px solid hsl(220 30% 30% / 0.4);
+    padding: 0.5rem 0.9rem; background: #eaeef2; border-bottom: 1px solid #d0d7de;
   }
   .nb-dot { width: 0.62rem; height: 0.62rem; border-radius: 999px; background: #f97583; box-shadow: 1rem 0 0 #ffd479, 2rem 0 0 #7ee787; }
-  .nb-lang { margin-left: 2.6rem; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #8b9bb4; font-weight: 600; }
+  .nb-lang { margin-left: 2.6rem; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #57606a; font-weight: 600; }
   .nb-copy {
-    margin-left: auto; font-size: 0.74rem; font-weight: 600; color: #9fb0cc;
-    padding: 0.22rem 0.6rem; border-radius: 0.45rem; border: 1px solid hsl(220 30% 40% / 0.4);
+    margin-left: auto; font-size: 0.74rem; font-weight: 600; color: #57606a;
+    padding: 0.22rem 0.6rem; border-radius: 0.45rem; border: 1px solid #d0d7de;
     background: transparent; transition: all .12s ease; cursor: pointer;
   }
-  .nb-copy:hover { color: #fff; background: hsl(220 30% 40% / 0.3); }
-  .nb-copy.copied { color: #7ee787; border-color: #7ee787; }
+  .nb-copy:hover { color: #1f2328; background: #d0d7de80; }
+  .nb-copy.copied { color: #1a7f37; border-color: #1a7f37; }
   .nb-code .hl, .nb-code pre {
     margin: 0; padding: 1rem 1.15rem; overflow-x: auto;
     font-family: ui-monospace, SFMono-Regular, Menlo, "Cascadia Code", monospace;
-    font-size: 0.84rem; line-height: 1.6; color: #e6edf3; background: transparent;
+    font-size: 0.84rem; line-height: 1.6; color: #1f2328; background: transparent;
   }
   .nb-code pre { white-space: pre; }
 
-  /* Pygments tokens on the dark card */
-  .hl .c, .hl .c1, .hl .cm { color: #6a82a8; font-style: italic; }
-  .hl .k, .hl .kn, .hl .kc, .hl .kd, .hl .kr { color: #ff7b9c; }
-  .hl .s, .hl .s1, .hl .s2, .hl .sb, .hl .se, .hl .sd { color: #a5e075; }
-  .hl .si, .hl .sx { color: #ffd479; }
-  .hl .mi, .hl .mf, .hl .mh, .hl .il, .hl .m { color: #ffcb6b; }
-  .hl .nb, .hl .bp { color: #82d2ff; }
-  .hl .nf, .hl .fm { color: #82aaff; }
-  .hl .nn, .hl .nc { color: #c792ea; }
-  .hl .o, .hl .ow { color: #ff7b9c; }
-  .hl .n, .hl .p { color: #e6edf3; }
-  .hl .nd { color: #ffd479; }
+  /* Pygments tokens — light (GitHub-light inspired) */
+  .hl .c, .hl .c1, .hl .cm { color: #6e7781; font-style: italic; }
+  .hl .k, .hl .kn, .hl .kc, .hl .kd, .hl .kr { color: #cf222e; }
+  .hl .s, .hl .s1, .hl .s2, .hl .sb, .hl .se, .hl .sd { color: #0a3069; }
+  .hl .si, .hl .sx { color: #0550ae; }
+  .hl .mi, .hl .mf, .hl .mh, .hl .il, .hl .m { color: #0550ae; }
+  .hl .nb, .hl .bp { color: #0550ae; }
+  .hl .nf, .hl .fm { color: #8250df; }
+  .hl .nn, .hl .nc { color: #953800; }
+  .hl .o, .hl .ow { color: #cf222e; }
+  .hl .n, .hl .p { color: #1f2328; }
+  .hl .nd { color: #953800; }
+
+  /* Pygments tokens — dark (night theme overrides) */
+  .dark .nb-code { background: #0f1623; border-color: hsl(220 30% 30% / 0.5); box-shadow: 0 1px 2px rgb(0 0 0 / 0.2); }
+  .dark .nb-code-bar { background: #121b2c; border-bottom-color: hsl(220 30% 30% / 0.4); }
+  .dark .nb-lang { color: #8b9bb4; }
+  .dark .nb-copy { color: #9fb0cc; border-color: hsl(220 30% 40% / 0.4); }
+  .dark .nb-copy:hover { color: #fff; background: hsl(220 30% 40% / 0.3); }
+  .dark .nb-copy.copied { color: #7ee787; border-color: #7ee787; }
+  .dark .nb-code .hl, .dark .nb-code pre { color: #e6edf3; }
+  .dark .hl .c, .dark .hl .c1, .dark .hl .cm { color: #6a82a8; }
+  .dark .hl .k, .dark .hl .kn, .dark .hl .kc, .dark .hl .kd, .dark .hl .kr { color: #ff7b9c; }
+  .dark .hl .s, .dark .hl .s1, .dark .hl .s2, .dark .hl .sb, .dark .hl .se, .dark .hl .sd { color: #a5e075; }
+  .dark .hl .si, .dark .hl .sx { color: #ffd479; }
+  .dark .hl .mi, .dark .hl .mf, .dark .hl .mh, .dark .hl .il, .dark .hl .m { color: #ffcb6b; }
+  .dark .hl .nb, .dark .hl .bp { color: #82d2ff; }
+  .dark .hl .nf, .dark .hl .fm { color: #82aaff; }
+  .dark .hl .nn, .dark .hl .nc { color: #c792ea; }
+  .dark .hl .o, .dark .hl .ow { color: #ff7b9c; }
+  .dark .hl .n, .dark .hl .p { color: #e6edf3; }
+  .dark .hl .nd { color: #ffd479; }
 
   /* ---------- Outputs ---------- */
   .nb-out {
