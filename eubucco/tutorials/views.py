@@ -2,6 +2,7 @@ import os
 
 from django.shortcuts import render
 from django.views.decorators.cache import cache_page
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 
 @cache_page(60 * 60)
@@ -20,7 +21,15 @@ def _buildings_pmtiles_url() -> str:
     return f"{minio_public}/{bucket}/{version}/buildings/tiles/buildings.pmtiles"
 
 
+@xframe_options_sameorigin
 @cache_page(60 * 60)
 def embed_city3d(request):
     """Self-contained 3D city scene embedded (lazy-loaded) in the getting-started page."""
     return render(request, "tutorials/embed/city3d.html", {"pmtiles_url": _buildings_pmtiles_url()})
+
+
+@xframe_options_sameorigin
+@cache_page(60 * 60)
+def embed_cities(request):
+    """Continental map of ~97k cities (from city-stats), colored by data source."""
+    return render(request, "tutorials/embed/cities.html")

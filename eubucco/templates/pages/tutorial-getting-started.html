@@ -56,6 +56,15 @@
     </div>
   </section>
 
+  {# ---------------------------------------------------------------- Explore Europe #}
+  <section class="gs-europe" id="gs-europe" data-embed="{% url 'tutorials:embed_cities' %}">
+    <div class="gs-europe-inner">
+      <p class="gs-glance-eyebrow">Explore across Europe</p>
+      <p class="gs-europe-lead">Every one of ~97,000 cities, colored by its main data source. Hover for counts, zoom in for street-level detail.</p>
+      <div class="gs-europe-frame"><span class="gs-europe-ph">Loading map…</span></div>
+    </div>
+  </section>
+
   {# ---------------------------------------------------------------- Notebook #}
   <div class="gs-body">
     {% include "tutorials/_getting_started_notebook.html" %}
@@ -165,6 +174,18 @@
   }
   .gs-canvas-wrap { position: relative; height: 200px; }
   .gs-chart-wide .gs-canvas-wrap { height: 280px; }
+
+  /* ---------- Explore Europe (continental cities map) ---------- */
+  .gs-europe { border-bottom: 1px solid var(--gs-line); }
+  .gs-europe-inner { max-width: 72rem; margin: 0 auto; padding: 2.5rem 1.5rem 2.75rem; }
+  .gs-europe-lead { font-size: 0.95rem; color: var(--gs-muted); margin: 0.4rem 0 1.25rem; max-width: 44rem; }
+  .gs-europe-frame {
+    position: relative; border-radius: 0.9rem; overflow: hidden;
+    border: 1px solid var(--gs-line); background: var(--gs-card-2);
+    height: 540px; display: flex; align-items: center; justify-content: center;
+  }
+  .gs-europe-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .gs-europe-ph { color: var(--gs-muted); font-size: 0.9rem; }
 
   /* ---------- Layout ---------- */
   .gs-body { max-width: 72rem; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
@@ -475,6 +496,32 @@
   // Re-render charts when the site theme toggles
   new MutationObserver(function () { if (cached) render(cached); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+})();
+
+// ── Auto-load the continental cities map when it scrolls into view ──
+(function () {
+  var sec = document.getElementById("gs-europe");
+  if (!sec) return;
+  var frame = sec.querySelector(".gs-europe-frame");
+  var loaded = false;
+  function load() {
+    if (loaded) return;
+    loaded = true;
+    var theme = "dark";
+    try { if (localStorage.getItem("ui-theme") === "light") theme = "light"; } catch (e) {}
+    var f = document.createElement("iframe");
+    f.setAttribute("loading", "lazy");
+    f.setAttribute("title", "EUBUCCO buildings across Europe");
+    f.src = sec.getAttribute("data-embed") + "?theme=" + theme;
+    frame.innerHTML = "";
+    frame.appendChild(f);
+  }
+  if ("IntersectionObserver" in window) {
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { load(); obs.disconnect(); } });
+    }, { rootMargin: "200px" });
+    obs.observe(sec);
+  } else { load(); }
 })();
 </script>
 <script>
