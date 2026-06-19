@@ -7,6 +7,7 @@ nav:
   - Data Access:
     - 'data-access/index.md'
     - CLI: 'data-access/cli.md'
+    # - Google Earth Engine: 'data-access/gee.md'
     - Python: 'data-access/python.md'
     - SQL: 'data-access/sql.md'
     - Website: 'data-access/website.md'
@@ -22,9 +23,16 @@ nav:
     - Loading & Filtering: 'data-usage/loading.md'
     - Cookbook: 'data-usage/cookbook.md'
     - Example notebook: 'data-usage/example-notebook.md'
+    # - Aggregation: 'data-usage/aggregation.md'
+    # - Analysis: 'data-usage/analysis.md'
+    # - Visualization: 'data-usage/visualization.md'
+  # - API: 'api.md'
   - Advanced:
     - Conflation Methodology: 'advanced/conflation.md'
+    - Prediction Methodology: 'advanced/prediction.md'
     - Prediction Evaluation: 'advanced/eval-metrics.md'
+    # - Validation Methodology: 'advanced/validation.md'
+  - Known Issues: 'known-issues.md'
   - License: 'license.md'
 
 theme:
@@ -82,3 +90,8 @@ markdown_extensions:
 
 extra_javascript:
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+  - javascripts/plausible.js
+  - javascripts/known-issues.js
+
+extra_css:
+  - stylesheets/known-issues.css

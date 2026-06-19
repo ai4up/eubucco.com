@@ -1,0 +1,153 @@
+/* Known Issues — compact, modern cards that adapt to Material light/dark themes. */
+
+/* ---- legend (rendered by JS at the top of the list) ---- */
+.ki-legendbox {
+  margin: 0 0 1.75rem;
+}
+.ki-legend {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.35rem 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.ki-legend__text {
+  color: var(--md-default-fg-color--light);
+}
+
+/* ---- badges ---- */
+.ki-badge {
+  flex: none;
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  padding: 0.05rem 0.45rem;
+  border-radius: 0.7rem;
+  white-space: nowrap;
+}
+.ki-badge--bug {
+  color: #1f6feb;
+  background: rgba(31, 111, 235, 0.13);
+}
+.ki-badge--upstream {
+  color: #b3760a;
+  background: rgba(217, 145, 18, 0.16);
+}
+[data-md-color-scheme="slate"] .ki-badge--bug {
+  color: #6ea8ff;
+}
+[data-md-color-scheme="slate"] .ki-badge--upstream {
+  color: #e0a93a;
+}
+
+/* ---- container ---- */
+#ki-root {
+  margin-top: 1.75rem;
+}
+
+.ki-note {
+  font-size: 0.72rem;
+  color: var(--md-default-fg-color--light);
+}
+.ki-error {
+  font-size: 0.75rem;
+  background: var(--md-code-bg-color);
+  border-left: 3px solid #e57373;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.2rem;
+}
+
+/* ---- version group ---- */
+.ki-group {
+  margin: 0 0 2rem;
+}
+.ki-group__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.ki-count {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.2em 0.5em;
+  border-radius: 1rem;
+  color: var(--md-primary-bg-color);
+  background: var(--md-primary-fg-color);
+}
+
+/* ---- issue card ---- */
+.ki-card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-left: 2px solid var(--md-default-fg-color--lighter);
+  border-radius: 0.35rem;
+  padding: 0.6rem 0.85rem;
+  margin: 0 0 0.5rem;
+  background: var(--md-default-bg-color);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ki-card--upstream {
+  border-left-color: rgba(217, 145, 18, 0.55);
+}
+.ki-card:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ki-card__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.ki-card__title {
+  font-weight: 600;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-decoration: none;
+  color: var(--md-typeset-color);
+}
+.ki-card__title:hover {
+  color: var(--md-accent-fg-color);
+}
+
+.ki-card__body {
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--md-default-fg-color--light);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ki-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.45rem;
+}
+.ki-num {
+  font-family: var(--md-code-font-family, monospace);
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--md-default-fg-color--light);
+}
+.ki-num:hover {
+  color: var(--md-accent-fg-color);
+}
+.ki-date {
+  font-size: 0.66rem;
+  color: var(--md-default-fg-color--lighter);
+}
