@@ -3,7 +3,7 @@
   <article class="nb">
 <div class="nb-md"><p>This notebook shows how to get started with downloading and using the EUBUCCO dataset.</p></div>
 <div class="nb-md"><h2 id="access-data" class="nb-h2">Access data</h2></div>
-<div class="nb-md"><h3 class="nb-h3">Option 1: Download and load as GeoDataFrame</h3></div>
+<div class="nb-md"><h3 class="nb-h3">Option 1: Download single region and load as GeoDataFrame</h3></div>
 <div class="nb-cell">
 <div class="nb-code" data-code="in">  <div class="nb-code-bar">    <span class="nb-dot"></span><span class="nb-lang">python</span>    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>  </div>  <div class="hl"><pre><span></span><span class="err">!</span><span class="n">curl</span> <span class="o">--</span><span class="n">progress</span><span class="o">-</span><span class="n">bar</span> <span class="o">-</span><span class="n">C</span> <span class="o">-</span> <span class="o">-</span><span class="n">o</span> <span class="n">CH04</span><span class="o">.</span><span class="n">parquet</span> <span class="s2">&quot;https://s3.eubucco.com/eubucco/v0.2/buildings/parquet/nuts_id=CH04/CH04.parquet&quot;</span>
 </pre></div>
@@ -74,6 +74,19 @@
     <span class="n">geometry</span><span class="o">=</span><span class="n">gpd</span><span class="o">.</span><span class="n">GeoSeries</span><span class="o">.</span><span class="n">from_wkt</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">]),</span>
     <span class="n">crs</span><span class="o">=</span><span class="s2">&quot;EPSG:3035&quot;</span><span class="p">,</span>
 <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nb-md"><h2 id="derive-metadata" class="nb-h2">Derive metadata</h2></div>
+<div class="nb-cell">
+<div class="nb-code" data-code="in">  <div class="nb-code-bar">    <span class="nb-dot"></span><span class="nb-lang">python</span>    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>  </div>  <div class="hl"><pre><span></span><span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;country&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;region_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># EU VAT 2-digit country code</span>
+<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;NUTS1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;region_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>  <span class="c1"># EU NUTS1 code</span>
+<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Identify touching buildings</span>
+
+<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_is_authoritative&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;gov&quot;</span><span class="p">)</span>  <span class="c1"># Identify buildings with authoritative type information</span>
+<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_is_merged&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;geometry_source&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;estimated&quot;</span><span class="p">)</span>  <span class="c1"># Identify buildings with merged type information</span>
+<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_is_estimated&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;estimated&quot;</span>  <span class="c1"># Identify buildings with estimated type information</span>
+<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_is_inferred&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;geometry_source&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">]</span>  <span class="c1"># Identify buildings with type being merged or estimated</span>
 </pre></div>
 </div>
 </div>
@@ -545,19 +558,6 @@
 </table>
 </div></div></div>
 </div>
-<div class="nb-md"><h2 id="deriving-metadata-features" class="nb-h2">Deriving metadata features</h2></div>
-<div class="nb-cell">
-<div class="nb-code" data-code="in">  <div class="nb-code-bar">    <span class="nb-dot"></span><span class="nb-lang">python</span>    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>  </div>  <div class="hl"><pre><span></span><span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;country&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;region_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>  <span class="c1"># EU VAT 2-digit country code</span>
-<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;NUTS1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;region_id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span>  <span class="c1"># EU NUTS1 code</span>
-<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;block_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># Identify touching buildings</span>
-
-<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_is_authoritative&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s2">&quot;gov&quot;</span><span class="p">)</span>  <span class="c1"># Identify buildings with authoritative type information</span>
-<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_is_merged&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;geometry_source&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;estimated&quot;</span><span class="p">)</span>  <span class="c1"># Identify buildings with merged type information</span>
-<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_is_estimated&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;estimated&quot;</span>  <span class="c1"># Identify buildings with estimated type information</span>
-<span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_is_inferred&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;geometry_source&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">gdf</span><span class="p">[</span><span class="s2">&quot;type_source&quot;</span><span class="p">]</span>  <span class="c1"># Identify buildings with type being merged or estimated</span>
-</pre></div>
-</div>
-</div>
 <div class="nb-md"><h2 id="visualization" class="nb-h2">Visualization</h2></div>
 <div class="nb-cell">
 <div class="nb-code" data-code="in">  <div class="nb-code-bar">    <span class="nb-dot"></span><span class="nb-lang">python</span>    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>  </div>  <div class="hl"><pre><span></span><span class="c1"># Simple static visualization with Matplotlib</span>
@@ -565,7 +565,7 @@
 <span class="n">city</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">&quot;block_id&quot;</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="nb-out"><span class="nb-out-label">Output</span><figure class="nb-figure"><img loading="lazy" src="/static/notebooks/getting-started/plot-32.png" alt="Plot output from cell 32"></figure></div>
+<div class="nb-out"><span class="nb-out-label">Output</span><figure class="nb-figure"><img loading="lazy" src="/static/notebooks/getting-started/plot-30.png" alt="Plot output from cell 30"></figure></div>
 </div>
 <div class="nb-cell">
 <div class="nb-code" data-code="in">  <div class="nb-code-bar">    <span class="nb-dot"></span><span class="nb-lang">python</span>    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>  </div>  <div class="hl"><pre><span></span><span class="c1"># Easy interactive visualization with Folium</span>
@@ -599,9 +599,9 @@
 <span class="n">h3_grid</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">&quot;floor_area&quot;</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
 </pre></div>
 </div>
-<div class="nb-out"><span class="nb-out-label">Output</span><figure class="nb-figure"><img loading="lazy" src="/static/notebooks/getting-started/plot-35.png" alt="Plot output from cell 35"></figure></div>
+<div class="nb-out"><span class="nb-out-label">Output</span><figure class="nb-figure"><img loading="lazy" src="/static/notebooks/getting-started/plot-33.png" alt="Plot output from cell 33"></figure></div>
 </div>
-<div class="nb-md"><h2 id="regional-stats" class="nb-h2">Regional stats</h2></div>
+<div class="nb-md"><h2 id="analyzing-regional-stats" class="nb-h2">Analyzing regional stats</h2></div>
 <div class="nb-md"><p>Download <code>region-stats.parquet</code> file from https://eubucco.com/files/.</p></div>
 <div class="nb-cell">
 <div class="nb-code" data-code="in">  <div class="nb-code-bar">    <span class="nb-dot"></span><span class="nb-lang">python</span>    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>  </div>  <div class="hl"><pre><span></span><span class="n">stats</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;region-stats.parquet&quot;</span><span class="p">)</span>
@@ -888,7 +888,7 @@
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Ground Truth Height Coverage per NUTS3 Region&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="nb-out"><span class="nb-out-label">Output</span><figure class="nb-figure"><img loading="lazy" src="/static/notebooks/getting-started/plot-41.png" alt="Plot output from cell 41"></figure></div>
+<div class="nb-out"><span class="nb-out-label">Output</span><figure class="nb-figure"><img loading="lazy" src="/static/notebooks/getting-started/plot-39.png" alt="Plot output from cell 39"></figure></div>
 </div>
   </article>
   <nav class="nb-toc" aria-label="On this page">
@@ -896,11 +896,11 @@
       <p class="nb-toc-title">On this page</p>
       <ul>
 <li><a href="#access-data">Access data</a></li>
+<li><a href="#derive-metadata">Derive metadata</a></li>
 <li><a href="#filter-data-after-loading">Filter data (after loading)</a></li>
 <li><a href="#filter-data-while-loading">Filter data (while loading)</a></li>
-<li><a href="#deriving-metadata-features">Deriving metadata features</a></li>
 <li><a href="#visualization">Visualization</a></li>
-<li><a href="#regional-stats">Regional stats</a></li>
+<li><a href="#analyzing-regional-stats">Analyzing regional stats</a></li>
       </ul>
     </div>
   </nav>

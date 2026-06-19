@@ -260,6 +260,22 @@ docker compose -f local.yml run --rm django python manage.py shell -c "from eubu
 docker compose -f local.yml run --rm django python manage.py shell -c "from eubucco.files.tasks import sync_files; sync_files()"
 ```
 
+**Regenerate the "Getting Started" tutorial page**
+
+The `/tutorials/getting_started` page is rendered from a single Jupyter notebook by a custom
+theme-adaptive renderer (not nbconvert). The notebook at
+`eubucco/static/notebooks/getting-started.ipynb` is both the file users download *and* the source
+the page is built from, so the two never drift. To update the tutorial, edit that notebook, then:
+
+```bash
+# needs `pygments`; reads the in-repo notebook by default
+python scripts/render_tutorial_notebook.py
+```
+
+This rewrites the include fragment `eubucco/templates/tutorials/_getting_started_notebook.html`
+and the extracted plot/Folium assets under `eubucco/static/notebooks/getting-started/`. Commit the
+notebook, the regenerated fragment, and the assets together.
+
 
 ## License
 

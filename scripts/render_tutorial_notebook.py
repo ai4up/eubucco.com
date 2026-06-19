@@ -7,15 +7,17 @@ themes from a single file, extracts heavy assets (plot PNGs, the Folium map) to 
 the committed template stays small, and degrades gracefully on outputs that can't render
 statically (Jupyter widgets such as the Lonboard GPU map, tqdm progress bars).
 
+There is a SINGLE source of truth: eubucco/static/notebooks/getting-started.ipynb. That same
+file is what users download AND what this script reads to render the page, so the page always
+matches the download. Edit that notebook, then re-run this script.
+
 Usage:
-    python scripts/render_tutorial_notebook.py SOURCE.ipynb
+    python scripts/render_tutorial_notebook.py            # uses the in-repo notebook
+    python scripts/render_tutorial_notebook.py OTHER.ipynb  # override the source
 
 Outputs (paths are repo-relative, hardcoded for the getting-started tutorial):
     eubucco/templates/tutorials/_getting_started_notebook.html   (Django include fragment)
     eubucco/static/notebooks/getting-started/*.png|*.html         (extracted assets)
-
-The downloadable eubucco/static/notebooks/getting-started.ipynb is curated by hand and is
-intentionally NOT (re)written here, so regenerating never clobbers manual edits to it.
 """
 from __future__ import annotations
 
@@ -31,13 +33,11 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
 
 REPO = Path(__file__).resolve().parent.parent
+# Single source of truth: the notebook users download is also what we render.
+NOTEBOOK = REPO / "eubucco/static/notebooks/getting-started.ipynb"
 FRAGMENT_OUT = REPO / "eubucco/templates/tutorials/_getting_started_notebook.html"
 ASSET_DIR = REPO / "eubucco/static/notebooks/getting-started"
-IPYNB_OUT = REPO / "eubucco/static/notebooks/getting-started.ipynb"
 ASSET_URL = "/static/notebooks/getting-started"
-
-# Cells that are pretty-jupyter / environment boilerplate, not tutorial content.
-SKIP_CELL_INDICES = {0, 1}
 
 _lexer = PythonLexer()
 _formatter = HtmlFormatter(cssclass="hl", nowrap=False)
@@ -243,14 +243,17 @@ def main(src_path: str) -> None:
     nb = json.loads(Path(src_path).read_text())
     ASSET_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Clear previously generated assets so renaming/removing cells can't leave orphans
+    # (assets are keyed by cell index, which shifts when the notebook is edited).
+    for stale in [*ASSET_DIR.glob("plot-*.png"), *ASSET_DIR.glob("folium-map.html")]:
+        stale.unlink()
+
     sections: list = []
     body: list[str] = []
     assets: dict = {}
 
     cells = nb["cells"]
     for idx, cell in enumerate(cells):
-        if idx in SKIP_CELL_INDICES:
-            continue
         ctype = cell["cell_type"]
         src = "".join(cell["source"])
         if not src.strip():
@@ -306,18 +309,15 @@ def main(src_path: str) -> None:
 
     FRAGMENT_OUT.write_text(fragment, encoding="utf-8")
 
-    # NOTE: the downloadable notebook (eubucco/static/notebooks/getting-started.ipynb)
-    # is curated MANUALLY and intentionally diverges from the source notebook, so this
-    # script deliberately does NOT (re)write it — regenerating must never clobber it.
-    # To refresh the download, edit that file by hand and commit it separately.
-
+    src_disp = Path(src_path)
+    src_disp = src_disp.relative_to(REPO) if src_disp.resolve().is_relative_to(REPO) else src_disp
+    print(f"source     -> {src_disp} (also the download)")
     print(f"fragment   -> {FRAGMENT_OUT.relative_to(REPO)}  ({FRAGMENT_OUT.stat().st_size//1024} KB)")
     print(f"sections   -> {[t for _, t in sections]}")
     print(f"assets     -> {sorted(p.name for p in ASSET_DIR.iterdir())}")
-    print(f"download   -> {IPYNB_OUT.relative_to(REPO)} (curated manually, left untouched)")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("usage: python scripts/render_tutorial_notebook.py SOURCE.ipynb")
-    main(sys.argv[1])
+    if len(sys.argv) > 2:
+        sys.exit("usage: python scripts/render_tutorial_notebook.py [SOURCE.ipynb]")
+    main(sys.argv[1] if len(sys.argv) == 2 else str(NOTEBOOK))
