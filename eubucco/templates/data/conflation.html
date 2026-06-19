@@ -781,11 +781,14 @@ window.DATA={};
     const nextBaseTheme = isDarkTheme() ? 'dark' : 'light';
     if(nextBaseTheme === currentBaseTheme) return;
     currentBaseTheme = nextBaseTheme;
-    map.setStyle(makeBaseStyle());
-    // setStyle reloads the basemap (re-introducing its building layers); strip
-    // them again once the new style has settled. style.load alone isn't reliable
-    // across a style swap, so re-run on idle too.
-    map.once('idle', removeBasemapBuildings);
+    map.setStyle(makeBaseStyle(), { diff: false });
+    // Strip the new basemap's building layers on style.load — i.e. before they
+    // ever paint — so they never flash in. requestAnimationFrame catches any
+    // that settle a frame later; the persistent idle handler is the backstop.
+    map.once('style.load', () => {
+      removeBasemapBuildings();
+      requestAnimationFrame(removeBasemapBuildings);
+    });
   }
 
   function watchThemeChanges(){
@@ -799,14 +802,16 @@ window.DATA={};
   }
 
   function removeBasemapBuildings(){
-    // Drop any layer whose source-layer is 'building'. The CARTO basemaps have
-    // building footprint / extrusion layers; we remove them all.
+    // Drop the CARTO basemap's own building footprint/extrusion layers. Our own
+    // buildings are a separate deck.gl overlay, so this only touches the basemap.
     try {
       const style = map.getStyle();
       if(!style || !style.layers) return;
-      for(const layer of style.layers){
-        if(layer['source-layer'] === 'building' || /^building/i.test(layer.id)){
-          map.removeLayer(layer.id);
+      for(const layer of [...style.layers]){
+        const sourceLayer = (layer['source-layer'] || '').toLowerCase();
+        const id = (layer.id || '').toLowerCase();
+        if(sourceLayer === 'building' || sourceLayer === 'building_part' || id.includes('building')){
+          if(map.getLayer(layer.id)) map.removeLayer(layer.id);
         }
       }
     } catch(e){
@@ -831,7 +836,11 @@ window.DATA={};
       center: DATA.meta.center, zoom:16.2 - zoomOffset(), pitch:0, bearing:0,
       attributionControl:{compact:true}
     });
-    map.on('style.load', removeBasemapBuildings);
+    map.on('style.load', () => {
+      removeBasemapBuildings();
+      requestAnimationFrame(removeBasemapBuildings);
+    });
+    map.on('idle', removeBasemapBuildings);
     watchThemeChanges();
     map.on('load', () => {
       document.getElementById('loading').classList.add('hidden');

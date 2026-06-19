@@ -10,9 +10,9 @@
 <style>
   body { overflow: hidden !important; }
 
-  /* Scoped demo chrome. All overlay UI inherits the site's DaisyUI tokens so
-     the map canvas, panel, tooltip, HUD and MapLibre controls follow the
-     active light/dark theme together. */
+  /* Scoped demo chrome. The map canvas, panel, tooltip, HUD and MapLibre
+     controls inherit the site's DaisyUI tokens and switch together with the
+     active light/dark theme. */
   #explorer-root {
     position: relative; width: 100%; height: calc(100vh - 64px);
     --bg: hsl(var(--b1));
@@ -23,10 +23,17 @@
     --rule: hsl(var(--bc) / 0.12);
     --accent: hsl(var(--p));
     --accent-ink: hsl(var(--pc));
-    background: var(--bg);
-    color: var(--ink);
+    --attrib-bg: hsl(var(--b1) / 0.78);
+    --ctrl-icon-filter: invert(0.35);
+    --ctrl-icon-filter-hover: invert(0.15);
+    background: var(--bg); color: var(--ink);
   }
-  #explorer-root.theme-dark { --bg: #0d0f12; }
+  #explorer-root.theme-dark {
+    --bg: #0d0f12;
+    --attrib-bg: rgba(13,15,18,.7);
+    --ctrl-icon-filter: invert(0.6);
+    --ctrl-icon-filter-hover: invert(0.9);
+  }
   #explorer-root * { box-sizing: border-box; }
 
   #map { position: absolute; inset: 0; background: var(--bg); }
@@ -212,8 +219,8 @@
     font-size: 9px; color: var(--ink-dim); margin: 5px 0 0; line-height: 1.5;
   }
 
-  /* MapLibre controls */
-  .maplibregl-ctrl-attrib { background: hsl(var(--b1) / 0.82) !important; color: var(--ink-dim) !important; }
+  /* MapLibre overrides */
+  .maplibregl-ctrl-attrib { background: var(--attrib-bg) !important; }
   .maplibregl-ctrl-attrib a,
   .maplibregl-ctrl-attrib-inner { color: var(--ink-dim) !important; font-size: 10px !important; }
   .maplibregl-ctrl-group {
@@ -223,10 +230,8 @@
     background: transparent !important; border-bottom: 1px solid var(--rule) !important;
   }
   .maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
-  #explorer-root.theme-dark .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(0.72); }
-  #explorer-root.theme-dark .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon { filter: invert(0.95); }
-  #explorer-root.theme-light .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: none; opacity: .68; }
-  #explorer-root.theme-light .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon { filter: none; opacity: .9; }
+  .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: var(--ctrl-icon-filter); }
+  .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon { filter: var(--ctrl-icon-filter-hover); }
 </style>
 
 <div id="explorer-root">
@@ -504,9 +509,15 @@ const MAP_STYLES = {
   light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
 };
 
+const CUSTOM_LAYER_IDS = new Set(['buildings-fill', 'buildings-3d', 'overture-outline']);
+
 function isDarkTheme() {
   return !!(document.documentElement.classList.contains('dark') ||
             document.querySelector('[data-theme="night"]'));
+}
+
+function isLightMode() {
+  return !isDarkTheme();
 }
 
 function applyThemeClass() {
@@ -517,12 +528,17 @@ function applyThemeClass() {
   root.classList.toggle('theme-light', !dark);
 }
 
-let currentMapLightMode = !isDarkTheme();
+function currentBaseStyleUrl() {
+  return isDarkTheme() ? MAP_STYLES.dark : MAP_STYLES.light;
+}
+
 applyThemeClass();
+let currentMapLightMode = isLightMode();
+let rebuildFrame = null;
 
 const map = new maplibregl.Map({
   container: 'map',
-  style: currentMapLightMode ? MAP_STYLES.light : MAP_STYLES.dark,
+  style: currentBaseStyleUrl(),
   center: [13.404, 52.520],
   zoom: 15,
   pitch: 45,
@@ -542,38 +558,38 @@ map.on('zoom', () => {
 map.on('dataloading', () => document.getElementById('loading-badge').classList.add('visible'));
 map.on('idle',        () => document.getElementById('loading-badge').classList.remove('visible'));
 
-const CUSTOM_SOURCE_IDS = new Set(['eubucco', 'overture']);
-const CUSTOM_LAYER_IDS = new Set(['buildings-fill', 'buildings-3d', 'overture-outline']);
-let pendingLayerRebuild = false;
-
 function removeBasemapBuildings() {
-  // Remove basemap building layers only. Do not touch our PMTiles overlays.
-  try {
-    const style = map.getStyle();
-    if (!style || !style.layers) return;
-    for (const layer of [...style.layers]) {
-      if (CUSTOM_LAYER_IDS.has(layer.id) || CUSTOM_SOURCE_IDS.has(layer.source)) continue;
-      if (layer['source-layer'] === 'building' || /^building/i.test(layer.id)) {
-        if (map.getLayer(layer.id)) map.removeLayer(layer.id);
-      }
+  // CARTO basemaps add their own footprints/extrusions. Remove only basemap
+  // building layers; keep our PMTiles and Overture overlay layers intact.
+  const style = map.getStyle();
+  if (!style || !style.layers) return;
+
+  for (const layer of [...style.layers]) {
+    if (!layer || CUSTOM_LAYER_IDS.has(layer.id)) continue;
+    const id = (layer.id || '').toLowerCase();
+    const sourceLayer = (layer['source-layer'] || '').toLowerCase();
+    const isBasemapBuilding =
+      sourceLayer === 'building' ||
+      sourceLayer === 'building_part' ||
+      (id.includes('building') && !CUSTOM_LAYER_IDS.has(layer.id));
+
+    if (isBasemapBuilding && map.getLayer(layer.id)) {
+      try { map.removeLayer(layer.id); }
+      catch (e) { console.warn('Could not remove basemap building layer:', layer.id, e); }
     }
-  } catch (e) {
-    console.warn('Could not strip basemap buildings:', e);
   }
 }
 
-function scheduleMapLayerRebuild() {
-  // setStyle() replaces the full style tree and removes custom PMTiles
-  // sources/layers. Re-add them once after the new style has loaded.
-  if (pendingLayerRebuild) return;
-  pendingLayerRebuild = true;
-  requestAnimationFrame(() => {
-    pendingLayerRebuild = false;
-    addMapLayers();
-  });
-}
+function addExplorerLayers() {
+  // `style.load` can fire before `map.isStyleLoaded()` becomes true; adding
+  // custom sources/layers only needs a style object, so retry on actual errors
+  // instead of waiting for another style.load event that may never come.
+  const style = map.getStyle();
+  if (!style || !style.layers) {
+    setTimeout(scheduleMapLayerRebuild, 50);
+    return;
+  }
 
-function addMapLayers() {
   try {
     removeBasemapBuildings();
 
@@ -645,26 +661,47 @@ function addMapLayers() {
       });
     }
 
+    map.setLayoutProperty('buildings-fill', 'visibility', is3d ? 'none' : 'visible');
+    map.setLayoutProperty('buildings-3d',   'visibility', is3d ? 'visible' : 'none');
+    map.setLayoutProperty('overture-outline', 'visibility', overtureVisible ? 'visible' : 'none');
+    map.setPaintProperty('buildings-fill', 'fill-color', color);
+    map.setPaintProperty('buildings-3d',   'fill-extrusion-color', color);
     renderLegend(selectedScheme);
+
+    // Some style internals settle one frame later; run cleanup again while
+    // protecting the custom layer IDs above.
+    requestAnimationFrame(removeBasemapBuildings);
   } catch (e) {
-    // Some browsers can fire style events before MapLibre accepts layer
-    // mutations. Retry on the next style.load instead of leaving overlays gone.
-    console.warn('Could not rebuild PMTiles overlay layers yet:', e);
-    map.once('style.load', scheduleMapLayerRebuild);
+    console.warn('Could not rebuild explorer map layers yet:', e);
+    setTimeout(scheduleMapLayerRebuild, 50);
   }
+}
+
+function scheduleMapLayerRebuild() {
+  if (rebuildFrame !== null) cancelAnimationFrame(rebuildFrame);
+  rebuildFrame = requestAnimationFrame(() => {
+    rebuildFrame = null;
+    addExplorerLayers();
+  });
+}
+
+function hideOpenTip() {
+  const el = document.getElementById('tip');
+  if (el) el.style.display = 'none';
+  if (map && map.getCanvas()) map.getCanvas().style.cursor = '';
 }
 
 function syncMapTheme() {
   applyThemeClass();
-  const nextLightMode = !isDarkTheme();
-  if (nextLightMode === currentMapLightMode) return;
+  const nextLightMode = isLightMode();
+  if (nextLightMode === currentMapLightMode) {
+    scheduleMapLayerRebuild();
+    return;
+  }
   currentMapLightMode = nextLightMode;
-  hideTip();
-  map.setStyle(currentMapLightMode ? MAP_STYLES.light : MAP_STYLES.dark);
-  // setStyle() drops our PMTiles overlays and brings the basemap's own building
-  // layers back. style.load isn't reliable across a style swap, so re-add the
-  // overlays (and re-strip basemap buildings) once the new style has settled.
-  map.once('idle', addMapLayers);
+  hideOpenTip();
+  map.setStyle(currentBaseStyleUrl(), { diff: false });
+  scheduleMapLayerRebuild();
 }
 
 map.on('load', () => {
@@ -674,6 +711,7 @@ map.on('load', () => {
 });
 
 map.on('style.load', scheduleMapLayerRebuild);
+map.on('idle', removeBasemapBuildings);
 
 const themeObserver = new MutationObserver(syncMapTheme);
 themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
@@ -681,7 +719,10 @@ themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data
 
 // ── Apply color scheme ─────────────────────────────────────────
 function applyColorScheme(key) {
-  if (!map.getLayer('buildings-fill')) return;
+  if (!map.getLayer('buildings-fill') || !map.getLayer('buildings-3d')) {
+    scheduleMapLayerRebuild();
+    return;
+  }
   const color = (SCHEMES[key] || SCHEMES.default).fill;
   map.setPaintProperty('buildings-fill', 'fill-color', color);
   map.setPaintProperty('buildings-3d',   'fill-extrusion-color', color);
@@ -696,7 +737,10 @@ function setView(view) {
   });
   // Hide Overture when manually entering 3D (outlines float oddly on extrusions)
   if (is3d && overtureVisible) setOverture(false);
-  if (!map.getLayer('buildings-fill')) return;
+  if (!map.getLayer('buildings-fill') || !map.getLayer('buildings-3d')) {
+    scheduleMapLayerRebuild();
+    return;
+  }
   map.setLayoutProperty('buildings-fill', 'visibility', is3d ? 'none' : 'visible');
   map.setLayoutProperty('buildings-3d',   'visibility', is3d ? 'visible' : 'none');
   map.easeTo({ pitch: is3d ? 45 : 0, duration: 400 });
@@ -707,6 +751,8 @@ function setOverture(show) {
   overtureVisible = show;
   if (map.getLayer('overture-outline')) {
     map.setLayoutProperty('overture-outline', 'visibility', show ? 'visible' : 'none');
+  } else {
+    scheduleMapLayerRebuild();
   }
   document.getElementById('overtureBtn').classList.toggle('on', show);
 }
