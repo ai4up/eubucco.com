@@ -430,12 +430,27 @@ function updateZoomIndicator() {
 
 /* ============ METRIC SELECTION ============ */
 
+const isMobile = () => window.matchMedia('(max-width: 1023px)').matches;
+
+function updateCurrentMetricLabel() {
+  const select = document.getElementById('metricSelect');
+  const labelEl = document.getElementById('currentMetricLabel');
+  if (select && labelEl) {
+    const opt = select.options[select.selectedIndex];
+    labelEl.textContent = opt ? opt.text : '';
+  }
+}
+
 function onMetricChange(metric) {
   currentMetric = metric;
   if (map && map.getLayer('coverage-fill')) {
     map.setPaintProperty('coverage-fill', 'fill-color', getChoroplethExpression(metric));
     generateLegend(metric);
   }
+  updateCurrentMetricLabel();
+  // On small screens, collapse the panel after a pick to free the map.
+  const panel = document.getElementById('controlPanel');
+  if (panel && isMobile()) panel.open = false;
 }
 
 /* ============ REGION SELECTION (single, toggleable) ============ */
@@ -520,12 +535,13 @@ function updateRegionHeader(props, isEurope) {
   const nameEl = document.getElementById('regionName');
   const metaEl = document.getElementById('regionMeta');
   const kpisEl = document.getElementById('regionKpis');
-  const hintEl = document.getElementById('regionHint');
+  const hintEl = document.getElementById('mapHint');
   const clearBtn = document.getElementById('clearSelection');
 
   if (nameEl) nameEl.textContent = isEurope ? (props.name || 'Europe') : regionDisplayName(props);
   if (metaEl) metaEl.innerHTML = isEurope ? badge('Europe-wide', 'badge-primary badge-outline') : regionMetaBadges(props);
   if (kpisEl) kpisEl.innerHTML = renderKpis(props);
+  // The "click a region" hint lives on the map; hide it once a region is picked.
   if (hintEl) hintEl.classList.toggle('hidden', !isEurope);
   if (clearBtn) clearBtn.classList.toggle('hidden', isEurope);
 }
@@ -801,6 +817,12 @@ async function init() {
     metricSelect.value = currentMetric;
     metricSelect.addEventListener('change', (e) => onMetricChange(e.target.value));
   }
+  updateCurrentMetricLabel();
+
+  // Control panel: expanded on desktop, collapsed by default on mobile so it
+  // doesn't cover the map. The user can still tap the header to open it.
+  const panel = document.getElementById('controlPanel');
+  if (panel) panel.open = !isMobile();
 
   const clearBtn = document.getElementById('clearSelection');
   if (clearBtn) clearBtn.addEventListener('click', clearSelection);

@@ -12,6 +12,14 @@
   body { overflow: hidden !important; }
   #map { width: 100%; height: 100%; }
 
+  /* Collapsible control panel (native <details>) */
+  #controlPanel > summary { list-style: none; }
+  #controlPanel > summary::-webkit-details-marker { display: none; }
+  #controlPanel .chevron { transition: transform 0.2s ease; }
+  #controlPanel[open] .chevron { transform: rotate(180deg); }
+  /* The legend/select live in the body; hide them when collapsed is automatic
+     via <details>, so nothing extra needed here. */
+
   /* Custom scrollbar for stats panel */
   .stats-panel::-webkit-scrollbar {
     width: 8px;
@@ -31,19 +39,32 @@
   }
 </style>
 
-<!-- Main Container: 2/3 Map + 1/3 Stats -->
+<!-- Main Container: 2/3 Map + 1/3 Stats (stacked on mobile) -->
 <div class="flex flex-col lg:flex-row h-[calc(100vh-64px)] w-full">
 
-  <!-- Map Panel (2/3 width on desktop) -->
-  <div class="relative lg:w-2/3 w-full h-full">
+  <!-- Map Panel (full width + fixed height on mobile, 2/3 on desktop) -->
+  <div class="relative w-full h-[55vh] lg:w-2/3 lg:h-full shrink-0">
     <div id="map"></div>
 
-    <!-- Control Panel (floating top-left) -->
-    <div class="absolute top-4 left-4 z-20">
-      <div class="card bg-base-100/95 backdrop-blur shadow-xl">
-        <div class="card-body p-4 w-80">
-          <h3 class="card-title text-sm mb-2">Coverage Visualization</h3>
+    <!-- Control Panel (floating top-left, collapsible) -->
+    <div class="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
+      <details id="controlPanel"
+               class="card bg-base-100/95 backdrop-blur shadow-xl
+                      w-56 sm:w-72 max-w-[calc(100vw-1rem)]">
+        <summary class="flex items-center justify-between gap-2 cursor-pointer p-3 select-none">
+          <div class="min-w-0">
+            <h3 class="card-title text-sm leading-tight">Coverage</h3>
+            <div id="currentMetricLabel" class="text-xs text-base-content/60 truncate">
+              Government Source %
+            </div>
+          </div>
+          <svg class="chevron h-4 w-4 shrink-0 text-base-content/60" xmlns="http://www.w3.org/2000/svg"
+               fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </summary>
 
+        <div class="px-3 pb-3">
           <!-- Metric Selector -->
           <div class="form-control">
             <label class="label py-1">
@@ -75,7 +96,7 @@
             <div id="legend" class="space-y-1"></div>
           </div>
         </div>
-      </div>
+      </details>
     </div>
 
     <!-- Map hint (bottom-center) -->
@@ -98,9 +119,9 @@
     </div>
   </div>
 
-  <!-- Stats Panel (1/3 width on desktop) -->
-  <div class="stats-panel lg:w-1/3 w-full h-full bg-base-200 overflow-y-auto">
-    <div class="p-6 space-y-4">
+  <!-- Stats Panel (fills remaining height on mobile, 1/3 on desktop) -->
+  <div class="stats-panel w-full flex-1 min-h-0 lg:w-1/3 lg:h-full bg-base-200 overflow-y-auto">
+    <div class="p-4 sm:p-6 space-y-4">
 
       <!-- Region Header -->
       <div class="card bg-base-100 shadow">
