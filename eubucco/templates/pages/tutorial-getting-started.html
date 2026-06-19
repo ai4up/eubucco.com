@@ -38,6 +38,24 @@
     </div>
   </header>
 
+  {# ---------------------------------------------------------------- At a glance #}
+  <section class="gs-glance" id="gs-glance" data-stats="{% static 'notebooks/getting-started/country-stats.json' %}">
+    <div class="gs-glance-inner">
+      <p class="gs-glance-eyebrow">The dataset at a glance</p>
+      <div class="gs-kpis">
+        <div class="gs-kpi"><span class="gs-kpi-num" data-kpi="buildings">322M</span><span class="gs-kpi-lbl">building footprints</span></div>
+        <div class="gs-kpi"><span class="gs-kpi-num" data-kpi="countries">30</span><span class="gs-kpi-lbl">countries</span></div>
+        <div class="gs-kpi"><span class="gs-kpi-num" data-kpi="gov">—</span><span class="gs-kpi-lbl">from government sources</span></div>
+        <div class="gs-kpi"><span class="gs-kpi-num" data-kpi="height">—</span><span class="gs-kpi-lbl">with ground-truth height</span></div>
+      </div>
+      <div class="gs-charts">
+        <figure class="gs-chart"><figcaption>Data sources</figcaption><div class="gs-canvas-wrap"><canvas id="gsSourceChart"></canvas></div></figure>
+        <figure class="gs-chart"><figcaption>Ground-truth attribute coverage</figcaption><div class="gs-canvas-wrap"><canvas id="gsCoverageChart"></canvas></div></figure>
+        <figure class="gs-chart gs-chart-wide"><figcaption>Buildings per country (top 12)</figcaption><div class="gs-canvas-wrap"><canvas id="gsCountryChart"></canvas></div></figure>
+      </div>
+    </div>
+  </section>
+
   {# ---------------------------------------------------------------- Notebook #}
   <div class="gs-body">
     {% include "tutorials/_getting_started_notebook.html" %}
@@ -112,6 +130,41 @@
     border-color: var(--gs-line);
   }
   .gs-btn-ghost:hover { background: hsl(var(--bc) / 0.08); }
+
+  /* ---------- At a glance (dashboards) ---------- */
+  .gs-glance { border-bottom: 1px solid var(--gs-line); background: hsl(var(--bc) / 0.02); }
+  .gs-glance-inner { max-width: 72rem; margin: 0 auto; padding: 2.5rem 1.5rem 2.75rem; }
+  .gs-glance-eyebrow {
+    font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase;
+    font-weight: 700; color: var(--gs-primary); margin-bottom: 1.25rem;
+  }
+  .gs-kpis {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.75rem;
+  }
+  @media (min-width: 720px) { .gs-kpis { grid-template-columns: repeat(4, 1fr); } }
+  .gs-kpi {
+    display: flex; flex-direction: column; gap: 0.15rem; padding: 1rem 1.1rem;
+    border: 1px solid var(--gs-line); border-radius: 0.8rem; background: var(--gs-card);
+  }
+  .gs-kpi-num {
+    font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; letter-spacing: -0.02em;
+    line-height: 1; color: var(--gs-fg); font-variant-numeric: tabular-nums;
+  }
+  .gs-kpi-lbl { font-size: 0.8rem; color: var(--gs-muted); }
+  .gs-charts {
+    display: grid; grid-template-columns: 1fr; gap: 1rem;
+  }
+  @media (min-width: 720px) { .gs-charts { grid-template-columns: 1fr 1fr; } }
+  .gs-chart {
+    margin: 0; padding: 1rem 1.1rem 1.1rem; border: 1px solid var(--gs-line);
+    border-radius: 0.8rem; background: var(--gs-card);
+  }
+  .gs-chart-wide { grid-column: 1 / -1; }
+  .gs-chart figcaption {
+    font-size: 0.82rem; font-weight: 650; color: var(--gs-fg); margin-bottom: 0.6rem;
+  }
+  .gs-canvas-wrap { position: relative; height: 200px; }
+  .gs-chart-wide .gs-canvas-wrap { height: 280px; }
 
   /* ---------- Layout ---------- */
   .gs-body { max-width: 72rem; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
@@ -329,6 +382,101 @@
 {% endblock content %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ── "At a glance" dashboards (theme-aware Chart.js) ─────────────────
+(function () {
+  var root = document.getElementById("gs-glance");
+  if (!root || typeof Chart === "undefined") return;
+
+  var SOURCE_COLORS = { gov: "#7dd3a0", msft: "#5cb1c9", osm: "#e8b54a" };
+  var fmt = function (n) {
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + "B";
+    if (n >= 1e6) return Math.floor(n / 1e6) + "M";
+    if (n >= 1e3) return Math.floor(n / 1e3) + "K";
+    return String(n);
+  };
+  var pct = function (x) { return Math.round(x * 100) + "%"; };
+  var css = function (v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
+  function themeColors() {
+    var dark = document.documentElement.classList.contains("dark");
+    return {
+      text: "hsl(" + css("--bc") + ")",
+      muted: "hsla(" + css("--bc") + ", 0.6)",
+      grid: dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
+      primary: "hsl(" + css("--p") + ")",
+    };
+  }
+
+  var charts = {};
+  function render(data) {
+    Object.values(charts).forEach(function (c) { c && c.destroy(); });
+    var c = themeColors();
+    Chart.defaults.font.family = "ui-sans-serif, system-ui, sans-serif";
+    Chart.defaults.color = c.muted;
+
+    // KPIs
+    var s = data.eu.source, totalSrc = s.gov + s.msft + s.osm;
+    var set = function (k, v) { var el = root.querySelector('[data-kpi="' + k + '"]'); if (el) el.textContent = v; };
+    set("buildings", fmt(data.total_buildings));
+    set("countries", data.n_countries);
+    set("gov", pct(s.gov / totalSrc));
+    set("height", pct(data.eu.coverage.height));
+
+    // 1) Data sources doughnut
+    charts.source = new Chart(document.getElementById("gsSourceChart"), {
+      type: "doughnut",
+      data: { labels: ["Government", "Microsoft", "OpenStreetMap"],
+        datasets: [{ data: [s.gov, s.msft, s.osm],
+          backgroundColor: [SOURCE_COLORS.gov, SOURCE_COLORS.msft, SOURCE_COLORS.osm],
+          borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: "62%",
+        plugins: { legend: { position: "right", labels: { color: c.text, boxWidth: 12, font: { size: 11 } } },
+          tooltip: { callbacks: { label: function (ctx) { return ctx.label + ": " + fmt(ctx.raw) + " (" + Math.round(ctx.raw / totalSrc * 100) + "%)"; } } } } },
+    });
+
+    // 2) Attribute coverage horizontal bars
+    var cov = data.eu.coverage;
+    charts.coverage = new Chart(document.getElementById("gsCoverageChart"), {
+      type: "bar",
+      data: { labels: ["Height", "Type", "Floors", "Constr. year"],
+        datasets: [{ data: [cov.height * 100, cov.type * 100, cov.floors * 100, cov.year * 100],
+          backgroundColor: c.primary, borderRadius: 4, barThickness: 18 }] },
+      options: { indexAxis: "y", responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (ctx) { return Math.round(ctx.raw) + "% of buildings"; } } } },
+        scales: { x: { max: 100, ticks: { color: c.muted, callback: function (v) { return v + "%"; } }, grid: { color: c.grid } },
+          y: { ticks: { color: c.text }, grid: { display: false } } } },
+    });
+
+    // 3) Top-12 countries
+    var top = data.countries.slice(0, 12);
+    charts.country = new Chart(document.getElementById("gsCountryChart"), {
+      type: "bar",
+      data: { labels: top.map(function (d) { return d.code; }),
+        datasets: [
+          { label: "Government", data: top.map(function (d) { return d.gov; }), backgroundColor: SOURCE_COLORS.gov, stack: "s" },
+          { label: "Microsoft", data: top.map(function (d) { return d.msft; }), backgroundColor: SOURCE_COLORS.msft, stack: "s" },
+          { label: "OpenStreetMap", data: top.map(function (d) { return d.osm; }), backgroundColor: SOURCE_COLORS.osm, stack: "s" },
+        ] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "top", labels: { color: c.text, boxWidth: 12, font: { size: 11 } } },
+          tooltip: { callbacks: { label: function (ctx) { return ctx.dataset.label + ": " + fmt(ctx.raw); } } } },
+        scales: { x: { stacked: true, ticks: { color: c.text }, grid: { display: false } },
+          y: { stacked: true, ticks: { color: c.muted, callback: function (v) { return fmt(v); } }, grid: { color: c.grid } } } },
+    });
+  }
+
+  var cached = null;
+  fetch(root.getAttribute("data-stats"))
+    .then(function (r) { return r.json(); })
+    .then(function (data) { cached = data; render(data); })
+    .catch(function (e) { console.error("stats load failed", e); });
+
+  // Re-render charts when the site theme toggles
+  new MutationObserver(function () { if (cached) render(cached); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+})();
+</script>
 <script>
 (function () {
   // Copy-to-clipboard for code cells
