@@ -277,7 +277,13 @@ def _tile_one_region(
         "-Z", str(min_zoom),
         "-z", str(max_zoom),
         "--drop-densest-as-needed",
-        "--extend-zooms-if-still-dropping",
+        # NB: NO --extend-zooms-if-still-dropping. On dense regions it pushes the
+        # tileset past max_zoom (e.g. to z15) but only where features were still
+        # dropping, leaving a partially-populated top level. Because the merged
+        # archive's maxzoom is then 15, MapLibre requests (mostly missing) z15
+        # tiles at zoom>=15 instead of overzooming z14, so buildings vanish past
+        # z15. Keeping a hard max_zoom yields a uniform top level that overzooms
+        # cleanly (buildings stay visible when zoomed in).
         "--read-parallel",
         "--force",
         # NB: deliberately NO --generate-ids — independent per-region runs would
