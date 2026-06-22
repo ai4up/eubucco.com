@@ -74,6 +74,78 @@
       file and the
       Madrid example file. Data from the Spanish Directorate General for Cadastre.</p>
   </div>
+
+  {# ============================================================ Inside the dataset #}
+  <section class="ds" id="ds">
+    <div class="ds-inner">
+      <p class="ds-eyebrow">Inside the dataset</p>
+      <h2 class="ds-title">One harmonized database, 55&nbsp;open sources</h2>
+      <p class="ds-lead">
+        EUBUCCO unifies national cadastres, OpenStreetMap, and Microsoft footprints into a single,
+        consistent, analysis-ready database &mdash; every building carries the same schema, with its
+        data source and attribute provenance recorded.
+      </p>
+
+      <div class="ds-stats">
+        <div class="ds-stat"><span class="ds-stat-num">322M<span class="ds-plus">+</span></span><span class="ds-stat-lbl">individual buildings</span></div>
+        <div class="ds-stat"><span class="ds-stat-num">30</span><span class="ds-stat-lbl">countries · EU-27 + UK, NO, CH</span></div>
+        <div class="ds-stat"><span class="ds-stat-num">55</span><span class="ds-stat-lbl">open datasets harmonized</span></div>
+        <div class="ds-stat"><span class="ds-stat-num">4</span><span class="ds-stat-lbl">core attributes per building</span></div>
+      </div>
+
+      {# ---- Source map ---- #}
+      <figure class="ds-map" id="ds-map" data-embed="{% url 'tutorials:embed_cities' %}">
+        <div class="ds-map-frame"><span class="ds-map-ph">Preparing map…</span></div>
+        <figcaption class="ds-map-cap">
+          Each point is a city, sized by building count and colored by its dominant data source.
+          Drag, zoom, and hover to explore. &nbsp;<a href="{% url 'data:explorer' %}">Open the full explorer&nbsp;&rarr;</a>
+        </figcaption>
+      </figure>
+
+      {# ---- Source composition bar ---- #}
+      <div class="ds-srcbar" aria-label="Composition by data source">
+        <div class="ds-srcbar-track">
+          <span class="seg seg-gov"  style="width:62.2%"></span>
+          <span class="seg seg-msft" style="width:20.4%"></span>
+          <span class="seg seg-osm"  style="width:17.4%"></span>
+        </div>
+        <ul class="ds-srclegend">
+          <li><i class="dot seg-gov"></i>Government registries <b>62.2%</b></li>
+          <li><i class="dot seg-msft"></i>Microsoft footprints <b>20.4%</b></li>
+          <li><i class="dot seg-osm"></i>OpenStreetMap <b>17.4%</b></li>
+        </ul>
+      </div>
+
+      {# ---- Panels: country breakdown + attribute coverage ---- #}
+      <div class="ds-grid">
+        <section class="ds-panel" data-stats="{% static 'notebooks/getting-started/country-stats.json' %}" id="ds-country">
+          <h3 class="ds-panel-title">Buildings by country</h3>
+          <p class="ds-panel-sub">Stacked by data source · all 30 countries (scroll)</p>
+          <div class="ds-chart-scroll"><div class="ds-chart-canvas"><canvas id="dsCountryChart"></canvas></div></div>
+        </section>
+
+        <section class="ds-panel">
+          <h3 class="ds-panel-title">Attribute coverage</h3>
+          <p class="ds-panel-sub">Share of buildings carrying each attribute, by provenance</p>
+          <div class="ds-cov">
+            {% comment %} Authoritative v0.2 figures (docs landing). GT | Merged | ML-estimated | total. {% endcomment %}
+            <div class="ds-cov-row" style="--gt:38.1;--mg:7.4;--es:54.5;--tot:100"><span class="ds-cov-name">Type</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
+            <div class="ds-cov-row" style="--gt:17.3;--mg:4.2;--es:78.5;--tot:100"><span class="ds-cov-name">Subtype</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
+            <div class="ds-cov-row" style="--gt:43.2;--mg:0.1;--es:56.7;--tot:100"><span class="ds-cov-name">Height</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
+            <div class="ds-cov-row" style="--gt:16.6;--mg:3.4;--es:79.9;--tot:100"><span class="ds-cov-name">Floors</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
+            <div class="ds-cov-row" style="--gt:15.6;--mg:0.3;--es:0;--tot:15.9"><span class="ds-cov-name">Constr.&nbsp;year</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">15.9%</span></div>
+          </div>
+          <ul class="ds-cov-legend">
+            <li><i class="gt"></i>Ground&nbsp;truth</li>
+            <li><i class="mg"></i>Merged</li>
+            <li><i class="es"></i>ML&nbsp;estimated</li>
+          </ul>
+          <p class="ds-cov-note">Ground truth from official registries; merged from other footprint datasets; the remainder inferred with machine&nbsp;learning.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
   <div class="flex justify-center items-center px-4 text-center">
     <div class="flex container mx-auto pt-8 w-full justify-center max-w-5xl">
       <article class="prose sm:prose-xl justify-center">
@@ -246,4 +318,176 @@
       </article>
     </div>
   </div>
+
+<style>
+  .ds {
+    --ds-fg: hsl(var(--bc));
+    --ds-muted: hsl(var(--bc) / 0.62);
+    --ds-line: hsl(var(--bc) / 0.12);
+    --ds-card: hsl(var(--b1));
+    --ds-card-2: hsl(var(--b2));
+    --gov: #7dd3a0; --msft: #5cb1c9; --osm: #e8b54a;     /* data sources (match the map) */
+    --cov: #2f8f78; --cov-mg: #79c4b1; --cov-es: #bfe3d9; /* attribute provenance */
+    color: var(--ds-fg);
+    border-top: 1px solid var(--ds-line);
+    border-bottom: 1px solid var(--ds-line);
+    background:
+      radial-gradient(140% 80% at 50% -20%, hsl(var(--p) / 0.06), transparent 60%),
+      hsl(var(--bc) / 0.015);
+  }
+  .ds-inner { max-width: 72rem; margin: 0 auto; padding: clamp(2.75rem, 6vw, 4.5rem) 1.5rem clamp(2.5rem, 5vw, 4rem); }
+  .ds-eyebrow { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: hsl(var(--p)); margin-bottom: 0.7rem; }
+  .ds-title { font-size: clamp(1.7rem, 4vw, 2.6rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.07; margin: 0 0 0.9rem; }
+  .ds-lead { font-size: clamp(1rem, 1.5vw, 1.15rem); line-height: 1.65; color: var(--ds-muted); max-width: 46rem; }
+
+  /* stat strip */
+  .ds-stats {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 0;
+    margin: 2.25rem 0 2.5rem; border: 1px solid var(--ds-line); border-radius: 1rem; overflow: hidden;
+    background: var(--ds-card);
+  }
+  @media (min-width: 760px) { .ds-stats { grid-template-columns: repeat(4, 1fr); } }
+  .ds-stat { padding: 1.15rem 1.35rem; border-top: 1px solid var(--ds-line); border-left: 1px solid var(--ds-line); }
+  .ds-stat:nth-child(-n+2) { border-top: 0; }
+  .ds-stat:nth-child(odd) { border-left: 0; }
+  @media (min-width: 760px) { .ds-stat { border-top: 0; } .ds-stat:nth-child(odd) { border-left: 1px solid var(--ds-line); } .ds-stat:first-child { border-left: 0; } }
+  .ds-stat-num { display: block; font-size: clamp(1.8rem, 3.4vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ds-plus { color: hsl(var(--p)); }
+  .ds-stat-lbl { display: block; margin-top: 0.4rem; font-size: 0.82rem; color: var(--ds-muted); line-height: 1.3; }
+
+  /* source map */
+  .ds-map { margin: 0; }
+  .ds-map-frame {
+    position: relative; height: clamp(380px, 56vw, 560px); border-radius: 1rem; overflow: hidden;
+    border: 1px solid var(--ds-line); background: var(--ds-card-2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ds-map-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .ds-map-ph { color: var(--ds-muted); font-size: 0.9rem; }
+  .ds-map-cap { margin-top: 0.7rem; font-size: 0.82rem; color: var(--ds-muted); line-height: 1.5; }
+  .ds-map-cap a { color: hsl(var(--p)); font-weight: 600; white-space: nowrap; }
+
+  /* source composition bar */
+  .ds-srcbar { margin: 1.75rem 0 2.75rem; }
+  .ds-srcbar-track { display: flex; height: 0.85rem; border-radius: 999px; overflow: hidden; background: var(--ds-line); }
+  .ds-srcbar-track .seg { height: 100%; }
+  .seg-gov { background: var(--gov); } .seg-msft { background: var(--msft); } .seg-osm { background: var(--osm); }
+  .ds-srclegend { list-style: none; margin: 0.85rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1.25rem; }
+  .ds-srclegend li { display: flex; align-items: center; gap: 0.45rem; font-size: 0.88rem; color: var(--ds-muted); }
+  .ds-srclegend b { color: var(--ds-fg); font-variant-numeric: tabular-nums; }
+  .ds-srclegend .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; flex: none; }
+
+  /* panels grid */
+  .ds-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+  @media (min-width: 900px) { .ds-grid { grid-template-columns: 1.1fr 1fr; } }
+  .ds-panel { border: 1px solid var(--ds-line); border-radius: 1rem; background: var(--ds-card); padding: 1.35rem 1.5rem 1.5rem; }
+  .ds-panel-title { font-size: 1.05rem; font-weight: 700; margin: 0; }
+  .ds-panel-sub { font-size: 0.82rem; color: var(--ds-muted); margin: 0.2rem 0 1.1rem; }
+
+  /* scrollable country chart */
+  .ds-chart-scroll { max-height: 380px; overflow-y: auto; overscroll-behavior: contain; padding-right: 0.3rem; }
+  .ds-chart-scroll::-webkit-scrollbar { width: 8px; }
+  .ds-chart-scroll::-webkit-scrollbar-thumb { background: hsl(var(--bc) / 0.2); border-radius: 4px; }
+  .ds-chart-canvas { position: relative; height: 760px; }
+
+  /* attribute coverage */
+  .ds-cov { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1.1rem; }
+  .ds-cov-row { display: flex; align-items: center; gap: 0.8rem; --tot: 100; }
+  .ds-cov-name { flex: none; width: 5.6rem; font-size: 0.84rem; font-weight: 600; }
+  .ds-cov-track { flex: 1; height: 0.7rem; border-radius: 999px; background: hsl(var(--bc) / 0.07); overflow: hidden; font-size: 0; }
+  .ds-cov-track i { display: inline-block; height: 100%; vertical-align: top; }
+  .ds-cov-track i.gt { width: calc(var(--gt) * 1%); background: var(--cov); }
+  .ds-cov-track i.mg { width: calc(var(--mg) * 1%); background: var(--cov-mg); }
+  .ds-cov-track i.es { width: calc(var(--es) * 1%); background: var(--cov-es); }
+  .ds-cov-tot { flex: none; width: 3rem; text-align: right; font-size: 0.82rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ds-cov-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 1rem; margin: 0 0 0.7rem; padding: 0; }
+  .ds-cov-legend li { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--ds-muted); }
+  .ds-cov-legend i, .ds-cov-track + * i { width: 0.7rem; height: 0.7rem; border-radius: 3px; display: inline-block; }
+  .ds-cov-legend i.gt { background: var(--cov); } .ds-cov-legend i.mg { background: var(--cov-mg); } .ds-cov-legend i.es { background: var(--cov-es); }
+  .ds-cov-note { font-size: 0.78rem; color: var(--ds-muted); line-height: 1.5; margin: 0; }
+</style>
 {% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  var SRC = { gov: "#7dd3a0", msft: "#5cb1c9", osm: "#e8b54a" };
+  var css = function (v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
+  function fmt(n) { return n === 0 ? "0" : n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M" : (n / 1e3).toFixed(0) + "K"; }
+
+  // ---- Buildings-by-country stacked bar (all countries, scrollable) ----
+  var panel = document.getElementById("ds-country");
+  var chart = null, cached = null;
+  function colors() {
+    return {
+      text: "hsl(" + css("--bc") + ")",
+      muted: "hsla(" + css("--bc") + ", 0.6)",
+      grid: document.documentElement.classList.contains("dark") ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)",
+    };
+  }
+  function renderCountry(data) {
+    if (typeof Chart === "undefined" || !panel) return;
+    if (chart) chart.destroy();
+    var c = colors();
+    var rows = data.countries.slice().sort(function (a, b) { return b.n - a.n; });
+    var labels = rows.map(function (d) { return d.code; });
+    chart = new Chart(document.getElementById("dsCountryChart"), {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          { label: "Government", data: rows.map(function (d) { return d.gov; }), backgroundColor: SRC.gov, stack: "s", borderRadius: 2, barThickness: 13 },
+          { label: "Microsoft", data: rows.map(function (d) { return d.msft; }), backgroundColor: SRC.msft, stack: "s", borderRadius: 2, barThickness: 13 },
+          { label: "OpenStreetMap", data: rows.map(function (d) { return d.osm; }), backgroundColor: SRC.osm, stack: "s", borderRadius: 2, barThickness: 13 },
+        ],
+      },
+      options: {
+        indexAxis: "y", responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 2 } },
+        plugins: {
+          legend: { position: "top", align: "start", labels: { color: c.text, boxWidth: 11, font: { size: 11 } } },
+          tooltip: { callbacks: { label: function (ctx) { return ctx.dataset.label + ": " + ctx.raw.toLocaleString(); } } },
+        },
+        scales: {
+          x: { stacked: true, position: "top", ticks: { color: c.muted, font: { size: 10 }, callback: function (v) { return fmt(v); } }, grid: { color: c.grid } },
+          y: { stacked: true, ticks: { color: c.text, font: { size: 11 } }, grid: { display: false } },
+        },
+      },
+    });
+  }
+  if (panel) {
+    fetch(panel.getAttribute("data-stats"))
+      .then(function (r) { return r.json(); })
+      .then(function (d) { cached = d; renderCountry(d); })
+      .catch(function (e) { console.error("country stats failed", e); });
+    new MutationObserver(function () { if (cached) renderCountry(cached); })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  }
+
+  // ---- Source map: load when scrolled into view (single WebGL context) ----
+  var mapFig = document.getElementById("ds-map");
+  if (mapFig) {
+    var frame = mapFig.querySelector(".ds-map-frame");
+    var done = false;
+    function loadMap() {
+      if (done) return; done = true;
+      var theme = "dark";
+      try { if (localStorage.getItem("ui-theme") === "light") theme = "light"; } catch (e) {}
+      var f = document.createElement("iframe");
+      f.setAttribute("loading", "lazy");
+      f.setAttribute("title", "EUBUCCO buildings across Europe");
+      f.src = mapFig.getAttribute("data-embed") + "?theme=" + theme;
+      frame.innerHTML = "";
+      frame.appendChild(f);
+    }
+    if ("IntersectionObserver" in window) {
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { loadMap(); obs.disconnect(); } });
+      }, { rootMargin: "300px" });
+      obs.observe(mapFig);
+    } else { loadMap(); }
+  }
+})();
+</script>
+{% endblock %}
