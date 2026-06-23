@@ -645,6 +645,10 @@ function addExplorerLayers() {
       map.addSource('eubucco', {
         type: 'vector',
         url: `pmtiles://${PMTILES_URL}`,
+        // Tiles are generated to z14. Pin maxzoom so MapLibre overzooms beyond
+        // it (buildings stay visible when zoomed in) instead of requesting
+        // higher-zoom tiles that may not be populated.
+        maxzoom: 14,
       });
     }
 
