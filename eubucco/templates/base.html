@@ -67,11 +67,13 @@
         </div>
 
 
+        {% block footer %}
         <footer class="footer p-4 bg-gradient-to-r from-base-200 via-base-200/95 to-accent/10 dark:from-base-200 dark:via-base-200/95 dark:to-base-300/30 text-base-content justify-center mt-auto border-t border-base-content/10">
           <div class="items-center grid-flow-col">
             <a class="link link-hover opacity-70 hover:opacity-100" href="{% url 'about' %}">About</a>
           </div>
         </footer>
+        {% endblock footer %}
       </div>
     </div>
   </div>
