@@ -141,7 +141,7 @@ function reveal() {
   }
 }
 map.on('sourcedata', (e) => {
-  if (e.sourceId === 'eubucco' && map.isSourceLoaded('eubucco')) reveal();
+  if (e.sourceId === 'eubucco' && map.getSource('eubucco') && map.isSourceLoaded('eubucco')) reveal();
 });
 map.on('load', () => setTimeout(reveal, 2000));  // fallback: basemap is up
 setTimeout(reveal, 8000);  // safety: never leave the loading overlay up indefinitely
@@ -177,12 +177,14 @@ map.getCanvas().addEventListener('webglcontextlost', (e) => {
 }, false);
 
 // ── Follow the site's light/dark toggle (same-origin localStorage) ──
+// Swapping the basemap in place is fragile (the old style's source/layers get
+// torn down mid-flight, which threw "no tile manager"); reload the iframe with
+// the new theme instead — a clean, reliable re-init.
 window.addEventListener('storage', (e) => {
-  // Re-read the new value directly (the ?theme= query param is only the initial seed).
   if (e.key !== 'ui-theme' || !e.newValue) return;
-  const m = e.newValue === 'light' ? 'light' : 'dark';
-  applyHtmlTheme(m);
-  map.setStyle(m === 'dark' ? MAP_STYLES.dark : MAP_STYLES.light);  // style.load re-adds our layers
+  const u = new URL(location.href);
+  u.searchParams.set('theme', e.newValue === 'light' ? 'light' : 'dark');
+  location.replace(u.toString());
 });
 </script>
 </body>
