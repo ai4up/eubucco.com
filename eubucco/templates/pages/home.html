@@ -114,7 +114,7 @@
         <figcaption class="ds-map-cap">
           But the mix varies sharply by region &mdash; each NUTS region below is tinted by its own blend
           of the three sources. Hover for details, zoom in for finer levels.
-          &nbsp;<a href="{% url 'data:explorer' %}">Open the full explorer&nbsp;&rarr;</a>
+          &nbsp;<a href="{% url 'data:coverage' %}">Open the coverage explorer&nbsp;&rarr;</a>
         </figcaption>
       </figure>
 
@@ -146,36 +146,36 @@
         </section>
       </div>
 
-      {# ---- Schema: what's in every record ---- #}
+      {# ---- Schema: the building record ---- #}
       <section class="ds-schema">
         <div class="ds-schema-head">
-          <h3 class="ds-panel-title">What every record carries</h3>
-          <p class="ds-panel-sub">One consistent schema for all 322M buildings &middot; <a href="{% url 'docs' %}">full reference &rarr;</a></p>
+          <h3 class="ds-panel-title">The building record</h3>
+          <p class="ds-panel-sub">Every building, the same fields &middot; <a href="{{ docs_schema_url|default:'/docs' }}">data schema &rarr;</a></p>
         </div>
         <div class="ds-fields">
           <div class="ds-fgroup">
             <span class="ds-fgroup-label">Identifiers</span>
-            <div class="ds-field"><code>id</code><span>unique building ID</span></div>
-            <div class="ds-field"><code>region_id</code><span>NUTS3 region</span></div>
-            <div class="ds-field"><code>city_id</code><span>LAU city</span></div>
+            <div class="ds-field"><code>id</code><span>unique ID</span></div>
+            <div class="ds-field"><code>region_id</code><span>NUTS3</span></div>
+            <div class="ds-field"><code>city_id</code><span>LAU</span></div>
           </div>
           <div class="ds-fgroup">
             <span class="ds-fgroup-label">Attributes</span>
-            <div class="ds-field"><code>type</code>&thinsp;/&thinsp;<code>subtype</code><span>residential &middot; detached&hellip;</span></div>
+            <div class="ds-field"><code>type</code><span>use class</span></div>
+            <div class="ds-field"><code>subtype</code><span>detailed use</span></div>
             <div class="ds-field"><code>height</code><span>metres</span></div>
-            <div class="ds-field"><code>floors</code><span>above-ground count</span></div>
-            <div class="ds-field"><code>construction_year</code><span>year built</span></div>
+            <div class="ds-field"><code>floors</code><span>count</span></div>
+            <div class="ds-field"><code>construction_year</code><span>year</span></div>
           </div>
           <div class="ds-fgroup">
             <span class="ds-fgroup-label">Geometry</span>
             <div class="ds-field"><code>geometry</code><span>WKB polygon</span></div>
-            <div class="ds-field ds-field-meta"><span>ETRS89 / EPSG:3035, metres</span></div>
+            <div class="ds-field"><code>EPSG:3035</code><span>metres</span></div>
           </div>
           <div class="ds-fgroup">
             <span class="ds-fgroup-label">Provenance</span>
-            <div class="ds-field"><code>&lt;attr&gt;_source</code><span>origin of each value</span></div>
-            <div class="ds-field"><code>&lt;attr&gt;_confidence</code><span>per-attribute uncertainty</span></div>
-            <div class="ds-field ds-field-meta"><span>gov &middot; osm &middot; msft &middot; estimated</span></div>
+            <div class="ds-field"><code>&lt;attr&gt;_source</code><span>origin</span></div>
+            <div class="ds-field"><code>&lt;attr&gt;_confidence</code><span>uncertainty</span></div>
           </div>
         </div>
       </section>
@@ -184,9 +184,10 @@
       <figure class="ds-city" id="ds-city" data-embed="{% url 'tutorials:embed_city3d' %}">
         <div class="ds-city-head">
           <h3 class="ds-panel-title">From the continent down to the building</h3>
-          <p class="ds-panel-sub">Every footprint carries its height &mdash; here, Z&uuml;rich extruded in 3D.</p>
+          <p class="ds-panel-sub">Every footprint carries its height &mdash; here, Z&uuml;rich extruded in 3D.
+            &nbsp;<a href="{% url 'data:explorer' %}">Open the map explorer&nbsp;&rarr;</a></p>
         </div>
-        <div class="ds-city-frame"><button type="button" class="ds-city-load">&#9654;&nbsp; Load the 3D view</button></div>
+        <div class="ds-city-frame"><span class="ds-map-ph">Preparing 3D view&hellip;</span></div>
       </figure>
     </div>
   </section>
@@ -418,6 +419,7 @@
   .ds-panel { border: 1px solid var(--ds-line); border-radius: 1rem; background: var(--ds-card); padding: 1.35rem 1.5rem 1.5rem; }
   .ds-panel-title { font-size: 1.05rem; font-weight: 700; margin: 0; }
   .ds-panel-sub { font-size: 0.82rem; color: var(--ds-muted); margin: 0.2rem 0 1.1rem; }
+  .ds-panel-sub a { color: hsl(var(--p)); font-weight: 600; white-space: nowrap; }
 
   /* scrollable country chart */
   .ds-chart-scroll { max-height: 380px; overflow-y: auto; overscroll-behavior: contain; padding-right: 0.3rem; }
@@ -469,21 +471,17 @@
     display: flex; align-items: center; justify-content: center;
   }
   .ds-city-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
-  .ds-city-load {
-    font-size: 0.95rem; font-weight: 650; cursor: pointer; color: hsl(var(--pc));
-    background: hsl(var(--p)); border: 0; border-radius: 0.7rem; padding: 0.7rem 1.3rem;
-    box-shadow: 0 8px 22px -10px hsl(var(--p) / 0.7); transition: transform .12s ease;
-  }
-  .ds-city-load:hover { transform: translateY(-1px); }
 
   /* ---------------- About / how-made / people ---------------- */
   .about {
     --ds-muted: hsl(var(--bc) / 0.62); --ds-line: hsl(var(--bc) / 0.12);
     color: hsl(var(--bc)); border-top: 1px solid var(--ds-line);
   }
-  .about-inner { max-width: 60rem; margin: 0 auto; padding: clamp(2.75rem, 6vw, 4.5rem) 1.5rem clamp(3rem, 6vw, 5rem); }
-  .about-body h2 { font-size: clamp(1.35rem, 2.6vw, 1.9rem); font-weight: 800; letter-spacing: -0.02em; text-align: left; margin: 0 0 0.85rem; color: hsl(var(--bc)); }
-  .about-body p { font-size: 1.02rem; line-height: 1.7; color: var(--ds-muted); max-width: 48rem; text-align: left; margin: 0 0 1rem; }
+  .about-inner { max-width: 56rem; margin: 0 auto; padding: clamp(2.75rem, 6vw, 4.5rem) 1.5rem clamp(3rem, 6vw, 5rem); text-align: center; }
+  .about-body h2 { font-size: clamp(1.35rem, 2.6vw, 1.9rem); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 0.85rem; color: hsl(var(--bc)); }
+  .about-body p { font-size: 1.02rem; line-height: 1.7; color: var(--ds-muted); max-width: 46rem; margin: 0 auto 1rem; }
+  .about-body .ds-eyebrow { margin-top: 0.5rem; }
+  .about-body textarea#bibtex { text-align: left; }
   .about-body a { color: hsl(var(--p)); text-decoration: underline; text-underline-offset: 2px; }
   .about-body .divider { margin: 2.75rem 0; opacity: 0.45; }
 
@@ -580,11 +578,13 @@
     } else { loadMap(); }
   }
 
-  // ---- 3D city: load on click (heavier WebGL, opt-in) ----
+  // ---- 3D city: load when scrolled into view ----
   var cityFig = document.getElementById("ds-city");
   if (cityFig) {
-    var cBtn = cityFig.querySelector(".ds-city-load");
-    cBtn && cBtn.addEventListener("click", function () {
+    var cFrame = cityFig.querySelector(".ds-city-frame");
+    var cDone = false;
+    function loadCity() {
+      if (cDone) return; cDone = true;
       var theme = "dark";
       try { if (localStorage.getItem("ui-theme") === "light") theme = "light"; } catch (e) {}
       var f = document.createElement("iframe");
@@ -592,10 +592,15 @@
       f.setAttribute("title", "EUBUCCO buildings in 3D");
       f.setAttribute("allow", "fullscreen");
       f.src = cityFig.getAttribute("data-embed") + "?theme=" + theme;
-      var fr = cityFig.querySelector(".ds-city-frame");
-      fr.innerHTML = "";
-      fr.appendChild(f);
-    });
+      cFrame.innerHTML = "";
+      cFrame.appendChild(f);
+    }
+    if ("IntersectionObserver" in window) {
+      var cObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { loadCity(); cObs.disconnect(); } });
+      }, { rootMargin: "300px" });
+      cObs.observe(cityFig);
+    } else { loadCity(); }
   }
 })();
 </script>

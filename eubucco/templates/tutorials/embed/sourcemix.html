@@ -23,11 +23,18 @@
     #legend .swatch { width: 11px; height: 11px; border-radius: 3px; }
     #legend .lbl { font-weight: 600; opacity: 0.8; }
     #legend .hint { opacity: 0.6; font-size: 10px; max-width: 168px; line-height: 1.35; margin-top: 7px; }
-    .tip { position: absolute; z-index: 3; pointer-events: none; transform: translate(-50%, calc(-100% - 14px)); background: var(--panel-bg); color: var(--panel-fg); border: 1px solid var(--panel-line); border-radius: 9px; padding: 7px 10px; font-size: 11px; white-space: nowrap; display: none; backdrop-filter: blur(8px); min-width: 130px; }
+    .tip { position: absolute; z-index: 3; pointer-events: none; transform: translate(-50%, calc(-100% - 14px)); background: var(--panel-bg); color: var(--panel-fg); border: 1px solid var(--panel-line); border-radius: 9px; padding: 8px 11px; font-size: 11px; white-space: nowrap; display: none; backdrop-filter: blur(8px); min-width: 178px; }
     .tip b { font-size: 12px; }
-    .tip .mix { margin-top: 5px; display: grid; grid-template-columns: auto 1fr auto; gap: 2px 7px; align-items: center; }
+    .tip .count { opacity: 0.65; font-size: 10px; margin-top: 1px; }
+    .tip .sect { font-size: 8.5px; letter-spacing: 0.07em; text-transform: uppercase; opacity: 0.5; font-weight: 700; margin-top: 8px; }
+    .tip .mix { margin-top: 4px; display: grid; grid-template-columns: auto 1fr auto; gap: 3px 7px; align-items: center; }
     .tip .mix i { width: 8px; height: 8px; border-radius: 2px; }
-    .tip .mix span:last-child { text-align: right; font-variant-numeric: tabular-nums; opacity: 0.85; }
+    .tip .mix .v { text-align: right; font-variant-numeric: tabular-nums; opacity: 0.85; }
+    .tip .prov { margin-top: 4px; display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: center; }
+    .tip .prov .lab { opacity: 0.8; }
+    .tip .prov .pbar { height: 7px; border-radius: 3px; overflow: hidden; background: rgba(127,127,127,0.22); display: flex; }
+    .tip .prov .pbar i { height: 100%; }
+    .tip .prov .gt { background: #2f8f78; } .tip .prov .mg { background: #79c4b1; } .tip .prov .es { background: #bfe3d9; }
     #loading { position: absolute; inset: 0; z-index: 4; display: flex; align-items: center; justify-content: center; background: #0f1623; color: #9fb0cc; font-size: 13px; gap: 9px; transition: opacity .4s ease; }
     #loading.hidden { opacity: 0; pointer-events: none; }
     .spinner { width: 16px; height: 16px; border: 2px solid rgba(159,176,204,0.3); border-top-color: #9fb0cc; border-radius: 50%; animation: spin .8s linear infinite; }
@@ -87,31 +94,38 @@ maplibregl.addProtocol('pmtiles', protocol.tile);
 
 const map = new maplibregl.Map({
   container: 'map', style: styleUrl(),
-  center: [9.5, 50], zoom: 3.4, minZoom: 2.5, maxZoom: 9,
+  // minZoom matches the pmtiles min zoom (3) so regions never vanish when zooming out.
+  center: [9.5, 50], zoom: 3.6, minZoom: 3, maxZoom: 9,
   attributionControl: { compact: true },
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
-function levelForZoom(z) { return z < 3.6 ? 1 : z < 5 ? 2 : 3; }
+// Coarser NUTS levels at lower zoom (countries when fully zoomed out).
+function levelForZoom(z) { return z < 3.5 ? 0 : z < 4.3 ? 1 : z < 5.4 ? 2 : 3; }
 let level = levelForZoom(map.getZoom());
+const levelFilter = () => ['==', ['get', 'nuts_level'], level];
 
 function addLayers() {
   if (map.getSource('cov')) return;
-  map.addSource('cov', { type: 'vector', url: `pmtiles://${PMTILES_URL}` });
+  // promoteId lets us use GPU feature-state for hover (no per-move setFilter).
+  map.addSource('cov', { type: 'vector', url: `pmtiles://${PMTILES_URL}`, promoteId: { stats: 'nuts_id' } });
   map.addLayer({
     id: 'mix-fill', type: 'fill', source: 'cov', 'source-layer': 'stats',
-    filter: ['==', ['get', 'nuts_level'], level],
+    filter: levelFilter(),
     paint: { 'fill-color': MIX_COLOR, 'fill-opacity': 0.82 },
   });
   map.addLayer({
     id: 'mix-line', type: 'line', source: 'cov', 'source-layer': 'stats',
-    filter: ['==', ['get', 'nuts_level'], level],
+    filter: levelFilter(),
     paint: { 'line-color': 'rgba(255,255,255,0.35)', 'line-width': ['interpolate', ['linear'], ['zoom'], 3, 0.2, 7, 0.6] },
   });
   map.addLayer({
     id: 'mix-hover', type: 'line', source: 'cov', 'source-layer': 'stats',
-    filter: ['==', ['get', 'nuts_id'], '__none__'],
-    paint: { 'line-color': '#ffffff', 'line-width': 1.8 },
+    filter: levelFilter(),
+    paint: {
+      'line-color': '#ffffff',
+      'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2, 0],
+    },
   });
   document.getElementById('loading').classList.add('hidden');
 }
@@ -125,38 +139,65 @@ map.on('zoomend', () => {
   const lv = levelForZoom(map.getZoom());
   if (lv === level || !map.getLayer('mix-fill')) return;
   level = lv;
-  ['mix-fill', 'mix-line'].forEach(id => map.setFilter(id, ['==', ['get', 'nuts_level'], level]));
+  ['mix-fill', 'mix-line', 'mix-hover'].forEach(id => map.setFilter(id, levelFilter()));
 });
 
-// Hover: highlight + source-mix tooltip
+// Hover: GPU feature-state highlight + tooltip with source mix and attribute provenance
 const tip = document.getElementById('tip');
+let hoveredId = null;
+function setHover(id) {
+  if (hoveredId === id) return;
+  if (hoveredId !== null) map.setFeatureState({ source: 'cov', sourceLayer: 'stats', id: hoveredId }, { hover: false });
+  hoveredId = id;
+  if (hoveredId !== null) map.setFeatureState({ source: 'cov', sourceLayer: 'stats', id: hoveredId }, { hover: true });
+}
+const num = (v) => Math.max(0, +v || 0);
+function provRow(label, gt, mg, es) {
+  return '<span class="lab">' + label + '</span><span class="pbar">' +
+    '<i class="gt" style="width:' + num(gt) + '%"></i>' +
+    '<i class="mg" style="width:' + num(mg) + '%"></i>' +
+    '<i class="es" style="width:' + num(es) + '%"></i></span>';
+}
 map.on('mousemove', 'mix-fill', (e) => {
   const f = e.features[0]; if (!f) return;
   const p = f.properties;
   map.getCanvas().style.cursor = 'pointer';
-  if (map.getLayer('mix-hover')) map.setFilter('mix-hover', ['==', ['get', 'nuts_id'], p.nuts_id]);
-  const row = (c, label, v) => `<i style="background:${c}"></i><span>${label}</span><span>${(+v || 0).toFixed(0)}%</span>`;
+  setHover(f.id);
+  const mix = (c, label, v) => '<i style="background:' + c + '"></i><span>' + label + '</span><span class="v">' + num(v).toFixed(0) + '%</span>';
   tip.style.display = 'block';
   tip.style.left = e.point.x + 'px';
   tip.style.top = e.point.y + 'px';
-  tip.innerHTML = '<b>' + (p.name || p.nuts_id) + '</b>' +
+  tip.innerHTML =
+    '<b>' + (p.name || p.nuts_id) + '</b>' +
+    '<div class="count">' + Number(p.building_count || 0).toLocaleString() + ' buildings</div>' +
+    '<div class="sect">Data sources</div>' +
     '<div class="mix">' +
-      row('#7dd3a0', 'Government', p.source_gov_pct) +
-      row('#5cb1c9', 'Microsoft', p.source_msft_pct) +
-      row('#e8b54a', 'OpenStreetMap', p.source_osm_pct) +
+      mix('#7dd3a0', 'Government', p.source_gov_pct) +
+      mix('#5cb1c9', 'Microsoft', p.source_msft_pct) +
+      mix('#e8b54a', 'OpenStreetMap', p.source_osm_pct) +
     '</div>' +
-    '<div style="margin-top:5px;opacity:.7">' + Number(p.building_count || 0).toLocaleString() + ' buildings</div>';
+    '<div class="sect">Attribute provenance</div>' +
+    '<div class="prov">' +
+      provRow('Type', p.type_gt_pct, p.type_merged_pct, p.type_est_pct) +
+      provRow('Subtype', p.subtype_gt_pct, p.subtype_merged_pct, p.subtype_est_pct) +
+      provRow('Height', p.height_gt_pct, p.height_merged_pct, p.height_est_pct) +
+      provRow('Floors', p.floors_gt_pct, p.floors_merged_pct, p.floors_est_pct) +
+      provRow('Year', p.construction_year_gt_pct, p.construction_year_merged_pct, p.construction_year_est_pct) +
+    '</div>';
 });
 map.on('mouseleave', 'mix-fill', () => {
   tip.style.display = 'none';
   map.getCanvas().style.cursor = '';
-  if (map.getLayer('mix-hover')) map.setFilter('mix-hover', ['==', ['get', 'nuts_id'], '__none__']);
+  setHover(null);
 });
 
 window.addEventListener('storage', (e) => {
-  if (e.key !== 'ui-theme') return;
-  applyHtmlTheme(storedTheme());
-  map.setStyle(styleUrl());
+  // Re-read the new value directly (the ?theme= query param is only the initial seed).
+  if (e.key !== 'ui-theme' || !e.newValue) return;
+  const m = e.newValue === 'light' ? 'light' : 'dark';
+  applyHtmlTheme(m);
+  hoveredId = null;
+  map.setStyle(m === 'dark' ? MAP_STYLES.dark : MAP_STYLES.light);
 });
 map.getCanvas().addEventListener('webglcontextlost', (e) => {
   e.preventDefault();

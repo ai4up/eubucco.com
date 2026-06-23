@@ -178,9 +178,11 @@ map.getCanvas().addEventListener('webglcontextlost', (e) => {
 
 // ── Follow the site's light/dark toggle (same-origin localStorage) ──
 window.addEventListener('storage', (e) => {
-  if (e.key !== 'ui-theme') return;
-  applyHtmlTheme(storedTheme());
-  map.setStyle(styleUrl());  // style.load re-adds our layers
+  // Re-read the new value directly (the ?theme= query param is only the initial seed).
+  if (e.key !== 'ui-theme' || !e.newValue) return;
+  const m = e.newValue === 'light' ? 'light' : 'dark';
+  applyHtmlTheme(m);
+  map.setStyle(m === 'dark' ? MAP_STYLES.dark : MAP_STYLES.light);  // style.load re-adds our layers
 });
 </script>
 </body>

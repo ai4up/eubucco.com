@@ -18,7 +18,12 @@ class DocsRedirectView(RedirectView):
 urlpatterns = [
     path(
         "",
-        cache_page(60 * 60)(TemplateView.as_view(template_name="pages/home.html")),
+        cache_page(60 * 60)(
+            TemplateView.as_view(
+                template_name="pages/home.html",
+                extra_context={"docs_schema_url": os.environ["DOCS_URL"].rstrip("/") + "/data-format/schema/"},
+            )
+        ),
         name="home",
     ),
     path("docs", cache_page(60 * 60)(DocsRedirectView.as_view()), name="docs"),
