@@ -13,6 +13,8 @@ let nutsNames = {};
 let europeSummary = null;
 let selectedRegion = null;            // { nuts_id, nuts_level, ...props } or null
 let currentMetric = 'source_gov_pct'; // req: default metric = Government source
+// Region from a shared URL, applied once the tiles carrying it have loaded.
+let pendingRegion = null;             // { nuts_id, nuts_level } or null
 
 const charts = {
   source: null,
@@ -339,7 +341,12 @@ function initMap() {
     updateVisibleLayers();
     generateLegend(currentMetric);
     addLabelLayer();
+    restoreSelectionFromUrl();
   });
+
+  // A region from a shared link may live in tiles that finish loading after the
+  // initial render; retry the restore until its feature is available.
+  map.on('idle', restoreSelectionFromUrl);
 
   map.on('zoom', () => {
     updateVisibleLayers();
@@ -448,6 +455,7 @@ function onMetricChange(metric) {
     generateLegend(metric);
   }
   updateCurrentMetricLabel();
+  updateUrl();
   // On small screens, collapse the panel after a pick to free the map.
   const panel = document.getElementById('controlPanel');
   if (panel && isMobile()) panel.open = false;
@@ -482,12 +490,14 @@ function selectRegion(props) {
   updateRegionHeader(props, false);
   updateCharts(props);
   applySelectedFilter();
+  updateUrl();
 }
 
 function clearSelection() {
   selectedRegion = null;
   applySelectedFilter();
   renderEuropeDefault();
+  updateUrl();
 }
 
 function renderEuropeDefault() {
@@ -801,10 +811,108 @@ function updateChartThemes() {
   });
 }
 
+/* ============ SHAREABLE URL STATE ============ */
+
+// The selected region (nuts_id + level) and the active metric are mirrored to
+// the query string so a link reproduces the view. State is written on every
+// metric/region change and read back once on load.
+
+function validMetric(metric) {
+  const select = document.getElementById('metricSelect');
+  if (!select || !metric) return false;
+  return [...select.options].some(o => o.value === metric);
+}
+
+// NUTS level is implicit in the code length (country = 2 chars, then +1 per
+// level), so only the region id needs to live in the URL.
+function nutsLevelFromId(nuts_id) {
+  return (nuts_id || '').length - 2;
+}
+
+function readUrlState() {
+  const p = new URLSearchParams(location.search);
+  const metric = p.get('metric');
+  const region = p.get('region');
+  return {
+    metric: validMetric(metric) ? metric : null,
+    region: region || null,
+  };
+}
+
+function updateUrl() {
+  const p = new URLSearchParams();
+  p.set('metric', currentMetric);
+  if (selectedRegion) p.set('region', selectedRegion.nuts_id);
+  history.replaceState(null, '', `${location.pathname}?${p.toString()}`);
+}
+
+// Bounding box of a (possibly Multi)Polygon GeoJSON geometry → LngLatBounds.
+function featureBounds(geometry) {
+  const bounds = new maplibregl.LngLatBounds();
+  const walk = (coords) => {
+    if (typeof coords[0] === 'number') bounds.extend(coords);
+    else coords.forEach(walk);
+  };
+  if (geometry && geometry.coordinates) walk(geometry.coordinates);
+  return bounds;
+}
+
+// Once the tiles are loaded, find the shared region's feature (tiles carry all
+// NUTS levels at every zoom) and select + frame it. No-op until the feature is
+// available, so it can be retried on map idle.
+function restoreSelectionFromUrl() {
+  if (!pendingRegion || !map) return;
+  const { nuts_id, nuts_level } = pendingRegion;
+  const feats = map.querySourceFeatures('coverage', {
+    sourceLayer: 'stats',
+    filter: ['all', ['==', 'nuts_id', nuts_id], ['==', 'nuts_level', nuts_level]],
+  });
+  if (!feats.length) return;
+  pendingRegion = null;
+  selectRegion(feats[0].properties);
+  try {
+    const b = featureBounds(feats[0].geometry);
+    // Keep a fair bit of context around the region rather than filling the map.
+    if (!b.isEmpty()) map.fitBounds(b, { padding: 80, maxZoom: 6, duration: 0 });
+  } catch (e) { /* framing is best-effort */ }
+}
+
+function setupShareButton() {
+  const btn = document.getElementById('shareLink');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    updateUrl();
+    const url = location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) { /* clipboard unavailable */ }
+      document.body.removeChild(ta);
+    }
+    const original = btn.innerHTML;
+    btn.innerHTML = '✓ Copied';
+    setTimeout(() => { btn.innerHTML = original; }, 1500);
+  });
+}
+
 /* ============ INITIALIZATION ============ */
 
 async function init() {
   await Promise.all([loadNutsNames(), loadEuropeSummary()]);
+
+  // Restore shared state from the URL: the metric must be applied before the
+  // map builds its choropleth; the region is applied once its tiles load.
+  const urlState = readUrlState();
+  if (urlState.metric) currentMetric = urlState.metric;
+  if (urlState.region) {
+    pendingRegion = { nuts_id: urlState.region, nuts_level: nutsLevelFromId(urlState.region) };
+  }
 
   initMap();
   initCharts();
@@ -826,6 +934,8 @@ async function init() {
 
   const clearBtn = document.getElementById('clearSelection');
   if (clearBtn) clearBtn.addEventListener('click', clearSelection);
+
+  setupShareButton();
 }
 
 if (document.readyState === 'loading') {
