@@ -95,13 +95,13 @@ maplibregl.addProtocol('pmtiles', protocol.tile);
 const map = new maplibregl.Map({
   container: 'map', style: styleUrl(),
   // minZoom matches the pmtiles min zoom (3) so regions never vanish when zooming out.
-  center: [9.5, 50], zoom: 3.6, minZoom: 3, maxZoom: 9,
+  center: [9.5, 50], zoom: 3.4, minZoom: 3, maxZoom: 9,
   attributionControl: { compact: true },
 });
 map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
-// Coarser NUTS levels at lower zoom (countries when fully zoomed out).
-function levelForZoom(z) { return z < 3.5 ? 0 : z < 4.3 ? 1 : z < 5.4 ? 2 : 3; }
+// Start at country level (NUTS0); reveal finer NUTS levels on zoom-in.
+function levelForZoom(z) { return z < 3.8 ? 0 : z < 4.6 ? 1 : z < 5.6 ? 2 : 3; }
 let level = levelForZoom(map.getZoom());
 const levelFilter = () => ['==', ['get', 'nuts_level'], level];
 
