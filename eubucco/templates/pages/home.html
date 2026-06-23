@@ -73,7 +73,7 @@
       <p class="ds-eyebrow">Dataset overview</p>
       <h2 class="ds-title">One harmonized database, 55&nbsp;open sources</h2>
       <p class="ds-lead">
-        EUBUCCO unifies national cadastres, OpenStreetMap, and Microsoft footprints into a single,
+        EUBUCCO unifies governmental cadastres, OpenStreetMap, and Microsoft footprints into a single,
         consistent, analysis-ready database &mdash; every building carries the same schema, with its
         data source and attribute provenance recorded.
       </p>
@@ -120,11 +120,11 @@
           <p class="ds-panel-sub">Share of buildings carrying each attribute, by provenance</p>
           <div class="ds-cov">
             {% comment %} Authoritative v0.2 figures (docs landing). GT | Merged | ML-estimated | total. {% endcomment %}
-            <div class="ds-cov-row" style="--gt:38.1;--mg:7.4;--es:54.5;--tot:100"><span class="ds-cov-name">Type</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
-            <div class="ds-cov-row" style="--gt:17.3;--mg:4.2;--es:78.5;--tot:100"><span class="ds-cov-name">Subtype</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
-            <div class="ds-cov-row" style="--gt:43.2;--mg:0.1;--es:56.7;--tot:100"><span class="ds-cov-name">Height</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
-            <div class="ds-cov-row" style="--gt:16.6;--mg:3.4;--es:79.9;--tot:100"><span class="ds-cov-name">Floors</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
-            <div class="ds-cov-row" style="--gt:15.6;--mg:0.3;--es:0;--tot:15.9"><span class="ds-cov-name">Constr.&nbsp;year</span><span class="ds-cov-track"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">15.9%</span></div>
+            <div class="ds-cov-row" style="--gt:38.1;--mg:7.4;--es:54.5;--tot:100"><span class="ds-cov-name">Type</span><span class="ds-cov-track" title="Ground truth 38.1% · Merged 7.4% · ML-estimated 54.5%"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
+            <div class="ds-cov-row" style="--gt:17.3;--mg:4.2;--es:78.5;--tot:100"><span class="ds-cov-name">Subtype</span><span class="ds-cov-track" title="Ground truth 17.3% · Merged 4.2% · ML-estimated 78.5%"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
+            <div class="ds-cov-row" style="--gt:43.2;--mg:0.1;--es:56.7;--tot:100"><span class="ds-cov-name">Height</span><span class="ds-cov-track" title="Ground truth 43.2% · Merged 0.1% · ML-estimated 56.7%"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
+            <div class="ds-cov-row" style="--gt:16.6;--mg:3.4;--es:79.9;--tot:100"><span class="ds-cov-name">Floors</span><span class="ds-cov-track" title="Ground truth 16.6% · Merged 3.4% · ML-estimated 79.9%"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">100%</span></div>
+            <div class="ds-cov-row" style="--gt:15.6;--mg:0.3;--es:0;--tot:15.9"><span class="ds-cov-name">Constr.&nbsp;year</span><span class="ds-cov-track" title="Ground truth 15.6% · Merged 0.3% · ML-estimated 0.0%"><i class="gt"></i><i class="mg"></i><i class="es"></i></span><span class="ds-cov-tot">15.9%</span></div>
           </div>
           <ul class="ds-cov-legend">
             <li><i class="gt"></i>Ground&nbsp;truth</li>
@@ -187,16 +187,13 @@
         <p class="ds-eyebrow">Why it exists</p>
         <h2>Built for urban-scale research</h2>
         <p>EUBUCCO gives researchers a centralized, harmonized basis for high-resolution urban sustainability
-          studies across scales &mdash; from continental comparisons down to single neighbourhoods. It underpins use
+          studies across scales &mdash; from continental comparisons down to single neighborhoods. It underpins use
           cases such as energy-system modelling, climate and natural-hazard risk assessment, and urban morphology.</p>
 
         <div class="divider"></div>
         <h2>How it was made</h2>
 
-        <p>This work is associated with a <a
-          href="https://www.nature.com/articles/s41597-023-02040-2" class="link">Data Descriptor paper</a> published
-          in the journal Scientific Data. The manuscript provides extensive documentation on the database content and methodology. 
-          All the code used to generate this data is openly available on the <a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer" class="link">EUBUCCO GitHub organization</a>.</p> 
+        <p> This dataset is described in a companion  <a href="https://www.nature.com/articles/s41597-023-02040-2" class="link">Data Descriptor</a> published in Scientific Data, which details the methodology and technical validation. All code used to generate the dataset is openly available through the <a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer" class="link">EUBUCCO GitHub organization</a>.</p>
         <p>If you use the data for your project, please cite:</p>
         <p class="about-bibtex-label">BibTeX</p>
         <div class="relative">
@@ -468,7 +465,7 @@
   }
   .about-inner { max-width: 62rem; margin: 0 auto; padding: clamp(2.75rem, 6vw, 4.5rem) 1.5rem clamp(3rem, 6vw, 5rem); text-align: center; }
   .about-body h2 { font-size: clamp(1.35rem, 2.6vw, 1.9rem); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 0.85rem; color: hsl(var(--bc)); }
-  .about-body p { font-size: 1.02rem; line-height: 1.7; color: var(--ds-muted); max-width: 46rem; margin: 0 auto 1rem; }
+  .about-body p { font-size: 1.02rem; line-height: 1.7; color: var(--ds-muted); max-width: 5%4rem; margin: 0 auto 1rem; }
   .about-body .ds-eyebrow { margin-top: 0.5rem; }
   .about-body textarea#bibtex { text-align: left; }
   .about-body a { color: hsl(var(--p)); text-decoration: underline; text-underline-offset: 2px; }
