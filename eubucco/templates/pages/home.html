@@ -67,14 +67,6 @@
       </div>
     </div>
   </div>
-  <div class="flex justify-center items-center pb-4">
-    <p class="text-xs justify-center text-slate-500 text-center">Building footprints in the city of Madrid, Spain.
-      Available in EUBUCCO within the
-      Spain country
-      file and the
-      Madrid example file. Data from the Spanish Directorate General for Cadastre.</p>
-  </div>
-
   {# ============================================================ Inside the dataset #}
   <section class="ds" id="ds">
     <div class="ds-inner">
@@ -147,7 +139,7 @@
       <section class="ds-schema">
         <div class="ds-schema-head">
           <h3 class="ds-panel-title">A building record</h3>
-          <p class="ds-panel-sub">Every building, the same fields. See full data schema in <a href="{{ docs_schema_url|default:'/docs' }}">docs &rarr;</a></p>
+          <p class="ds-panel-sub">See full data schema in <a href="{{ docs_schema_url|default:'/docs' }}">docs &rarr;</a></p>
         </div>
         <div class="ds-fields">
           <div class="ds-fgroup">
@@ -181,7 +173,7 @@
       <figure class="ds-city" id="ds-city" data-embed="{% url 'tutorials:embed_city3d' %}">
         <div class="ds-city-head">
           <h3 class="ds-panel-title">From the continent down to the building</h3>
-          <p class="ds-panel-sub">Every footprint carries its height &mdash; here, Z&uuml;rich extruded in 3D.
+          <p class="ds-panel-sub">Every footprint carries its height and use type information. Here illustrated for Z&uuml;rich.
             &nbsp;<a href="{% url 'data:explorer' %}">Open the map explorer&nbsp;&rarr;</a></p>
         </div>
         <div class="ds-city-frame"><span class="ds-map-ph">Preparing 3D view&hellip;</span></div>

@@ -28,10 +28,10 @@
     #title .name { font-size: 15px; font-weight: 750; line-height: 1.2; margin-top: 1px; }
     #title .sub { font-size: 11px; opacity: 0.7; margin-top: 2px; }
     #legend { bottom: 14px; left: 12px; padding: 9px 12px; }
-    #legend .lbl { font-size: 10px; font-weight: 600; opacity: 0.75; margin-bottom: 5px; }
-    #legend .bar { width: 168px; height: 9px; border-radius: 3px;
-      background: linear-gradient(90deg,#440154,#3b4a6b,#2a6485,#1e7f8a,#1a9c7a,#35b779,#6ece58,#fde725); }
-    #legend .ticks { display: flex; justify-content: space-between; font-size: 9px; opacity: 0.6; margin-top: 3px; }
+    #legend .lbl { font-size: 10px; font-weight: 600; opacity: 0.75; margin-bottom: 6px; }
+    #legend .rows { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 10px; }
+    #legend .row { display: flex; align-items: center; gap: 6px; opacity: 0.85; }
+    #legend .sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
     #loading {
       position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center;
       background: #0f1623; color: #9fb0cc; font-size: 13px; gap: 9px; transition: opacity .4s ease;
@@ -47,13 +47,22 @@
   <div id="map"></div>
   <div id="title" class="overlay">
     <div class="eyebrow">EUBUCCO · live 3D</div>
-    <div class="name">Zürich, extruded by height</div>
+    <div class="name">Zürich, Switzerland</div>
     <div class="sub">322M European buildings · drag to orbit, scroll to zoom</div>
   </div>
   <div id="legend" class="overlay">
-    <div class="lbl">Building height</div>
-    <div class="bar"></div>
-    <div class="ticks"><span>0&nbsp;m</span><span>25</span><span>50</span><span>100+&nbsp;m</span></div>
+    <div class="lbl">Building use</div>
+    <div class="rows">
+      <div class="row"><span class="sw" style="background:#34d399"></span>Detached</div>
+      <div class="row"><span class="sw" style="background:#fbbf24"></span>Commercial</div>
+      <div class="row"><span class="sw" style="background:#86efac"></span>Semi-detached</div>
+      <div class="row"><span class="sw" style="background:#f97316"></span>Industrial</div>
+      <div class="row"><span class="sw" style="background:#6ee7b7"></span>Terraced</div>
+      <div class="row"><span class="sw" style="background:#c084fc"></span>Public</div>
+      <div class="row"><span class="sw" style="background:#60a5fa"></span>Apartment</div>
+      <div class="row"><span class="sw" style="background:#a3e635"></span>Agricultural</div>
+      <div class="row"><span class="sw" style="background:#9aa3b2"></span>Other</div>
+    </div>
   </div>
   <div id="loading"><span class="spinner"></span>Loading 3D buildings…</div>
 
@@ -63,9 +72,17 @@ const MAP_STYLES = {
   dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
   light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
 };
-const HEIGHT_COLOR = ['interpolate', ['linear'], ['coalesce', ['get', 'height'], 0],
-  0,'#2d2d3a', 3,'#440154', 6,'#3b4a6b', 9,'#2a6485', 12,'#1e7f8a',
-  17,'#1a9c7a', 25,'#35b779', 40,'#6ece58', 75,'#b5de2b', 100,'#fde725'];
+// Colour by building use subtype (same palette as the explorer).
+const SUBTYPE_COLOR = ['match', ['downcase', ['coalesce', ['get', 'subtype'], '']],
+  'commercial', '#fbbf24',
+  'industrial', '#f97316',
+  'public', '#c084fc',
+  'agricultural', '#a3e635',
+  'apartment', '#60a5fa',
+  'terraced', '#6ee7b7',
+  'semi-detached', '#86efac',
+  'detached', '#34d399',
+  /* others / unknown */ '#9aa3b2'];
 
 function storedTheme() {
   try {
@@ -117,7 +134,7 @@ function addBuildings() {
     map.addLayer({
       id: 'buildings-3d', type: 'fill-extrusion', source: 'eubucco', 'source-layer': 'buildings',
       paint: {
-        'fill-extrusion-color': HEIGHT_COLOR,
+        'fill-extrusion-color': SUBTYPE_COLOR,
         'fill-extrusion-height': ['coalesce', ['get', 'height'], 5],
         'fill-extrusion-base': 0,
         'fill-extrusion-opacity': 0.9,
@@ -177,14 +194,24 @@ map.getCanvas().addEventListener('webglcontextlost', (e) => {
 }, false);
 
 // ── Follow the site's light/dark toggle (same-origin localStorage) ──
-// Swapping the basemap in place is fragile (the old style's source/layers get
-// torn down mid-flight, which threw "no tile manager"); reload the iframe with
-// the new theme instead — a clean, reliable re-init.
+// Swap only the basemap, carrying our source + extrusion layer across with
+// transformStyle so they are never torn down (which threw "no tile manager"
+// and blanked the buildings).
+function setTheme(m) {
+  applyHtmlTheme(m);
+  map.setStyle(m === 'dark' ? MAP_STYLES.dark : MAP_STYLES.light, {
+    transformStyle: (prev, next) => {
+      if (!prev) return next;
+      const sources = { ...next.sources };
+      if (prev.sources && prev.sources.eubucco) sources.eubucco = prev.sources.eubucco;
+      const keep = (prev.layers || []).filter((l) => l.id === 'buildings-3d');
+      return { ...next, sources, layers: [...(next.layers || []), ...keep] };
+    },
+  });
+}
 window.addEventListener('storage', (e) => {
   if (e.key !== 'ui-theme' || !e.newValue) return;
-  const u = new URL(location.href);
-  u.searchParams.set('theme', e.newValue === 'light' ? 'light' : 'dark');
-  location.replace(u.toString());
+  setTheme(e.newValue === 'light' ? 'light' : 'dark');
 });
 </script>
 </body>

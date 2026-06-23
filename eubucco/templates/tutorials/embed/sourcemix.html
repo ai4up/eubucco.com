@@ -191,14 +191,26 @@ map.on('mouseleave', 'mix-fill', () => {
   setHover(null);
 });
 
-// Follow the site light/dark toggle. Swapping the basemap in place is fragile
-// (the old style's sources/layers get torn down mid-flight), so just reload the
-// iframe with the new theme — a clean, reliable re-init.
+// Follow the site light/dark toggle by swapping ONLY the basemap and carrying
+// our source + region layers across with transformStyle, so the custom layers
+// are never torn down (avoids both the "no tile manager" throw and a full
+// iframe reload, which would churn WebGL contexts on a page with two maps).
+function setTheme(m) {
+  applyHtmlTheme(m);
+  hoveredId = null;
+  map.setStyle(m === 'dark' ? MAP_STYLES.dark : MAP_STYLES.light, {
+    transformStyle: (prev, next) => {
+      if (!prev) return next;
+      const sources = { ...next.sources };
+      if (prev.sources && prev.sources.cov) sources.cov = prev.sources.cov;
+      const keep = (prev.layers || []).filter((l) => l.id && l.id.indexOf('mix-') === 0);
+      return { ...next, sources, layers: [...(next.layers || []), ...keep] };
+    },
+  });
+}
 window.addEventListener('storage', (e) => {
   if (e.key !== 'ui-theme' || !e.newValue) return;
-  const u = new URL(location.href);
-  u.searchParams.set('theme', e.newValue === 'light' ? 'light' : 'dark');
-  location.replace(u.toString());
+  setTheme(e.newValue === 'light' ? 'light' : 'dark');
 });
 map.getCanvas().addEventListener('webglcontextlost', (e) => {
   e.preventDefault();
