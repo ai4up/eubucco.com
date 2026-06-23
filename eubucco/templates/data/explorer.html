@@ -501,8 +501,49 @@ const protocol = new pmtiles.Protocol();
 maplibregl.addProtocol('pmtiles', protocol.tile);
 
 // ── Map ────────────────────────────────────────────────────────
-let is3d = true;
-let overtureVisible = false;
+
+// Shareable URL state: map location, the color metric, the view (2D/3D) and
+// the Overture overlay are all encoded in the query string so a link
+// reproduces the exact view. State is read once on load and written back
+// (history.replaceState) whenever the user pans/zooms or changes a control.
+function readUrlState() {
+  const p = new URLSearchParams(location.search);
+  const num = (k) => { const v = parseFloat(p.get(k)); return Number.isFinite(v) ? v : null; };
+  const color = p.get('color');
+  const view = p.get('view');
+  return {
+    lng: num('lng'), lat: num('lat'), zoom: num('zoom'),
+    pitch: num('pitch'), bearing: num('bearing'),
+    color: SCHEMES[color] ? color : null,
+    view: (view === 'flat' || view === '3d') ? view : null,
+    overture: p.get('overture') === '1',
+  };
+}
+const urlState = readUrlState();
+
+let is3d = urlState.view ? urlState.view === '3d' : true;
+let overtureVisible = urlState.overture;
+
+// Reflect the restored color metric in the dropdown before the map builds its
+// layers (addExplorerLayers reads the current <select> value).
+if (urlState.color) document.getElementById('colorSelect').value = urlState.color;
+
+function writeUrlState() {
+  if (!map) return;
+  const c = map.getCenter();
+  const p = new URLSearchParams();
+  p.set('lat', c.lat.toFixed(5));
+  p.set('lng', c.lng.toFixed(5));
+  p.set('zoom', map.getZoom().toFixed(2));
+  const pitch = map.getPitch();
+  const bearing = map.getBearing();
+  if (pitch) p.set('pitch', pitch.toFixed(1));
+  if (bearing) p.set('bearing', bearing.toFixed(1));
+  p.set('color', document.getElementById('colorSelect').value);
+  p.set('view', is3d ? '3d' : 'flat');
+  if (overtureVisible) p.set('overture', '1');
+  history.replaceState(null, '', `${location.pathname}?${p.toString()}`);
+}
 
 const MAP_STYLES = {
   dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
@@ -539,13 +580,17 @@ let rebuildFrame = null;
 const map = new maplibregl.Map({
   container: 'map',
   style: currentBaseStyleUrl(),
-  center: [13.404, 52.520],
-  zoom: 15,
-  pitch: 45,
+  center: [urlState.lng ?? 21.0122, urlState.lat ?? 52.2297],
+  zoom: urlState.zoom ?? 15,
+  pitch: urlState.pitch ?? (is3d ? 45 : 0),
+  bearing: urlState.bearing ?? 0,
   antialias: true,
 });
 
 map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+
+// Persist map position to the URL after every pan/zoom/rotate/tilt.
+map.on('moveend', writeUrlState);
 
 const zoomHint = document.getElementById('zoom-hint');
 
@@ -600,10 +645,6 @@ function addExplorerLayers() {
       map.addSource('eubucco', {
         type: 'vector',
         url: `pmtiles://${PMTILES_URL}`,
-        // Tiles are generated to z14. Pin maxzoom so MapLibre overzooms beyond
-        // it (buildings stay visible when zoomed in) instead of requesting
-        // higher-zoom tiles that may not be populated.
-        maxzoom: 14,
       });
     }
 
@@ -638,7 +679,7 @@ function addExplorerLayers() {
       });
     }
 
-    // Overture buildings — rendered as line outlines for visual differentiation
+    // Overture buildings — rendered as line outlines for visual differentiation.
     if (!map.getSource('overture')) {
       map.addSource('overture', {
         type: 'vector',
@@ -744,6 +785,7 @@ function setView(view) {
   map.setLayoutProperty('buildings-fill', 'visibility', is3d ? 'none' : 'visible');
   map.setLayoutProperty('buildings-3d',   'visibility', is3d ? 'visible' : 'none');
   map.easeTo({ pitch: is3d ? 45 : 0, duration: 400 });
+  writeUrlState();
 }
 
 // ── Overture overlay ──────────────────────────────────────────
@@ -755,6 +797,7 @@ function setOverture(show) {
     scheduleMapLayerRebuild();
   }
   document.getElementById('overtureBtn').classList.toggle('on', show);
+  writeUrlState();
 }
 
 document.getElementById('overtureBtn').addEventListener('click', () => {
@@ -845,11 +888,19 @@ map.getContainer().addEventListener('mousemove', e => {
 // ── Controls ──────────────────────────────────────────────────
 document.getElementById('colorSelect').addEventListener('change', e => {
   applyColorScheme(e.target.value);
+  writeUrlState();
 });
 
 document.querySelectorAll('#viewSeg button').forEach(btn => {
   btn.addEventListener('click', () => setView(btn.dataset.view));
 });
+
+// Reflect restored view / overlay state in the controls (the map itself was
+// created with the right pitch + layer visibility from urlState above).
+document.querySelectorAll('#viewSeg button').forEach(b => {
+  b.classList.toggle('on', (b.dataset.view === '3d') === is3d);
+});
+document.getElementById('overtureBtn').classList.toggle('on', overtureVisible);
 
 // ── Collapse panel (mobile) ───────────────────────────────────
 document.getElementById('panelToggle').addEventListener('click', () => {
