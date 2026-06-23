@@ -22,23 +22,27 @@ def getting_started(request):
     })
 
 
-def _buildings_pmtiles_url() -> str:
-    # Same construction as the explorer view, so it works in local and prod.
+def _pmtiles_url(kind: str) -> str:
+    # Same construction as the explorer/coverage views, so it works local and prod.
     minio_public = os.getenv("MINIO_PUBLIC_ENDPOINT", "http://localhost:9000").rstrip("/")
     bucket = os.getenv("MINIO_BUCKET", "eubucco")
     version = os.getenv("BUILDINGS_VERSION", "v0.2")
-    return f"{minio_public}/{bucket}/{version}/buildings/tiles/buildings.pmtiles"
+    paths = {
+        "buildings": f"{version}/buildings/tiles/buildings.pmtiles",
+        "coverage": f"{version}/coverage/coverage-stats.pmtiles",
+    }
+    return f"{minio_public}/{bucket}/{paths[kind]}"
 
 
 @xframe_options_sameorigin
 @cache_page(60 * 60)
 def embed_city3d(request):
     """Self-contained 3D city scene embedded (lazy-loaded) in the getting-started page."""
-    return render(request, "tutorials/embed/city3d.html", {"pmtiles_url": _buildings_pmtiles_url()})
+    return render(request, "tutorials/embed/city3d.html", {"pmtiles_url": _pmtiles_url("buildings")})
 
 
 @xframe_options_sameorigin
 @cache_page(60 * 60)
-def embed_cities(request):
-    """Continental map of ~97k cities (from city-stats), colored by data source."""
-    return render(request, "tutorials/embed/cities.html")
+def embed_sourcemix(request):
+    """NUTS choropleth tinted by each region's blend of data sources (gov/MS/OSM)."""
+    return render(request, "tutorials/embed/sourcemix.html", {"pmtiles_url": _pmtiles_url("coverage")})
