@@ -48,15 +48,15 @@
            data-endpoint="{{ duckdb_s3_endpoint }}" data-ssl="{{ duckdb_s3_use_ssl }}"
            data-bucket="{{ duckdb_bucket }}" data-version="{{ duckdb_version }}">
     <div class="gs-live-inner">
-      <p class="gs-glance-eyebrow">Run it yourself — no install</p>
-      <h2 class="gs-live-title">Live SQL on the data lake, straight from your browser</h2>
+      <p class="gs-glance-eyebrow">Try it yourself — no install required</p>
+      <h2 class="gs-live-title">Live SQL on the EUBUCCO data lake from your browser</h2>
       <p class="gs-live-lead">
         This runs <a href="https://duckdb.org/docs/api/wasm/overview" target="_blank" rel="noopener">DuckDB-WASM</a>
-        in your browser and queries the EUBUCCO parquet files directly over HTTP &mdash; no download, no backend.
-        Edit the SQL and hit run.
+        in your browser and reads an EUBUCCO region file (the Z&uuml;rich region, <code>CH04</code>)
+        straight over HTTP &mdash; no download, no backend. Edit the SQL and hit run.
       </p>
       <div class="gs-live-chips">
-        <button class="gs-chip" data-q="country">Buildings per country</button>
+        <button class="gs-chip" data-q="subtype">Buildings by subtype</button>
         <button class="gs-chip" data-q="height">Height distribution</button>
         <button class="gs-chip" data-q="source">Source &amp; quality</button>
       </div>
@@ -146,7 +146,7 @@
   }
 
   /* ---------- Live SQL (DuckDB-WASM) ---------- */
-  .gs-live { border-top: 1px solid var(--gs-line); background: hsl(var(--bc) / 0.02); }
+  .gs-live { border-top: 1px solid var(--gs-line); background: hsl(var(--bc) / 0.02); scroll-margin-top: 5.5rem; }
   .gs-live-inner { max-width: 60rem; margin: 0 auto; padding: 3rem 1.5rem 3.5rem; }
   .gs-live-title { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 800; letter-spacing: -0.02em; margin: 0.3rem 0 0.5rem; }
   .gs-live-lead { font-size: 0.98rem; color: var(--gs-muted); line-height: 1.6; max-width: 42rem; margin-bottom: 1.25rem; }
@@ -373,27 +373,6 @@
   }
   .nb-folium-load:hover { background: hsl(var(--p) / 0.12); }
   .nb-folium-load svg { width: 1.1rem; height: 1.1rem; color: var(--gs-primary); }
-
-  /* Live 3D city embed (lazy-loaded MapLibre + PMTiles) */
-  .nb-embed3d {
-    position: relative; border-radius: 0.8rem; overflow: hidden;
-    border: 1px solid hsl(var(--p) / 0.35); min-height: 360px;
-    display: flex; align-items: center; justify-content: center;
-    background:
-      radial-gradient(120% 120% at 50% 0%, hsl(var(--p) / 0.14), transparent 60%),
-      var(--gs-card-2);
-  }
-  .nb-embed3d iframe { width: 100%; height: 520px; border: 0; display: block; }
-  .nb-embed-cta { text-align: center; padding: 1.5rem; max-width: 26rem; }
-  .nb-embed-cta > svg { width: 2.2rem; height: 2.2rem; color: var(--gs-primary); margin-bottom: 0.6rem; }
-  .nb-embed-load {
-    display: inline-block; cursor: pointer; font-size: 0.95rem; font-weight: 650;
-    color: hsl(var(--pc)); background: var(--gs-primary);
-    padding: 0.65rem 1.25rem; border-radius: 0.7rem; border: 0;
-    box-shadow: 0 8px 22px -10px hsl(var(--p) / 0.7); transition: transform .12s ease;
-  }
-  .nb-embed-load:hover { transform: translateY(-1px); }
-  .nb-embed-note { font-size: 0.84rem; color: var(--gs-muted); margin-top: 0.7rem; line-height: 1.5; }
 </style>
 {% endblock content %}
 
@@ -427,22 +406,17 @@
     });
   });
 
-  // Lazy-load the live 3D city embed, passing the current theme through
-  document.querySelectorAll(".nb-embed-load").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var wrap = btn.closest(".nb-embed3d");
-      var base = wrap.getAttribute("data-embed");
-      var theme = "dark";
-      try { if (localStorage.getItem("ui-theme") === "light") theme = "light"; } catch (e) {}
-      var frame = document.createElement("iframe");
-      frame.setAttribute("loading", "lazy");
-      frame.setAttribute("title", "Interactive 3D city");
-      frame.setAttribute("allow", "fullscreen");
-      frame.src = base + "?theme=" + theme;
-      wrap.innerHTML = "";
-      wrap.appendChild(frame);
-    });
-  });
+  // Append the Live SQL section to the TOC (it lives outside the notebook fragment)
+  var tocList = document.querySelector(".nb-toc ul");
+  var liveSec = document.getElementById("gs-live");
+  if (tocList && liveSec) {
+    var li = document.createElement("li");
+    var la = document.createElement("a");
+    la.href = "#gs-live";
+    la.textContent = "Live SQL demo";
+    li.appendChild(la);
+    tocList.appendChild(li);
+  }
 
   // Scroll-spy: highlight the active section in the TOC
   var links = Array.prototype.slice.call(document.querySelectorAll(".nb-toc a"));
@@ -459,6 +433,7 @@
       });
     }, { rootMargin: "-10% 0px -75% 0px" });
     document.querySelectorAll(".nb-h2[id]").forEach(function (h) { obs.observe(h); });
+    if (liveSec) obs.observe(liveSec);
   }
 })();
 </script>
@@ -473,24 +448,33 @@ if (sec) {
     endpoint: sec.dataset.endpoint, ssl: sec.dataset.ssl,
     bucket: sec.dataset.bucket, version: sec.dataset.version,
   };
-  const SRC = `s3://${cfg.bucket}/${cfg.version}/buildings/parquet/*/*.parquet`;
+  // Browser DuckDB-WASM can't glob remote dirs and ignores s3_url_style (it would
+  // build a non-existent virtual-host URL from an s3:// URI). So we hand it explicit
+  // https object URLs with range reads — the one access pattern WASM fully supports.
+  const proto = cfg.ssl === "true" ? "https" : "http";
+  const PREFIX = `${proto}://${cfg.endpoint}/${cfg.bucket}/${cfg.version}/buildings/parquet`;
+  const fileUrl = (region) => `${PREFIX}/nuts_id=${region}/${region}.parquet`;
+
+  const SRC = fileUrl("CH04"); // Zürich region — fast, single file
+
   const QUERIES = {
-    country:
-`-- Buildings, by country, computed live in your browser
-SELECT LEFT(region_id, 2)      AS country,
+    subtype:
+`-- Buildings in the Zürich region (CH04), by subtype — computed live in your browser
+SELECT subtype,
        count(*)                AS buildings,
        round(avg(height), 1)   AS avg_height_m
-FROM read_parquet('${SRC}', hive_partitioning => true)
-GROUP BY country
+FROM read_parquet('${SRC}')
+WHERE subtype IS NOT NULL
+GROUP BY subtype
 ORDER BY buildings DESC;`,
     height:
-`-- Height distribution across all loaded buildings
+`-- Height distribution across the region's buildings
 SELECT CASE WHEN height < 5  THEN '0-5 m'
             WHEN height < 10 THEN '5-10 m'
             WHEN height < 20 THEN '10-20 m'
             ELSE '20 m+' END        AS height_band,
        count(*)                     AS buildings
-FROM read_parquet('${SRC}', hive_partitioning => true)
+FROM read_parquet('${SRC}')
 WHERE height IS NOT NULL
 GROUP BY height_band
 ORDER BY min(height);`,
@@ -500,7 +484,7 @@ SELECT geometry_source                                              AS source,
        count(*)                                                     AS buildings,
        round(100.0 * count(*) FILTER (WHERE height_source <> 'estimated')
              / count(*), 1)                                         AS pct_measured_height
-FROM read_parquet('${SRC}', hive_partitioning => true)
+FROM read_parquet('${SRC}')
 GROUP BY source
 ORDER BY buildings DESC;`,
   };
@@ -509,7 +493,7 @@ ORDER BY buildings DESC;`,
   const runBtn = document.getElementById("gs-run");
   const statusEl = document.getElementById("gs-status");
   const resultEl = document.getElementById("gs-result");
-  sql.value = QUERIES.country;
+  sql.value = QUERIES.subtype;
 
   document.querySelectorAll(".gs-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
@@ -518,7 +502,7 @@ ORDER BY buildings DESC;`,
       sql.value = QUERIES[chip.dataset.q];
     });
   });
-  document.querySelector('.gs-chip[data-q="country"]').classList.add("active");
+  document.querySelector('.gs-chip[data-q="subtype"]').classList.add("active");
 
   let connPromise = null;
   function getConn() {
@@ -533,15 +517,10 @@ ORDER BY buildings DESC;`,
       await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
       URL.revokeObjectURL(workerUrl);
       const conn = await db.connect();
-      // DuckDB-WASM runs ONE statement per query() call — set each separately.
+      // We query explicit https URLs (not s3://), so all we need is the HTTP
+      // filesystem — no S3 endpoint/credential settings.
       await conn.query("INSTALL httpfs;");
       await conn.query("LOAD httpfs;");
-      await conn.query(`SET s3_endpoint='${cfg.endpoint}';`);
-      await conn.query(`SET s3_use_ssl=${cfg.ssl};`);
-      await conn.query("SET s3_url_style='path';");
-      await conn.query("SET s3_region='eu';");
-      await conn.query("SET s3_access_key_id='';");
-      await conn.query("SET s3_secret_access_key='';");
       return conn;
     })();
     return connPromise;
