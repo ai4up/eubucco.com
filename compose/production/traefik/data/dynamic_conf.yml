@@ -12,7 +12,7 @@ tls:
       curvePreferences:
         - CurveP521
         - CurveP384
-      sniStrict: true
+          #      sniStrict: true
 http:
   middlewares:
     secHeaders:
@@ -20,12 +20,16 @@ http:
         browserXssFilter: true
         contentTypeNosniff: true
         frameDeny: true
-        sslRedirect: true
+        #sslRedirect: true
         #HSTS Configuration
         stsIncludeSubdomains: true
         stsPreload: true
         stsSeconds: 31536000
         customFrameOptionsValue: "SAMEORIGIN"
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
     redirect-www-to-non-www:
       # Redirect a request from an url to another with regex matching and replacement
       redirectregex:
