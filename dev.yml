@@ -329,6 +329,8 @@ services:
   tile-generator:
     user: root
     image: eubucco/eubucco.com:dev
+    # One-off job: excluded from `up -d`. Run with `run --rm tile-generator`.
+    profiles: ["generators"]
     depends_on:
       minio-setup:
         condition: service_completed_successfully
@@ -345,6 +347,8 @@ services:
   coverage-generator:
     user: root
     image: eubucco/eubucco.com:dev
+    # One-off job: excluded from `up -d`. Run with `run --rm coverage-generator`.
+    profiles: ["generators"]
     depends_on:
       minio-setup:
         condition: service_completed_successfully
