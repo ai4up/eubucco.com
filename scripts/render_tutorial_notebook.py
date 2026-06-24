@@ -30,7 +30,7 @@ from pathlib import Path
 
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
-from pygments.lexers import PythonLexer
+from pygments.lexers import BashLexer, PythonLexer
 
 REPO = Path(__file__).resolve().parent.parent
 # Single source of truth: the notebook users download is also what we render.
@@ -39,8 +39,14 @@ FRAGMENT_OUT = REPO / "eubucco/templates/tutorials/_getting_started_notebook.htm
 ASSET_DIR = REPO / "eubucco/static/notebooks/getting-started"
 ASSET_URL = "/static/notebooks/getting-started"
 
-_lexer = PythonLexer()
+_py_lexer = PythonLexer()
+_bash_lexer = BashLexer()
 _formatter = HtmlFormatter(cssclass="hl", nowrap=False)
+
+# Cells that begin with a shell cell-magic (%%bash / %%sh) are shell cells: they
+# run as bash in the notebook, so render them with a "bash" label and shell
+# highlighting, stripping the magic line itself from the displayed code.
+_SHELL_MAGIC_RE = re.compile(r"^\s*%%(?:bash|sh)\b[^\n]*\n?")
 
 
 # --------------------------------------------------------------------------------------
@@ -100,11 +106,17 @@ def render_markdown(src: str, sections: list) -> str:
 # Code + outputs
 # --------------------------------------------------------------------------------------
 def render_code(src: str) -> str:
-    code_html = highlight(src.strip("\n"), _lexer, _formatter)
+    code = src.strip("\n")
+    lang, lexer = "python", _py_lexer
+    m = _SHELL_MAGIC_RE.match(code)
+    if m:
+        lang, lexer = "bash", _bash_lexer
+        code = code[m.end():].strip("\n")
+    code_html = highlight(code, lexer, _formatter)
     return (
         '<div class="nb-code" data-code="in">'
         '  <div class="nb-code-bar">'
-        '    <span class="nb-dot"></span><span class="nb-lang">python</span>'
+        f'    <span class="nb-dot"></span><span class="nb-lang">{lang}</span>'
         '    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>'
         "  </div>"
         f"  {code_html}"
@@ -147,24 +159,6 @@ def _clean_stream(text: str) -> str | None:
     return text.rstrip()
 
 
-def render_city3d_embed() -> str:
-    """A lazy-loaded, live 3D city scene (MapLibre + PMTiles) — the web-native
-    replacement for the Lonboard widget, whose state can't be serialized."""
-    return (
-        '<div class="nb-out"><span class="nb-out-label">Live output</span>'
-        '<div class="nb-embed3d" data-embed="/tutorials/embed/city3d">'
-        '  <div class="nb-embed-cta">'
-        '    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">'
-        '      <path d="M3 7l9-4 9 4-9 4-9-4Z" stroke-linejoin="round"/>'
-        '      <path d="M3 7v10l9 4 9-4V7M12 11v10" stroke-linejoin="round"/></svg>'
-        '    <button class="nb-embed-load" type="button">Load interactive 3D city</button>'
-        '    <p class="nb-embed-note">Live GPU render of EUBUCCO buildings in Zürich, '
-        "extruded by height &mdash; the web-native version of the Lonboard view above.</p>"
-        "  </div>"
-        "</div></div>"
-    )
-
-
 def render_outputs(outputs: list, idx: int, assets: dict) -> str:
     blocks: list[str] = []
     for out in outputs:
@@ -198,7 +192,6 @@ def render_outputs(outputs: list, idx: int, assets: dict) -> str:
 
         if "application/vnd.jupyter.widget-view+json" in data:
             # Widget state isn't serialized (tqdm/aws progress, etc.) -> drop.
-            # The Lonboard cell is handled separately as a live 3D embed.
             continue
 
         if "text/plain" in data:
@@ -212,13 +205,14 @@ def render_outputs(outputs: list, idx: int, assets: dict) -> str:
     return '<div class="nb-out"><span class="nb-out-label">Output</span>' + "\n".join(blocks) + "</div>"
 
 
-def extract_folium(outputs: list) -> str | None:
-    """Pull the big Folium map HTML out to a static file; return its filename or None."""
+def extract_folium(outputs: list, idx: int) -> str | None:
+    """Pull a Folium map's HTML out to a per-cell static file; return its filename or None.
+    The filename is keyed by cell index so multiple maps in one notebook don't collide."""
     for out in outputs:
         data = out.get("data", {})
         html_str = "".join(data.get("text/html", []))
         if "folium" in html_str or "leaflet" in html_str.lower():
-            fname = "folium-map.html"
+            fname = f"folium-map-{idx}.html"
             doc = (
                 "<!DOCTYPE html><html><head><meta charset='utf-8'>"
                 "<meta name='viewport' content='width=device-width, initial-scale=1'>"
@@ -243,7 +237,7 @@ def main(src_path: str) -> None:
 
     # Clear previously generated assets so renaming/removing cells can't leave orphans
     # (assets are keyed by cell index, which shifts when the notebook is edited).
-    for stale in [*ASSET_DIR.glob("plot-*.png"), *ASSET_DIR.glob("folium-map.html")]:
+    for stale in [*ASSET_DIR.glob("plot-*.png"), *ASSET_DIR.glob("folium-map*.html")]:
         stale.unlink()
 
     sections: list = []
@@ -265,7 +259,7 @@ def main(src_path: str) -> None:
             outputs = cell.get("outputs", [])
 
             if is_folium_cell(src):
-                fname = extract_folium(outputs)
+                fname = extract_folium(outputs, idx)
                 if fname:
                     cell_html.append(
                         '<div class="nb-out"><span class="nb-out-label">Output</span>'
@@ -278,9 +272,6 @@ def main(src_path: str) -> None:
                         "  </button>"
                         "</div></div>"
                     )
-            elif "lonboard" in src.lower():
-                # Widget state isn't serialized; show a live web-native 3D scene instead.
-                cell_html.append(render_city3d_embed())
             else:
                 cell_html.append(render_outputs(outputs, idx, assets))
 
