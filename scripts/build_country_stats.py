@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Aggregate per-city stats into a small per-country JSON for the Getting Started dashboards.
+"""Aggregate per-region stats into a small per-country JSON for the Getting Started dashboards.
 
-Reads city-stats.parquet (the same higher-resolution stats table used elsewhere) and writes a
+Reads region-stats.parquet (the same higher-resolution stats table used elsewhere) and writes a
 compact JSON the tutorial page renders with Chart.js. Run inside the Docker stack so DuckDB and the
 parquet are available:
 
@@ -10,7 +10,7 @@ parquet are available:
 Source can be a local path or an S3 URL (DuckDB httpfs), e.g. to compute it live against the
 public data lake:
 
-    ... build_country_stats.py s3://eubucco/v0.2/.../city-stats.parquet
+    ... build_country_stats.py s3://eubucco/v0.2/.../region-stats.parquet
 """
 from __future__ import annotations
 
@@ -21,14 +21,14 @@ from pathlib import Path
 import duckdb
 
 OUT = Path(__file__).resolve().parent.parent / "eubucco/static/notebooks/getting-started/country-stats.json"
-DEFAULT_SRC = "/app/city-stats.parquet"
+DEFAULT_SRC = "/app/region-stats.parquet"
 
 SUMS = {
-    "n": "n", "gov": "n_gov", "osm": "n_osm", "msft": "n_msft",
+    "n": "n", "area": "area", "floor_area": "floor_area", "gov": "n_gov", "osm": "n_osm", "msft": "n_msft",
     "h0_5": "n_height_0_5", "h5_10": "n_height_5_10",
     "h10_20": "n_height_10_20", "h20_inf": "n_height_20_inf",
     "residential": "n_type_residential", "non_residential": "n_type_non_residential",
-    "gt_height": "n_gt_height", "gt_type": "n_gt_type",
+    "gt_height": "n_gt_height", "gt_type": "n_gt_type", "gt_subtype": "n_gt_subtype",
     "gt_floors": "n_gt_floors", "gt_year": "n_gt_construction_year",
 }
 
@@ -55,6 +55,8 @@ def main(src: str) -> None:
         countries.append({
             "code": d["country"],
             "n": int(d["n"]),
+            "area": int(d["area"]),
+            "floor_area": int(d["floor_area"]),
             "gov": int(d["gov"]), "osm": int(d["osm"]), "msft": int(d["msft"]),
             "height": {"0_5": int(d["h0_5"]), "5_10": int(d["h5_10"]),
                        "10_20": int(d["h10_20"]), "20_inf": int(d["h20_inf"])},
@@ -63,6 +65,7 @@ def main(src: str) -> None:
             "coverage": {
                 "height": round(int(d["gt_height"]) / n, 4),
                 "type": round(int(d["gt_type"]) / n, 4),
+                "subtype": round(int(d["gt_subtype"]) / n, 4),
                 "floors": round(int(d["gt_floors"]) / n, 4),
                 "year": round(int(d["gt_year"]) / n, 4),
             },
@@ -72,6 +75,8 @@ def main(src: str) -> None:
     payload = {
         "source": src,
         "total_buildings": eu["n"],
+        "total_area": eu["area"],
+        "total_floor_area": eu["floor_area"],
         "n_countries": len(countries),
         "eu": {
             "source": {"gov": eu["gov"], "osm": eu["osm"], "msft": eu["msft"]},
@@ -81,6 +86,7 @@ def main(src: str) -> None:
             "coverage": {
                 "height": round(eu["gt_height"] / n_eu, 4),
                 "type": round(eu["gt_type"] / n_eu, 4),
+                "subtype": round(eu["gt_subtype"] / n_eu, 4),
                 "floors": round(eu["gt_floors"] / n_eu, 4),
                 "year": round(eu["gt_year"] / n_eu, 4),
             },
