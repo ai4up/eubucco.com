@@ -21,7 +21,7 @@ urlpatterns = [
         cache_page(60 * 60)(
             TemplateView.as_view(
                 template_name="pages/home.html",
-                extra_context={"docs_schema_url": os.environ["DOCS_URL"].rstrip("/") + "/data-format/schema/"},
+                extra_context={"docs_schema_url": os.environ["DOCS_URL"].rstrip("/") + "/latest/data-format/schema/"},
             )
         ),
         name="home",
