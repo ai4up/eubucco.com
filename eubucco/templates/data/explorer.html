@@ -170,8 +170,11 @@
   #tip .src-microsoft  { background: #5cb1c9; }
   #tip .src-estimated  { background: #9a8fc0; color: var(--ink); }
   #tip .na { color: var(--ink-muted); font-style: italic; }
+  #tip .tip-conf-hint-boarder {
+    border-top: 1px solid var(--rule);
+  }
   #tip .tip-conf-hint {
-    margin-top: 6px; padding-top: 5px; border-top: 1px solid var(--rule);
+    margin-top: 6px; padding-top: 5px;
     font-size: 9px; color: var(--ink-muted); font-style: italic; line-height: 1.4;
   }
   #tip .tip-conf-hint ul {
@@ -850,11 +853,14 @@ function updateTip(e) {
 
   const hasConf = typeConf || subtypeConf || heightConf || floorsConf || yearConf;
   const confHint = hasConf
-    ? `<div class="tip-conf-hint">Confidence assessments:<ul>
+    ? `<div class="tip-conf-hint tip-conf-hint-boarder">Confidence of ESTIMATED values:<ul>
             <li><em>(%)</em> classification probability</li>
             <li><em>±</em> bootstrapped prediction</li>
+        </ul></div>
+        <div class="tip-conf-hint">Confidence of merged OSM values:<ul>
+            <li><em>(%)</em> relative overlap with contributing sources</li>
             <li><em>[range]</em> of merged attributes</li>
-          </ul></div>`    : '';
+        </ul></div>`    : '';
 
   tipEl.innerHTML =
     `<div class="tip-id">${p.id || '—'}</div><table>${tableHtml}</table>${confHint}`;
