@@ -72,37 +72,40 @@ Unlike traditional methods that use simple "rule-of-thumb" intersection threshol
 Once matches are identified, the geometries and attributes are integrated to produce the final building record.
 
 ### Attribute Merging
-Attributes (Type, Height, Floors, Construction Year) are merged across matching blocks using logic designed to maximize spatial consistency. We define the optimal source set $\mathcal{S}_a^*$ for a target building $a$ as the subset of available buildings $\mathcal{B}_a$ that maximizes the Intersection over Union (IoU):
+
+For each target building $a$, we combine the attributes (Type, Height, Floors, Construction Year) of the matching buildings that overlap it. Since several sources may overlap the same target — sometimes only partially — we first select the combination that best fits the target's footprint. This optimal source set $\mathcal{S}_a^*$ is the subset of the matching buildings $\mathcal{B}_a$ whose combined shape maximizes the Intersection over Union (IoU) with $a$:
 
 $$\mathcal{S}_a^* = \arg\max_{\mathcal{S} \subseteq \mathcal{B}_a} \text{IoU}(a, \mathcal{S})$$
 
-<small>where $\mathcal{B}_a$ represents the set of all matching building footprints from various sources for the target building $a$, and $\mathcal{S}$ is any possible combination of those footprints.</small>
+<small>where $\mathcal{B}_a$ is the set of all matching source footprints for the target building $a$, $b_i$ denotes the footprint of source building $i$, and $\mathcal{S}$ is any possible combination of those footprints.</small>
 
 #### Numerical Attributes
-* **Merge Aggregation:** Building height, floors, and construction year are merged using **intersection-area–weighted averages**.
 
-    $$V_{merged} = \frac{\sum_{i \in \mathcal{S}_a^*} (V_{source, i} \cdot w_i)}{\sum_{i \in \mathcal{S}_a^*} w_i}$$
+* **Merge Aggregation:** Building height, floors, and construction year are merged using **intersection-area–weighted averages**, so that larger overlaps contribute more.
 
-    <small>where $V_{source, i}$ is the numerical value from source footprint $i$, and $w_i$ is the area of intersection between the target footprint $B_{target}$ and the $i$-th matching source footprint $B_{source, i}$.</small>
+    $$v_a = \frac{\sum_{i \in \mathcal{S}_a^*} w_i \, v_i}{\sum_{i \in \mathcal{S}_a^*} w_i}$$
 
-* **Confidence Scores**: To represent the reliability of numerical merges, we provide the range of contributing values:
+    <small>where $v_i$ is the value from source footprint $i$, and $w_i = \text{Area}(a \cap b_i)$ is its area of intersection with the target footprint $a$.</small>
 
-    $$\text{Range} = [ \min(V_{source, i}), \max(V_{source, i}) ] \quad \forall i \in \mathcal{S}_a^*$$
+* **Confidence Scores:** For numerical merges, we report the spread of contributing values as a **lower** and **upper** confidence bound — the smallest and largest values among the merged sources:
 
-    <small>where $\min$ and $\max$ denote the lowest and highest attribute values found among matching source footprints in the optimal source set.</small>
+    $$\text{Confidence}_\text{lower} = \min(v_i), \qquad \text{Confidence}_\text{upper} = \max(v_i)$$
+
+    <small>taken over all source footprints $i$ in the optimal source set $\mathcal{S}_a^*$.</small>
 
 #### Categorical Attributes
-* **Merge Aggregation:** Building types are assigned based on the **dominant category** by cumulative intersecting area.
 
-    $$C_{merged} = \arg\max_{c \in \mathcal{C}} \sum_{i \in \mathcal{S}_{a, c}^*} \text{Area}(B_{target} \cap B_{source, i})$$
+* **Merge Aggregation:** Building types are assigned the **dominant category** $c^\ast$ — the category covering the largest cumulative intersecting area.
 
-    <small>where $\mathcal{C}$ is the set of possible building categories, and $\mathcal{S}_{a, c}^*$ is the subset of matching buildings in $\mathcal{S}_a^*$ that belong to category $c$.</small>
+    $$c^\ast = \arg\max_{c \in \mathcal{C}} \sum_{i:\, c_i = c} \text{Area}(a \cap b_i)$$
 
-* **Confidence Scores**: The confidence score represents the spatial agreement (Intersection over Area) of the source geometries relative to the target:
+    <small>where $\mathcal{C}$ is the set of possible building categories, $c_i$ is the category of source building $i$, and the sum runs over the footprints in $\mathcal{S}_a^*$ whose category equals $c$.</small>
 
-    $$\text{Confidence} = \frac{\text{Area}(B_{target} \cap \bigcup_{i \in \mathcal{S}_a^* } B_{source, i})}{\text{Area}(B_{target})}$$
+* **Confidence Scores:** The confidence score is the spatial agreement (Intersection over Area) between the target and the source footprints that **share the dominant category** $c^\ast$ — sources with a different category are excluded:
 
-    <small>where $\bigcup B_{source, i}$ represents the geometric union of all matching source footprints, and $B_{target}$ is the geometry of the target footprint.</small>
+    $$\text{Confidence} = \frac{\text{Area}\big(a \cap \bigcup_{i:\, c_i = c^\ast} b_i\big)}{\text{Area}(a)}$$
+
+    <small>where the union is taken over the source footprints sharing the dominant category $c^\ast$.</small>
 
 ---
 
