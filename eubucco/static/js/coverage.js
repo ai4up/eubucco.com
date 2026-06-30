@@ -673,8 +673,8 @@ function initCharts() {
     charts.height = new Chart(heightCtx, {
       type: 'bar',
       data: {
-        labels: ['0-5m', '5-10m', '10-20m', '20m+'],
-        datasets: [{ label: 'Buildings %', data: [0, 0, 0, 0], backgroundColor: '#7ec8a3', borderRadius: 4 }],
+        labels: ['<5m', '5–<10m', '10–<20m', '20–<50m', '≥50'],
+        datasets: [{ label: 'Buildings %', data: [0, 0, 0, 0, 0], backgroundColor: '#7ec8a3', borderRadius: 4 }],
       },
       options: baseBarOptions(colors),
     });
@@ -686,8 +686,8 @@ function initCharts() {
     charts.floor = new Chart(floorCtx, {
       type: 'bar',
       data: {
-        labels: ['0-3 floors', '4-6 floors', '7+ floors'],
-        datasets: [{ label: 'Buildings %', data: [0, 0, 0], backgroundColor: '#9370b0', borderRadius: 4 }],
+        labels: ['<2 floors', '2-<4 floors', '4-<7 floors', '≥7 floors'],
+        datasets: [{ label: 'Buildings %', data: [0, 0, 0, 0], backgroundColor: '#9370b0', borderRadius: 4 }],
       },
       options: baseBarOptions(colors),
     });
@@ -760,14 +760,14 @@ function updateCharts(props) {
   if (charts.height) {
     charts.height.data.datasets[0].data = [
       val(props, 'height_0_5_pct'), val(props, 'height_5_10_pct'),
-      val(props, 'height_10_20_pct'), val(props, 'height_20_inf_pct'),
+      val(props, 'height_10_20_pct'), val(props, 'height_20_50_pct'), val(props, 'height_50_inf_pct'),
     ];
     charts.height.update();
   }
 
   if (charts.floor) {
     charts.floor.data.datasets[0].data = [
-      val(props, 'floors_0_3_pct'), val(props, 'floors_4_6_pct'), val(props, 'floors_7_inf_pct'),
+      val(props, 'floors_0_2_pct'), val(props, 'floors_2_4_pct'), val(props, 'floors_4_7_pct'), val(props, 'floors_7_inf_pct'),
     ];
     charts.floor.update();
   }

@@ -606,8 +606,8 @@ def _derive_coverage_metrics(df):
     # honest "merged" share is (binned - ground truth) and the remainder
     # (100 - gt - merged) shows up as "no value".
     cy_bins = [c for c in (
-        "n_construction_year_0_1900", "n_construction_year_1901_1970",
-        "n_construction_year_1971_2000", "n_construction_year_2001_inf",
+        "n_construction_year_0_1900", "n_construction_year_1900_1970",
+        "n_construction_year_1970_2000", "n_construction_year_2000_inf",
     ) if c in df.columns]
     if cy_bins:
         cy_known = df[cy_bins].sum(axis=1)
@@ -622,9 +622,9 @@ def _derive_coverage_metrics(df):
         df[f"subtype_{st}_pct"] = pct(f"n_subtype_{st}")
 
     # Height / floor bins
-    for col in ("n_height_0_5", "n_height_5_10", "n_height_10_20", "n_height_20_inf"):
+    for col in ("n_height_0_5", "n_height_5_10", "n_height_10_20", "n_height_20_50", "n_height_50_inf"):
         df[col.replace("n_height", "height") + "_pct"] = pct(col)
-    for col in ("n_floors_0_3", "n_floors_4_6", "n_floors_7_inf"):
+    for col in ("n_floors_0_2", "n_floors_2_4", "n_floors_4_7", "n_floors_7_inf"):
         df[col.replace("n_floors", "floors") + "_pct"] = pct(col)
 
     # Floor-area composition (share of total floor area)
