@@ -726,6 +726,7 @@ def _europe_coverage_summary(nuts3_gdf, count_cols: list) -> dict:
 def _coverage_tippecanoe(geojson_path: str, pmtiles_path, min_zoom: int, max_zoom: int):
     log = logging.getLogger(__name__)
     log.info("Coverage: tippecanoe -> %s", Path(pmtiles_path).name)
+    Path(pmtiles_path).unlink(missing_ok=True)
     subprocess.run(
         [
             "tippecanoe",
