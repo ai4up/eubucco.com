@@ -71,10 +71,10 @@ Comprehensive building stock statistics aggregated at the **city ([LAU](https://
 
 **Attribute Distributions**
 
-- Height bins: 0-5m, 5-10m, 10-20m, >20m
-- Floor bins: 0-3, 4-6, >6 floors
-- Construction year bins: ≤1900, 1901-1970, 1971-2000, >2000
-- Footprint area bins: 0-25m², 25-100m², 100-500m², >500m²
+- Height bins: <5m, 5-10m, 10-20m, 20-50m, ≥50m
+- Floor bins: <2, 2-4, 4-7, ≥7 floors
+- Construction year bins: <1900, 1900-1970, 1970-2000, ≥2000
+- Footprint area bins: <25m², 25-100m², 100-500m², ≥500m²
 
 **Area Metrics**
 

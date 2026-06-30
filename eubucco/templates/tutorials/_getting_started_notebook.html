@@ -5,15 +5,15 @@
 <div class="nb-md"><h2 id="access-data" class="nb-h2">Access data</h2></div>
 <div class="nb-md"><h3 class="nb-h3">Option 1: Download single region and load as GeoDataFrame</h3></div>
 <div class="nb-cell">
-<div class="nb-code" data-code="in">  <div class="nb-code-bar">    <span class="nb-dot"></span><span class="nb-lang">bash</span>    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>  </div>  <div class="hl"><pre><span></span>curl --progress-bar -C - -o CH04.parquet <span class="s2">&quot;https://s3.eubucco.com/eubucco/v0.2/buildings/parquet/nuts_id=CH04/CH04.parquet&quot;</span>
+<div class="nb-code" data-code="in">  <div class="nb-code-bar">    <span class="nb-dot"></span><span class="nb-lang">bash</span>    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>  </div>  <div class="hl"><pre><span></span>curl<span class="w"> </span>--progress-bar<span class="w"> </span>-C<span class="w"> </span>-<span class="w"> </span>-o<span class="w"> </span>CH04.parquet<span class="w"> </span><span class="s2">&quot;https://s3.eubucco.com/eubucco/v0.2/buildings/parquet/nuts_id=CH04/CH04.parquet&quot;</span>
 </pre></div>
 </div>
 </div>
 <div class="nb-cell">
 <div class="nb-code" data-code="in">  <div class="nb-code-bar">    <span class="nb-dot"></span><span class="nb-lang">bash</span>    <button class="nb-copy" type="button" aria-label="Copy code">Copy</button>  </div>  <div class="hl"><pre><span></span><span class="c1"># Alternatively, use the AWS CLI to download the file:</span>
-aws s3 cp s3://eubucco/v0.2/buildings/parquet/nuts_id<span class="o">=</span>CH04/CH04.parquet . <span class="se">\</span>
-    --endpoint-url https://s3.eubucco.com <span class="se">\</span>
-    --no-sign-request
+aws<span class="w"> </span>s3<span class="w"> </span>cp<span class="w"> </span>s3://eubucco/v0.2/buildings/parquet/nuts_id<span class="o">=</span>CH04/CH04.parquet<span class="w"> </span>.<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--endpoint-url<span class="w"> </span>https://s3.eubucco.com<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--no-sign-request
 </pre></div>
 </div>
 </div>
@@ -862,8 +862,9 @@ aws s3 cp s3://eubucco/v0.2/buildings/parquet/nuts_id<span class="o">=</span>CH0
     <span class="s2">&quot;n_gt_subtype&quot;</span><span class="p">,</span>
     <span class="s2">&quot;n_gt_height&quot;</span><span class="p">,</span>
     <span class="s2">&quot;n_gt_floors&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;n_floors_0_3&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;n_floors_4_6&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;n_floors_0_2&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;n_floors_2_4&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;n_floors_4_7&quot;</span><span class="p">,</span>
     <span class="s2">&quot;n_floors_7_inf&quot;</span><span class="p">,</span>
     <span class="s2">&quot;n_type_residential&quot;</span><span class="p">,</span>
     <span class="s2">&quot;n_type_non_residential&quot;</span><span class="p">,</span>
@@ -892,7 +893,6 @@ aws s3 cp s3://eubucco/v0.2/buildings/parquet/nuts_id<span class="o">=</span>CH0
 <span class="n">gdf_floor</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf_floor</span><span class="o">.</span><span class="n">centroid</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="s2">&quot;EPSG:4326&quot;</span><span class="p">)</span>
 <span class="n">h3_grid</span> <span class="o">=</span> <span class="n">gdf_floor</span><span class="o">.</span><span class="n">h3</span><span class="o">.</span><span class="n">geo_to_h3_aggregate</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="s2">&quot;sum&quot;</span><span class="p">)</span>
 
-<span class="c1"># precision</span>
 <span class="n">h3_grid</span><span class="o">.</span><span class="n">explore</span><span class="p">(</span>
     <span class="n">column</span><span class="o">=</span><span class="s2">&quot;floor_area&quot;</span><span class="p">,</span>
     <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;YlGn&quot;</span><span class="p">,</span>
@@ -931,7 +931,7 @@ aws s3 cp s3://eubucco/v0.2/buildings/parquet/nuts_id<span class="o">=</span>CH0
 <span class="s2">        h3_latlng_to_cell_string(</span>
 <span class="s2">            ST_X(centroid),</span>
 <span class="s2">            ST_Y(centroid),</span>
-<span class="s2">            </span><span class="si">{</span><span class="n">h3_resolution</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">            </span><span class="si">{</span><span class="n">h3_resolution</span><span class="si">}</span>
 <span class="s2">        ) AS h3,</span>
 <span class="s2">        AVG(height) AS avg_height,</span>
 <span class="s2">        COUNT(*) AS n_buildings</span>
