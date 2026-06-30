@@ -23,6 +23,7 @@ const charts = {
   subtype: null,
   height: null,
   floor: null,
+  constructionYear: null,
   floorArea: null,
   floorAreaRes: null,
 };
@@ -693,6 +694,19 @@ function initCharts() {
     });
   }
 
+  // Construction year distribution (bar)
+  const constructionYearCtx = document.getElementById('constructionYearChart');
+  if (constructionYearCtx) {
+    charts.constructionYear = new Chart(constructionYearCtx, {
+      type: 'bar',
+      data: {
+        labels: ['<1900', '1900–<1970', '1970–<2000', '≥2000'],
+        datasets: [{ label: 'Share %', data: [0, 0, 0, 0], backgroundColor: '#d98e7c', borderRadius: 4 }],
+      },
+      options: baseBarOptions(colors),
+    });
+  }
+
   // Floor area: residential vs non-residential share of total floor area
   const floorAreaCtx = document.getElementById('floorAreaChart');
   if (floorAreaCtx) {
@@ -770,6 +784,19 @@ function updateCharts(props) {
       val(props, 'floors_0_2_pct'), val(props, 'floors_2_4_pct'), val(props, 'floors_4_7_pct'), val(props, 'floors_7_inf_pct'),
     ];
     charts.floor.update();
+  }
+
+  if (charts.constructionYear) {
+    // Construction-year coverage is partial, so re-normalise the era bins to
+    // 100% (the distribution among buildings carrying a known year).
+    const cy = [
+      val(props, 'construction_year_0_1900_pct'), val(props, 'construction_year_1900_1970_pct'),
+      val(props, 'construction_year_1970_2000_pct'), val(props, 'construction_year_2000_inf_pct'),
+    ];
+    const cySum = cy.reduce((a, b) => a + b, 0);
+    charts.constructionYear.data.datasets[0].data =
+      cySum > 0 ? cy.map(v => +(v / cySum * 100).toFixed(2)) : cy;
+    charts.constructionYear.update();
   }
 
   if (charts.floorArea) {

@@ -627,6 +627,15 @@ def _derive_coverage_metrics(df):
     for col in ("n_floors_0_2", "n_floors_2_4", "n_floors_4_7", "n_floors_7_inf"):
         df[col.replace("n_floors", "floors") + "_pct"] = pct(col)
 
+    # Construction-year bins. Coverage is partial (no ML estimation), so the
+    # explorer re-normalises these to 100% to show the era distribution among
+    # buildings that carry a year.
+    for col in (
+        "n_construction_year_0_1900", "n_construction_year_1900_1970",
+        "n_construction_year_1970_2000", "n_construction_year_2000_inf",
+    ):
+        df[col.replace("n_construction_year", "construction_year") + "_pct"] = pct(col)
+
     # Floor-area composition (share of total floor area)
     if fa is not None:
         def fapct(col):
