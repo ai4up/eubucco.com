@@ -1,30 +1,19 @@
-import uuid
-
 from django.contrib.auth.models import AbstractUser
-from django.db import models
 from django.db.models import CharField
-from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 
 class User(AbstractUser):
-    """
-    Default custom user model for eubucco.
-    If adding fields that need to be filled at user signup,
-    check forms.SignupForm and forms.SocialSignupForms accordingly.
+    """Minimal custom user model for eubucco.
+
+    Public signup/login was removed; this exists so Django admin (the only
+    authenticated surface) keeps a stable, swappable AUTH_USER_MODEL.
     """
 
     #: First and last name do not cover name patterns around the globe
     name = CharField(_("Name of User"), blank=True, max_length=255)
     first_name = None  # type: ignore
     last_name = None  # type: ignore
-    api_key = models.UUIDField(db_index=True, default=uuid.uuid4, unique=True)
 
-    def get_absolute_url(self):
-        """Get url for user's detail view.
-
-        Returns:
-            str: URL for user detail.
-
-        """
-        return reverse("users:detail", kwargs={"username": self.username})
+    def __str__(self):
+        return self.username

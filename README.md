@@ -59,19 +59,17 @@ eubucco/
 │   ├── settings/       # Environment-specific settings
 │   └── urls.py         # URL routing
 ├── eubucco/            # Django apps
-│   ├── analytics/      # Basic analytics
+│   ├── analytics/      # Download analytics (MinIO webhook → Plausible)
 │   ├── api/            # FastAPI endpoints
 │   │   └── v1/         # API version 1
 │   │       ├── tiles.py      # Vector tile generation
-│   │       ├── datalake.py   # Data lake access
-│   │       └── files.py      # File management
-│   ├── blog/           # Blog
-│   ├── data/           # Data lake integration & visualization
-│   ├── files/          # Management additional files
+│   │       └── datalake.py   # Data lake access (public download URLs + bundle zip)
+│   ├── data/           # MinIO data management, ingestion/tiling jobs, /data/download UI
+│   ├── explore/        # Visualizations: explore/map, explore/coverage, explore/conflation
+│   ├── tutorials/      # Jupyter notebook tutorials + home-page embeds
 │   ├── templates/      # Django templates
-│   ├── tutorial/       # Jupyter notebook tutorials
 │   ├── static/         # Static assets
-│   └── users/          # User management
+│   └── users/          # Minimal user model (Django admin only; no public auth)
 ├── compose/            # Docker Compose configurations
 │   ├── local/          # Local development
 │   └── production/     # Production deployment
@@ -251,15 +249,6 @@ docker compose -f local.yml run --rm django python manage.py migrate
 docker compose -f local.yml run --rm django python manage.py shell
 ```
 
-**Trigger building data ingestion**
-```bash
-docker compose -f local.yml run --rm django python manage.py shell -c "from eubucco.data.tasks import ingest_all_by_version; ingest_all_by_version(version_tag='v0.2')"
-```
-**Trigger ingestion of additional files**
-```bash
-docker compose -f local.yml run --rm django python manage.py shell -c "from eubucco.files.tasks import sync_files; sync_files()"
-```
-
 **Regenerate the "Getting Started" tutorial page**
 
 The `/tutorials/getting_started` page is rendered from a single Jupyter notebook by a custom
@@ -276,6 +265,47 @@ This rewrites the include fragment `eubucco/templates/tutorials/_getting_started
 and the extracted plot/Folium assets under `eubucco/static/notebooks/getting-started/`. Commit the
 notebook, the regenerated fragment, and the assets together.
 
+
+## Operations / Running Jobs
+
+Jobs fall into three buckets by **how they are triggered**. The full release order
+(rsync → ingest → upload extras → tiles → coverage) lives in `create-release.md`.
+
+### 1. Runtime async (Celery — automatic)
+The web app dispatches these; dedicated workers consume them (no manual trigger):
+- `io_tasks` worker — parquet uploads to MinIO (`upload_parquet_task`).
+- `heavy_tasks` worker (concurrency 1, OOM-isolated) — GPKG/SHP conversion (`convert_spatial_task`).
+- `tiling` worker (optional) — Celery path for tile tasks; tiling normally runs via the
+  one-off generator below instead.
+
+Monitor with Flower (`:5555`) or `docker compose ... logs -f celeryworker-io celeryworker-heavy`.
+
+### 2. One-off release jobs (Django management commands)
+Run explicitly, on demand. Locally via `docker compose -f local.yml run --rm django python manage.py <cmd>`;
+on the server the data-bearing ones are also exposed as one-off compose services (profile `generators`).
+
+| Job | Command | When to run |
+|-----|---------|-------------|
+| Ingest buildings | `manage.py ingest_buildings --data-version v0.2 [--reupload]` | New/updated building parquet in `data/s3/<version>/`. Dispatches the upload→convert Celery chain (workers must be up). |
+| Upload extras | `manage.py upload_extras [--version v0.1] [--reupload]` (svc: `extras-uploader`) | New additional files / examples / v0.1 buildings under `data/{additional,examples,buildings}/`. Idempotent. |
+| Building tiles | `manage.py generate_building_tiles --data-version v0.2` (svc: `tile-generator`) | After ingest, to (re)build `buildings.pmtiles`. Resumable; long-running. |
+| Coverage tiles | `manage.py generate_coverage_tiles --data-version v0.2` (svc: `coverage-generator`) | After `region-stats.parquet` changes, to rebuild the choropleth + summary. |
+
+Example (server, dev stack):
+```bash
+sudo docker compose -f dev.yml -p eubucco-dev --env-file ./.envs/.dev/.django run --rm extras-uploader
+sudo docker compose -f dev.yml -p eubucco-dev --env-file ./.envs/.dev/.django run --rm tile-generator
+```
+
+### 3. Local preprocessing scripts (developer machine, commit the output)
+Run on your machine; the generated artifacts are committed:
+- `python scripts/render_tutorial_notebook.py` — regenerate the Getting Started page (see above).
+- `python scripts/build_country_stats.py` — aggregate NUTS3 stats → per-country dashboard JSON.
+
+### MinIO download analytics
+Downloads are direct public-URL GETs against MinIO (no app round-trip). MinIO is configured
+to POST an `ObjectAccessed:Get` bucket notification to **`/analytics/webhook/minio/`**, which
+de-duplicates and forwards each download to Plausible.
 
 ## License
 
@@ -295,4 +325,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ai4up/eubucco-conflation](https://github.com/ai4up/eubucco-conflation) - Matching and merging repository
 - [ai4up/eubucco-features](https://github.com/ai4up/eubucco-features) - Feature engineering repository for building attribute prediction
 - [ai4up/ufo-prediction](https://github.com/ai4up/ufo-prediction) - Building attribute prediction repository
-

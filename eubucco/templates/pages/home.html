@@ -53,7 +53,7 @@
                 <a href="/files" class="btn btn-sm btn-ghost text-white border-white hover:bg-white hover:text-primary transition-all">
                   Download v0.2 →
                 </a>
-                <a href="{% url 'data:explorer' %}" class="btn btn-sm btn-ghost text-white border-white hover:bg-white hover:text-primary transition-all">
+                <a href="{% url 'explore:map' %}" class="btn btn-sm btn-ghost text-white border-white hover:bg-white hover:text-primary transition-all">
                   Explore on map →
                 </a>
                 <a href="{% url 'docs' %}" class="btn btn-sm btn-ghost text-white border-white hover:bg-white hover:text-primary transition-all">
@@ -103,7 +103,7 @@
       <figure class="ds-map" id="ds-map" data-embed="{% url 'tutorials:embed_sourcemix' %}">
         <div class="ds-map-frame"><span class="ds-map-ph">Preparing map…</span></div>
         <figcaption class="ds-map-cap">
-          <a href="{% url 'data:coverage' %}">Open the coverage explorer&nbsp;&rarr;</a>
+          <a href="{% url 'explore:coverage' %}">Open the coverage explorer&nbsp;&rarr;</a>
         </figcaption>
       </figure>
 
@@ -174,7 +174,7 @@
         <div class="ds-city-head">
           <h3 class="ds-panel-title">From the continent down to the building</h3>
           <p class="ds-panel-sub">Every footprint carries its height and use type information. Here illustrated for Z&uuml;rich.
-            &nbsp;<a href="{% url 'data:explorer' %}">Open the map explorer&nbsp;&rarr;</a></p>
+            &nbsp;<a href="{% url 'explore:map' %}">Open the map explorer&nbsp;&rarr;</a></p>
         </div>
         <div class="ds-city-frame"><span class="ds-map-ph">Preparing 3D view&hellip;</span></div>
       </figure>
@@ -219,7 +219,7 @@
 	doi          = {10.1038/s41597-023-02040-2}
 }</textarea>
         </div>
-  
+
         <div class="divider"></div>
 
         <h2>People</h2>

@@ -1,6 +1,1 @@
-from django.contrib import admin
-
-from .models import FileDownload
-
-# Register your models here.
-admin.site.register(FileDownload)
+# No analytics models are registered in the admin (download events go to Plausible).

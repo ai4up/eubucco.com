@@ -7,9 +7,9 @@
     </svg>
   </div>
   <ul tabindex="0" class="dropdown-content menu menu-sm text-xs bg-base-100 z-[60] w-44 p-1 shadow-lg border border-base-content/10">
-    <li><a href="{% url 'data:explorer' %}">Map</a></li>
-    <li><a href="{% url 'data:coverage' %}">Coverage</a></li>
-    <li><a href="{% url 'data:conflation' %}">Conflation</a></li>
+    <li><a href="{% url 'explore:map' %}">Map</a></li>
+    <li><a href="{% url 'explore:coverage' %}">Coverage</a></li>
+    <li><a href="{% url 'explore:conflation' %}">Conflation</a></li>
   </ul>
 </li>
 <li class="dropdown dropdown-bottom dropdown-hover p-0">
@@ -20,7 +20,7 @@
     </svg>
   </div>
   <ul tabindex="0" class="dropdown-content menu menu-sm text-xs bg-base-100 z-[60] w-44 p-1 shadow-lg border border-base-content/10">
-    <li><a href="{% url 'files:index' %}">Download</a></li>
+    <li><a href="{% url 'data:download' %}">Download</a></li>
     <li><a href="{% url 'tutorials:getting_started' %}">Getting Started</a></li>
   </ul>
 </li>

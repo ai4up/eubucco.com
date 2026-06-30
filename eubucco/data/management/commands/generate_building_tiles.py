@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 
-from eubucco.data.minio_client import build_client, file_exists
-from eubucco.data.tasks import run_tile_pipeline
+from eubucco.data import storage
+from eubucco.data.tiling import run_tile_pipeline
 
 
 class Command(BaseCommand):
@@ -50,10 +50,9 @@ class Command(BaseCommand):
         max_zoom = options["max_zoom"]
         force = options["force"]
 
-        object_key = f"{version}/buildings/tiles/buildings.pmtiles"
-        client, settings = build_client()
+        object_key = storage.building_tiles_key(version)
 
-        if not force and file_exists(client, settings, object_key):
+        if not force and storage.object_exists(object_key):
             self.stdout.write(
                 self.style.SUCCESS(
                     f"PMTiles already present at {object_key} — skipping "

@@ -1,0 +1,923 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl@5.14.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3.2.0/dist/pmtiles.js"></script>
+
+<style>
+  body { overflow: hidden !important; }
+
+  /* Scoped demo chrome. The map canvas, panel, tooltip, HUD and MapLibre
+     controls inherit the site's DaisyUI tokens and switch together with the
+     active light/dark theme. */
+  #explorer-root {
+    position: relative; width: 100%; height: calc(100vh - 64px);
+    --bg: hsl(var(--b1));
+    --panel: hsl(var(--b1) / 0.95);
+    --ink: hsl(var(--bc));
+    --ink-dim: hsl(var(--bc) / 0.6);
+    --ink-muted: hsl(var(--bc) / 0.42);
+    --rule: hsl(var(--bc) / 0.12);
+    --accent: hsl(var(--p));
+    --accent-ink: hsl(var(--pc));
+    --attrib-bg: hsl(var(--b1) / 0.78);
+    --ctrl-icon-filter: invert(0.35);
+    --ctrl-icon-filter-hover: invert(0.15);
+    background: var(--bg); color: var(--ink);
+  }
+  #explorer-root.theme-dark {
+    --bg: #0d0f12;
+    --attrib-bg: rgba(13,15,18,.7);
+    --ctrl-icon-filter: invert(0.6);
+    --ctrl-icon-filter-hover: invert(0.9);
+  }
+  #explorer-root * { box-sizing: border-box; }
+
+  #map { position: absolute; inset: 0; background: var(--bg); }
+
+  /* ── Floating Panel ── */
+  #panel {
+    position: absolute; top: 20px; left: 20px;
+    width: 340px; max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 104px);
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 1rem;
+    padding: 20px 22px 18px;
+    box-shadow: 0 10px 30px -12px rgba(0,0,0,.5);
+    backdrop-filter: blur(12px);
+    color: var(--ink);
+    overflow-y: auto; z-index: 5;
+  }
+  #panel::-webkit-scrollbar { width: 5px; }
+  #panel::-webkit-scrollbar-track { background: transparent; }
+  #panel::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 2px; }
+
+  #panel h1 {
+    font-family: inherit;
+    font-weight: 600; font-size: 18px; line-height: 1.2;
+    margin: 0 0 4px; letter-spacing: -.01em; color: var(--ink);
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  #panel h1 .h1-right { display: flex; align-items: center; gap: 8px; }
+
+  /* Collapse toggle — only shown on mobile */
+  #panelToggle {
+    display: none; background: transparent; border: none; padding: 2px;
+    color: var(--ink-dim); cursor: pointer; line-height: 0;
+    transition: transform .2s ease;
+  }
+  #panelToggle:hover { color: var(--ink); }
+  #panel.collapsed #panelToggle { transform: rotate(-90deg); }
+  @media (max-width: 768px) {
+    #panel { top: 12px; left: 12px; }
+    #panelToggle { display: inline-flex; }
+    #panel.collapsed { padding-bottom: 16px; }
+    #panel.collapsed #panel-body { display: none; }
+  }
+  .version-badge {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 9px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent);
+    padding: 2px 6px; border-radius: 2px;
+  }
+  .section-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--ink-dim); margin: 16px 0 7px;
+  }
+
+  #panel select {
+    width: 100%; padding: 7px 8px; cursor: pointer; outline: none;
+    background: transparent; border: 1px solid var(--rule); color: var(--ink);
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px;
+    letter-spacing: .05em; border-radius: 2px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239aa1ad'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+    transition: border-color .15s ease;
+  }
+  #panel select:focus { border-color: var(--accent); }
+  #panel select option { background: hsl(var(--b1)); color: var(--ink); }
+
+  .seg { display: flex; gap: 4px; flex-wrap: wrap; }
+  .seg button {
+    background: transparent; border: 1px solid var(--rule); color: var(--ink-dim);
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10.5px;
+    letter-spacing: .05em; border-radius: 2px; padding: 5px 10px; cursor: pointer;
+    transition: all .15s ease;
+  }
+  .seg button:hover { color: var(--ink); border-color: hsl(var(--bc) / 0.3); }
+  .seg button.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+  /* ── Legend ── */
+  #legend {
+    margin-top: 8px; padding: 10px 12px;
+    background: hsl(var(--bc) / 0.04); border: 1px solid var(--rule); border-radius: .5rem;
+    display: none;
+  }
+  #legend.visible { display: block; }
+  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .legend-row:last-child { margin-bottom: 0; }
+  .legend-swatch {
+    width: 12px; height: 10px; border-radius: 1px; flex-shrink: 0;
+    border: 1px solid hsl(var(--bc) / 0.16);
+  }
+  .legend-label {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5px; color: var(--ink-dim);
+  }
+  .legend-gradient {
+    height: 8px; border-radius: 1px; flex: 1;
+    border: 1px solid hsl(var(--bc) / 0.16);
+  }
+  .legend-gradient-labels {
+    display: flex; justify-content: space-between; margin-top: 3px;
+  }
+  .legend-divider { border: none; border-top: 1px solid var(--rule); margin: 6px 0; }
+
+  /* ── Hover Tooltip ── */
+  #tip {
+    position: absolute; pointer-events: none; z-index: 9;
+    background: var(--panel); border: 1px solid var(--rule);
+    border-radius: .5rem; padding: 10px 12px;
+    backdrop-filter: blur(8px);
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px;
+    color: var(--ink); max-width: 310px;
+    box-shadow: 0 12px 28px -10px rgba(0,0,0,.35);
+    display: none;
+  }
+  #tip .tip-id {
+    font-size: 9.5px; color: var(--ink-dim); letter-spacing: .06em;
+    margin-bottom: 7px; word-break: break-all;
+    border-bottom: 1px solid var(--rule); padding-bottom: 5px;
+  }
+  #tip table { border-collapse: collapse; width: 100%; }
+  #tip td { padding: 2px 6px 2px 0; vertical-align: top; }
+  #tip td.k { color: var(--ink-dim); text-transform: uppercase; font-size: 9px; letter-spacing: .1em; white-space: nowrap; }
+  #tip td.v { color: var(--ink); }
+  #tip .conf { color: var(--ink-muted); font-size: 10px; }
+  #tip .src-pill {
+    display: inline-block; padding: 1px 5px; border-radius: 2px;
+    font-size: 8.5px; letter-spacing: .08em; color: #0d0f12;
+    font-weight: 700; text-transform: uppercase; margin-left: 5px; vertical-align: middle;
+  }
+  #tip .src-osm        { background: var(--accent); }
+  #tip .src-government { background: #7dd3a0; }
+  #tip .src-microsoft  { background: #5cb1c9; }
+  #tip .src-estimated  { background: #9a8fc0; color: var(--ink); }
+  #tip .na { color: var(--ink-muted); font-style: italic; }
+  #tip .tip-conf-hint-boarder {
+    border-top: 1px solid var(--rule);
+  }
+  #tip .tip-conf-hint {
+    margin-top: 6px; padding-top: 5px;
+    font-size: 9px; color: var(--ink-muted); font-style: italic; line-height: 1.4;
+  }
+  #tip .tip-conf-hint ul {
+    margin: 3px 0 0; padding-left: 14px; list-style: disc;
+  }
+  #tip .tip-conf-hint li { margin: 1px 0; }
+
+  /* ── Bottom-right HUD ── */
+  #hud {
+    position: absolute; bottom: 20px; right: 20px; z-index: 5;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  }
+  #loading-badge {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--ink-dim); background: var(--panel); border: 1px solid var(--rule);
+    padding: 5px 10px; border-radius: 2px; display: none; align-items: center; gap: 6px;
+  }
+  #loading-badge.visible { display: flex; }
+  .spinner {
+    width: 8px; height: 8px; border: 1.5px solid var(--rule);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #zoom-display {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px; color: var(--ink-dim);
+    background: var(--panel); border: 1px solid var(--rule);
+    padding: 5px 10px; border-radius: 2px;
+  }
+  #zoom-display span { color: var(--accent); }
+
+  #zoom-hint {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+    color: var(--ink-dim); background: var(--panel); border: 1px solid var(--rule);
+    padding: 5px 14px; border-radius: 2px; z-index: 5; pointer-events: none;
+    transition: opacity .3s ease;
+  }
+
+  .overlay-note {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 9px; color: var(--ink-dim); margin: 5px 0 0; line-height: 1.5;
+  }
+
+  /* MapLibre overrides */
+  .maplibregl-ctrl-attrib { background: var(--attrib-bg) !important; }
+  .maplibregl-ctrl-attrib a,
+  .maplibregl-ctrl-attrib-inner { color: var(--ink-dim) !important; font-size: 10px !important; }
+  .maplibregl-ctrl-group {
+    background: var(--panel) !important; border: 1px solid var(--rule) !important; border-radius: 2px !important;
+  }
+  .maplibregl-ctrl-group button {
+    background: transparent !important; border-bottom: 1px solid var(--rule) !important;
+  }
+  .maplibregl-ctrl-group button:last-child { border-bottom: none !important; }
+  .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: var(--ctrl-icon-filter); }
+  .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon { filter: var(--ctrl-icon-filter-hover); }
+</style>
+
+<div id="explorer-root">
+  <div id="map"></div>
+  <div id="tip"></div>
+
+  <!-- ── Control Panel ── -->
+  <aside id="panel">
+    <h1>
+      <span>Explorer</span>
+      <span class="h1-right">
+        <span class="version-badge">v0.2</span>
+        <button id="panelToggle" type="button" aria-label="Collapse panel" aria-expanded="true">
+          <svg style="width:16px;height:16px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </span>
+    </h1>
+
+    <div id="panel-body">
+      <p class="section-label">Color by</p>
+      <select id="colorSelect">
+        <option value="subtype" selected>Building Subtype</option>
+        <option value="type">Building Type</option>
+        <option value="geometry_source">Data Source</option>
+        <option value="height">Height (m)</option>
+        <option value="floors">Floors</option>
+        <option value="construction_year">Construction Year</option>
+        <option value="default">Uniform (accent)</option>
+      </select>
+
+      <div id="legend"></div>
+
+      <p class="section-label">View</p>
+      <div class="seg" id="viewSeg">
+        <button data-view="flat">Flat</button>
+        <button class="on" data-view="3d">3D Extrusion</button>
+      </div>
+
+      <p class="section-label">Overlays</p>
+      <div class="seg">
+        <button id="overtureBtn">Overture Buildings</button>
+      </div>
+      <p class="overlay-note">Outlines only · release 2026-05-20.0</p>
+    </div>
+  </aside>
+
+  <!-- ── HUD ── -->
+  <div id="hud">
+    <div id="loading-badge"><div class="spinner"></div>streaming tiles</div>
+    <div id="zoom-display">zoom <span id="zoom-val">--</span></div>
+  </div>
+
+  <div id="zoom-hint" style="opacity:0;">zoom in to see buildings (≥ 12)</div>
+</div>
+
+<script>
+const PMTILES_URL = "{{ pmtiles_url }}";
+const OVERTURE_URL = "https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-05-20.0/buildings.pmtiles";
+
+// ── Color schemes ──────────────────────────────────────────────
+const SCHEMES = {
+  subtype: {
+    label: 'Building Subtype',
+    fill: ['match', ['downcase', ['coalesce', ['get', 'subtype'], '']],
+    'commercial',    '#fbbf24',
+    'industrial',    '#f97316',
+    'public',        '#c084fc',
+    'agricultural',  '#a3e635',
+    'apartment',     '#60a5fa',
+    'terraced',      '#6ee7b7',
+    'semi-detached', '#86efac',
+    'detached',      '#34ab7f',
+                       '#6b7280'],
+    legend: [
+    { color: '#fbbf24', label: 'Commercial' },
+      { color: '#f97316', label: 'Industrial' },
+      { color: '#c084fc', label: 'Public' },
+      { color: '#a3e635', label: 'Agricultural' },
+      { color: '#60a5fa', label: 'Apartment (multi-family)' },
+      { color: '#6ee7b7', label: 'Terraced (row house)' },
+      { color: '#86efac', label: 'Semi-detached (duplex)' },
+      { color: '#34d399', label: 'Detached (single-family)' },
+      { color: '#6b7280', label: 'Others' },
+    ],
+  },
+
+  type: {
+    label: 'Building Type',
+    fill: ['match', ['downcase', ['coalesce', ['get', 'type'], '']],
+      'residential',     '#4ade80',
+      'non-residential', '#f87171',
+                         '#6a7180'],
+    legend: [
+      { color: '#4ade80', label: 'Residential' },
+      { color: '#f87171', label: 'Non-residential' },
+    ],
+  },
+
+  geometry_source: {
+    label: 'Data Source',
+    fill: ['case',
+      ['==', ['slice', ['downcase', ['coalesce', ['get', 'geometry_source'], '']], 0, 4], 'gov-'], '#7dd3a0',
+      ['==', ['downcase', ['coalesce', ['get', 'geometry_source'], '']], 'osm'],       '#e8b54a',
+      ['==', ['downcase', ['coalesce', ['get', 'geometry_source'], '']], 'msft'], '#5cb1c9',
+      '#dddcdf'],
+    legend: [
+      { color: '#e8b54a', label: 'OpenStreetMap' },
+      { color: '#7dd3a0', label: 'Government' },
+      { color: '#5cb1c9', label: 'Microsoft' },
+    ],
+  },
+
+  height: {
+    label: 'Height (m)',
+    fill: ['interpolate', ['linear'], ['coalesce', ['get', 'height'], 0],
+      0,   '#2d2d3a',
+      3,   '#440154',
+      6,   '#3b4a6b',
+      9,   '#2a6485',
+      12,  '#1e7f8a',
+      17,  '#1a9c7a',
+      25,  '#35b779',
+      40,  '#6ece58',
+      75,  '#b5de2b',
+      100, '#fde725'],
+    gradient: ['#440154', '#3b4a6b', '#2a6485', '#1e7f8a', '#1a9c7a', '#35b779', '#6ece58', '#fde725'],
+    gradientLabels: ['3 m', '6', '9', '12', '17', '25', '40', '100+ m'],
+    legend: [{ color: '#2d2d3a', label: 'Unknown / 0 m' }],
+  },
+
+  floors: {
+    label: 'Floors',
+    fill: ['interpolate', ['linear'], ['coalesce', ['get', 'floors'], 0],
+      0,  '#2d2d3a',
+      1,  '#440154',
+      3,  '#31688e',
+      5,  '#21908c',
+      8,  '#35b779',
+      12, '#bddf26',
+      20, '#fde725'],
+    gradient: ['#440154', '#31688e', '#21908c', '#35b779', '#bddf26', '#fde725'],
+    gradientLabels: ['1', '3', '5', '8', '12', '20+ floors'],
+    legend: [{ color: '#2d2d3a', label: 'Unknown' }],
+  },
+
+  construction_year: {
+    label: 'Construction Year',
+    fill: ['case',
+      ['==', ['coalesce', ['get', 'construction_year'], 0], 0], '#1c1c28',
+      ['interpolate', ['linear'], ['get', 'construction_year'],
+        1850, '#8b1a1a',
+        1918, '#e07b54',
+        1945, '#f5c07a',
+        1980, '#d4d4d4',
+        2000, '#6baed6',
+        2024, '#2171b5']],
+    gradient: ['#8b1a1a', '#e07b54', '#f5c07a', '#d4d4d4', '#6baed6', '#2171b5'],
+    gradientLabels: ['1850', '1918', '1945', '1980', '2000', '2024'],
+    legend: [{ color: '#1c1c28', label: 'Unknown' }],
+  },
+
+  default: {
+    fill: '#e8b54a',
+    legend: null,
+  },
+};
+
+// ── Helpers ────────────────────────────────────────────────────
+function srcPill(val) {
+  if (!val || val === 'null') return '';
+  const lower = val.toLowerCase();
+  if (lower.startsWith('gov-')) return `<span class="src-pill src-government">gov</span>`;
+  if (lower === 'osm')          return `<span class="src-pill src-osm">OSM</span>`;
+  if (lower === 'microsoft')    return `<span class="src-pill src-microsoft">Microsoft</span>`;
+  if (lower === 'estimated')    return `<span class="src-pill src-estimated">Estimated</span>`;
+  return '';
+}
+
+function fmtGeometrySource(val) {
+  if (!val || val === 'null') return '<span class="na">—</span>';
+  const lower = val.toLowerCase();
+  if (lower === 'osm')          return 'OpenStreetMap';
+  if (lower === 'msft')          return 'Microsoft';
+  if (lower.startsWith('gov-')) return `Government (${val.slice(4)})`;
+  return val;
+}
+
+function fmtVal(v) {
+  if (v == null || v === '' || v === 'null') return '<span class="na">—</span>';
+  return String(v);
+}
+
+// Confidence display helpers
+function _dispNum(v) {
+  // Show as integer if close to one, else 1 decimal place
+  return Math.abs(v - Math.round(v)) < 0.05 ? String(Math.round(v)) : v.toFixed(1);
+}
+
+function fmtNumConf(source, lower, upper, unit) {
+  if (lower == null || upper == null) return '';
+  const lo = parseFloat(lower), hi = parseFloat(upper);
+  if (isNaN(lo) || isNaN(hi) || lo === hi) return '';
+  const u = unit ? ' ' + unit : '';  // narrow no-break space before unit
+  const src = (source || '').toLowerCase();
+  if (src === 'estimated') {
+    const half = _dispNum((hi - lo) / 2);
+    return `<span class="conf"> ± ${half}${u}</span>`;
+  }
+  return `<span class="conf"> [${_dispNum(lo)}–${_dispNum(hi)}${u}]</span>`;
+}
+
+function fmtCatConf(confidence) {
+  if (confidence == null) return '';
+  const v = parseFloat(confidence);
+  if (isNaN(v)) return '';
+  return `<span class="conf"> (${Math.round(v * 100)}%)</span>`;
+}
+
+// ── Legend renderer ────────────────────────────────────────────
+function renderLegend(key) {
+  const legendEl = document.getElementById('legend');
+  const scheme = SCHEMES[key];
+  legendEl.innerHTML = '';
+  if (!scheme || (!scheme.legend && !scheme.gradient)) {
+    legendEl.classList.remove('visible');
+    return;
+  }
+  legendEl.classList.add('visible');
+
+  if (scheme.gradient) {
+    const bar = document.createElement('div');
+    bar.className = 'legend-gradient';
+    bar.style.background = `linear-gradient(to right, ${scheme.gradient.join(',')})`;
+    legendEl.appendChild(bar);
+    const lblRow = document.createElement('div');
+    lblRow.className = 'legend-gradient-labels';
+    scheme.gradientLabels.forEach(l => {
+      const s = document.createElement('span');
+      s.className = 'legend-label';
+      s.textContent = l;
+      lblRow.appendChild(s);
+    });
+    legendEl.appendChild(lblRow);
+    if (scheme.legend && scheme.legend.length) {
+      const hr = document.createElement('hr');
+      hr.className = 'legend-divider';
+      legendEl.appendChild(hr);
+    }
+  }
+
+  if (scheme.legend) {
+    scheme.legend.forEach(({ color, label }) => {
+      const row = document.createElement('div');
+      row.className = 'legend-row';
+      row.innerHTML =
+        `<div class="legend-swatch" style="background:${color}"></div>` +
+        `<span class="legend-label">${label}</span>`;
+      legendEl.appendChild(row);
+    });
+  }
+}
+
+// ── PMTiles protocol ───────────────────────────────────────────
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol('pmtiles', protocol.tile);
+
+// ── Map ────────────────────────────────────────────────────────
+
+// Shareable URL state: map location, the color metric, the view (2D/3D) and
+// the Overture overlay are all encoded in the query string so a link
+// reproduces the exact view. State is read once on load and written back
+// (history.replaceState) whenever the user pans/zooms or changes a control.
+function readUrlState() {
+  const p = new URLSearchParams(location.search);
+  const num = (k) => { const v = parseFloat(p.get(k)); return Number.isFinite(v) ? v : null; };
+  const color = p.get('color');
+  const view = p.get('view');
+  return {
+    lng: num('lng'), lat: num('lat'), zoom: num('zoom'),
+    pitch: num('pitch'), bearing: num('bearing'),
+    color: SCHEMES[color] ? color : null,
+    view: (view === 'flat' || view === '3d') ? view : null,
+    overture: p.get('overture') === '1',
+  };
+}
+const urlState = readUrlState();
+
+let is3d = urlState.view ? urlState.view === '3d' : true;
+let overtureVisible = urlState.overture;
+
+// Reflect the restored color metric in the dropdown before the map builds its
+// layers (addExplorerLayers reads the current <select> value).
+if (urlState.color) document.getElementById('colorSelect').value = urlState.color;
+
+function writeUrlState() {
+  if (!map) return;
+  const c = map.getCenter();
+  const p = new URLSearchParams();
+  p.set('lat', c.lat.toFixed(5));
+  p.set('lng', c.lng.toFixed(5));
+  p.set('zoom', map.getZoom().toFixed(2));
+  const pitch = map.getPitch();
+  const bearing = map.getBearing();
+  if (pitch) p.set('pitch', pitch.toFixed(1));
+  if (bearing) p.set('bearing', bearing.toFixed(1));
+  p.set('color', document.getElementById('colorSelect').value);
+  p.set('view', is3d ? '3d' : 'flat');
+  if (overtureVisible) p.set('overture', '1');
+  history.replaceState(null, '', `${location.pathname}?${p.toString()}`);
+}
+
+const MAP_STYLES = {
+  dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+};
+
+const CUSTOM_LAYER_IDS = new Set(['buildings-fill', 'buildings-3d', 'overture-outline']);
+
+function isDarkTheme() {
+  return !!(document.documentElement.classList.contains('dark') ||
+            document.querySelector('[data-theme="night"]'));
+}
+
+function isLightMode() {
+  return !isDarkTheme();
+}
+
+function applyThemeClass() {
+  const root = document.getElementById('explorer-root');
+  if (!root) return;
+  const dark = isDarkTheme();
+  root.classList.toggle('theme-dark', dark);
+  root.classList.toggle('theme-light', !dark);
+}
+
+function currentBaseStyleUrl() {
+  return isDarkTheme() ? MAP_STYLES.dark : MAP_STYLES.light;
+}
+
+applyThemeClass();
+let currentMapLightMode = isLightMode();
+let rebuildFrame = null;
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: currentBaseStyleUrl(),
+  center: [urlState.lng ?? 21.0122, urlState.lat ?? 52.2297],
+  zoom: urlState.zoom ?? 15,
+  pitch: urlState.pitch ?? (is3d ? 45 : 0),
+  bearing: urlState.bearing ?? 0,
+  antialias: true,
+});
+
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+
+// Persist map position to the URL after every pan/zoom/rotate/tilt.
+map.on('moveend', writeUrlState);
+
+const zoomHint = document.getElementById('zoom-hint');
+
+map.on('zoom', () => {
+  const z = map.getZoom();
+  document.getElementById('zoom-val').textContent = z.toFixed(1);
+  zoomHint.style.opacity = z < 12 ? '1' : '0';
+});
+
+map.on('dataloading', () => document.getElementById('loading-badge').classList.add('visible'));
+map.on('idle',        () => document.getElementById('loading-badge').classList.remove('visible'));
+
+function removeBasemapBuildings() {
+  // CARTO basemaps add their own footprints/extrusions. Remove only basemap
+  // building layers; keep our PMTiles and Overture overlay layers intact.
+  const style = map.getStyle();
+  if (!style || !style.layers) return;
+
+  for (const layer of [...style.layers]) {
+    if (!layer || CUSTOM_LAYER_IDS.has(layer.id)) continue;
+    const id = (layer.id || '').toLowerCase();
+    const sourceLayer = (layer['source-layer'] || '').toLowerCase();
+    const isBasemapBuilding =
+      sourceLayer === 'building' ||
+      sourceLayer === 'building_part' ||
+      (id.includes('building') && !CUSTOM_LAYER_IDS.has(layer.id));
+
+    if (isBasemapBuilding && map.getLayer(layer.id)) {
+      try { map.removeLayer(layer.id); }
+      catch (e) { console.warn('Could not remove basemap building layer:', layer.id, e); }
+    }
+  }
+}
+
+function addExplorerLayers() {
+  // `style.load` can fire before `map.isStyleLoaded()` becomes true; adding
+  // custom sources/layers only needs a style object, so retry on actual errors
+  // instead of waiting for another style.load event that may never come.
+  const style = map.getStyle();
+  if (!style || !style.layers) {
+    setTimeout(scheduleMapLayerRebuild, 50);
+    return;
+  }
+
+  try {
+    removeBasemapBuildings();
+
+    const selectedScheme = document.getElementById('colorSelect').value || 'subtype';
+    const color = (SCHEMES[selectedScheme] || SCHEMES.default).fill;
+
+    if (!map.getSource('eubucco')) {
+      map.addSource('eubucco', {
+        type: 'vector',
+        url: `pmtiles://${PMTILES_URL}`,
+        // Tiles are generated to z14. Pin maxzoom so MapLibre overzooms beyond
+        // it (buildings stay visible when zoomed in) instead of requesting
+        // higher-zoom tiles that may not be populated.
+        maxzoom: 14,
+      });
+    }
+
+    if (!map.getLayer('buildings-fill')) {
+      map.addLayer({
+        id: 'buildings-fill',
+        type: 'fill',
+        source: 'eubucco',
+        'source-layer': 'buildings',
+        layout: { visibility: is3d ? 'none' : 'visible' },
+        paint: {
+          'fill-color': color,
+          'fill-opacity': ['interpolate', ['linear'], ['zoom'], 12, 0.6, 14, 0.85],
+          'fill-outline-color': ['interpolate', ['linear'], ['zoom'], 12, 'rgba(0,0,0,0)', 14, 'rgba(0,0,0,0.25)'],
+        },
+      });
+    }
+
+    if (!map.getLayer('buildings-3d')) {
+      map.addLayer({
+        id: 'buildings-3d',
+        type: 'fill-extrusion',
+        source: 'eubucco',
+        'source-layer': 'buildings',
+        layout: { visibility: is3d ? 'visible' : 'none' },
+        paint: {
+          'fill-extrusion-color': color,
+          'fill-extrusion-height': ['coalesce', ['get', 'height'], 5],
+          'fill-extrusion-base': 0,
+          'fill-extrusion-opacity': 0.85,
+        },
+      });
+    }
+
+    // Overture buildings — rendered as line outlines for visual differentiation.
+    if (!map.getSource('overture')) {
+      map.addSource('overture', {
+        type: 'vector',
+        url: `pmtiles://${OVERTURE_URL}`,
+      });
+    }
+
+    if (!map.getLayer('overture-outline')) {
+      map.addLayer({
+        id: 'overture-outline',
+        type: 'line',
+        source: 'overture',
+        'source-layer': 'building',
+        layout: { visibility: overtureVisible ? 'visible' : 'none' },
+        paint: {
+          'line-color': '#c4b5fd',
+          'line-width': 1.8,
+          'line-opacity': 0.9,
+        },
+      });
+    }
+
+    map.setLayoutProperty('buildings-fill', 'visibility', is3d ? 'none' : 'visible');
+    map.setLayoutProperty('buildings-3d',   'visibility', is3d ? 'visible' : 'none');
+    map.setLayoutProperty('overture-outline', 'visibility', overtureVisible ? 'visible' : 'none');
+    map.setPaintProperty('buildings-fill', 'fill-color', color);
+    map.setPaintProperty('buildings-3d',   'fill-extrusion-color', color);
+    renderLegend(selectedScheme);
+
+    // Some style internals settle one frame later; run cleanup again while
+    // protecting the custom layer IDs above.
+    requestAnimationFrame(removeBasemapBuildings);
+  } catch (e) {
+    console.warn('Could not rebuild explorer map layers yet:', e);
+    setTimeout(scheduleMapLayerRebuild, 50);
+  }
+}
+
+function scheduleMapLayerRebuild() {
+  if (rebuildFrame !== null) cancelAnimationFrame(rebuildFrame);
+  rebuildFrame = requestAnimationFrame(() => {
+    rebuildFrame = null;
+    addExplorerLayers();
+  });
+}
+
+function hideOpenTip() {
+  const el = document.getElementById('tip');
+  if (el) el.style.display = 'none';
+  if (map && map.getCanvas()) map.getCanvas().style.cursor = '';
+}
+
+function syncMapTheme() {
+  applyThemeClass();
+  const nextLightMode = isLightMode();
+  if (nextLightMode === currentMapLightMode) {
+    scheduleMapLayerRebuild();
+    return;
+  }
+  currentMapLightMode = nextLightMode;
+  hideOpenTip();
+  map.setStyle(currentBaseStyleUrl(), { diff: false });
+  scheduleMapLayerRebuild();
+}
+
+map.on('load', () => {
+  document.getElementById('zoom-val').textContent = map.getZoom().toFixed(1);
+  zoomHint.style.opacity = map.getZoom() < 12 ? '1' : '0';
+  scheduleMapLayerRebuild();
+});
+
+map.on('style.load', scheduleMapLayerRebuild);
+map.on('idle', removeBasemapBuildings);
+
+const themeObserver = new MutationObserver(syncMapTheme);
+themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+
+// ── Apply color scheme ─────────────────────────────────────────
+function applyColorScheme(key) {
+  if (!map.getLayer('buildings-fill') || !map.getLayer('buildings-3d')) {
+    scheduleMapLayerRebuild();
+    return;
+  }
+  const color = (SCHEMES[key] || SCHEMES.default).fill;
+  map.setPaintProperty('buildings-fill', 'fill-color', color);
+  map.setPaintProperty('buildings-3d',   'fill-extrusion-color', color);
+  renderLegend(key);
+}
+
+// ── Toggle 3D / flat ──────────────────────────────────────────
+function setView(view) {
+  is3d = view === '3d';
+  document.querySelectorAll('#viewSeg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.view === view);
+  });
+  // Hide Overture when manually entering 3D (outlines float oddly on extrusions)
+  if (is3d && overtureVisible) setOverture(false);
+  if (!map.getLayer('buildings-fill') || !map.getLayer('buildings-3d')) {
+    scheduleMapLayerRebuild();
+    return;
+  }
+  map.setLayoutProperty('buildings-fill', 'visibility', is3d ? 'none' : 'visible');
+  map.setLayoutProperty('buildings-3d',   'visibility', is3d ? 'visible' : 'none');
+  map.easeTo({ pitch: is3d ? 45 : 0, duration: 400 });
+  writeUrlState();
+}
+
+// ── Overture overlay ──────────────────────────────────────────
+function setOverture(show) {
+  overtureVisible = show;
+  if (map.getLayer('overture-outline')) {
+    map.setLayoutProperty('overture-outline', 'visibility', show ? 'visible' : 'none');
+  } else {
+    scheduleMapLayerRebuild();
+  }
+  document.getElementById('overtureBtn').classList.toggle('on', show);
+  writeUrlState();
+}
+
+document.getElementById('overtureBtn').addEventListener('click', () => {
+  // Auto-switch to flat when enabling Overture (outlines work poorly on 3D extrusions)
+  if (is3d) setView('flat');
+  setOverture(!overtureVisible);
+});
+
+// ── Hover tooltip ─────────────────────────────────────────────
+const tipEl = document.getElementById('tip');
+
+function updateTip(e) {
+  if (!map.getLayer('buildings-fill')) return;
+  const activeLayer = is3d ? 'buildings-3d' : 'buildings-fill';
+  const features = map.queryRenderedFeatures(e.point, { layers: [activeLayer] });
+  if (!features.length) { hideTip(); return; }
+
+  const p = features[0].properties;
+
+  // Confidence annotations
+  const typeConf    = fmtCatConf(p.type_confidence);
+  const subtypeConf = fmtCatConf(p.subtype_confidence);
+  const heightConf  = p.height != null && p.height !== 'null'
+    ? fmtNumConf(p.height_source, p.height_confidence_lower, p.height_confidence_upper, 'm')
+    : '';
+  const floorsConf  = fmtNumConf(p.floors_source, p.floors_confidence_lower, p.floors_confidence_upper, '');
+  const yearConf    = fmtNumConf(p.construction_year_source,
+      p.construction_year_confidence_lower, p.construction_year_confidence_upper, '');
+
+  const heightVal = p.height != null && p.height !== 'null'
+    ? `${p.height} m${heightConf}`
+    : fmtVal(null);
+
+  const rows = [
+    { k: 'type',    v: `${fmtVal(p.type)}${typeConf}`,                 src: p.type_source },
+    { k: 'subtype', v: `${fmtVal(p.subtype)}${subtypeConf}`,           src: p.subtype_source },
+    { k: 'height',  v: heightVal,                                      src: p.height_source },
+    { k: 'floors',  v: `${fmtVal(p.floors)}${floorsConf}`,             src: p.floors_source },
+    { k: 'year',    v: `${fmtVal(p.construction_year)}${yearConf}`,    src: p.construction_year_source },
+    { k: 'source',  v: fmtGeometrySource(p.geometry_source),           src: null },
+  ];
+
+  const tableHtml = rows.map(r =>
+    `<tr><td class="k">${r.k}</td><td class="v">${r.v}${r.src && r.src !== 'null' ? srcPill(r.src) : ''}</td></tr>`
+  ).join('');
+
+  const hasConf = typeConf || subtypeConf || heightConf || floorsConf || yearConf;
+  const confHint = hasConf
+    ? `<div class="tip-conf-hint tip-conf-hint-boarder">Confidence of ESTIMATED values:<ul>
+            <li><em>(%)</em> classification probability</li>
+            <li><em>±</em> bootstrapped prediction</li>
+        </ul></div>
+        <div class="tip-conf-hint">Confidence of merged OSM values:<ul>
+            <li><em>(%)</em> relative overlap with contributing sources</li>
+            <li><em>[range]</em> of merged attributes</li>
+        </ul></div>`    : '';
+
+  tipEl.innerHTML =
+    `<div class="tip-id">${p.id || '—'}</div><table>${tableHtml}</table>${confHint}`;
+
+  positionTip(e.originalEvent);
+  tipEl.style.display = 'block';
+  map.getCanvas().style.cursor = 'crosshair';
+}
+
+function hideTip() {
+  tipEl.style.display = 'none';
+  map.getCanvas().style.cursor = '';
+}
+
+function positionTip(mouseEvent) {
+  const rect = map.getContainer().getBoundingClientRect();
+  const relX = mouseEvent.clientX - rect.left;
+  const relY = mouseEvent.clientY - rect.top;
+  const tw = tipEl.offsetWidth  || 200;
+  const th = tipEl.offsetHeight || 120;
+  let left = relX + 14, top = relY + 14;
+  if (left + tw > rect.width  - 10) left = relX - tw - 10;
+  if (top  + th > rect.height - 10) top  = relY - th - 10;
+  tipEl.style.left = left + 'px';
+  tipEl.style.top  = top  + 'px';
+}
+
+map.on('mousemove', updateTip);
+map.on('mouseout',  hideTip);
+
+map.getContainer().addEventListener('mousemove', e => {
+  if (tipEl.style.display === 'block') positionTip(e);
+});
+
+// ── Controls ──────────────────────────────────────────────────
+document.getElementById('colorSelect').addEventListener('change', e => {
+  applyColorScheme(e.target.value);
+  writeUrlState();
+});
+
+document.querySelectorAll('#viewSeg button').forEach(btn => {
+  btn.addEventListener('click', () => setView(btn.dataset.view));
+});
+
+// Reflect restored view / overlay state in the controls (the map itself was
+// created with the right pitch + layer visibility from urlState above).
+document.querySelectorAll('#viewSeg button').forEach(b => {
+  b.classList.toggle('on', (b.dataset.view === '3d') === is3d);
+});
+document.getElementById('overtureBtn').classList.toggle('on', overtureVisible);
+
+// ── Collapse panel (mobile) ───────────────────────────────────
+document.getElementById('panelToggle').addEventListener('click', () => {
+  const panel = document.getElementById('panel');
+  const collapsed = panel.classList.toggle('collapsed');
+  document.getElementById('panelToggle').setAttribute('aria-expanded', String(!collapsed));
+});
+</script>
+
+{% endblock %}

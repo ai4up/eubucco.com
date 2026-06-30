@@ -2,8 +2,8 @@ import os
 
 from django.core.management.base import BaseCommand
 
-from eubucco.data.minio_client import build_client, file_exists
-from eubucco.data.tasks import coverage_object_key, run_coverage_pipeline
+from eubucco.data import storage
+from eubucco.data.coverage import run_coverage_pipeline
 
 
 class Command(BaseCommand):
@@ -48,9 +48,8 @@ class Command(BaseCommand):
         )
 
         if not options["force"] and not options["no_upload"]:
-            object_key = coverage_object_key(version)
-            client, settings = build_client()
-            if file_exists(client, settings, object_key):
+            object_key = storage.coverage_key(version)
+            if storage.object_exists(object_key):
                 self.stdout.write(
                     self.style.SUCCESS(
                         f"Coverage PMTiles already present at {object_key} "

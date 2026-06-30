@@ -1,7 +1,6 @@
 let countries = [];
 let selectedNutsId = "";
 let nutsPartitions = [];
-let v01Files = [];
 let applyFilters = () => {};
 let nutsNames = {};
 
@@ -59,23 +58,14 @@ const getNutsName = (nutsId) => {
   return nutsNames[nutsId] || 'Unknown region';
 };
 
-/* ---------- NUTS partitions + v0.1 files ---------- */
+/* ---------- NUTS partitions (v0.2 region table) ---------- */
+// v0.1 is country-level and rendered server-side (see data/download_v0.1.html);
+// only v0.2 needs the client-side, searchable NUTS partition table.
 
 const loadNutsOrFiles = async () => {
+  if (currentVersion !== "v0.2") return;
   const baseApi = getApiBase();
   try {
-    if (currentVersion === "v0.1") {
-      const resp = await fetch(`${baseApi}datalake/files/v0.1`);
-      if (!resp.ok) {
-        console.error("Failed to load v0.1 files", resp.status, resp.statusText);
-        v01Files = [];
-      } else {
-        const data = await resp.json();
-        v01Files = Array.isArray(data.files) ? data.files : [];
-      }
-      return;
-    }
-
     const resp = await fetch(`${baseApi}datalake/nuts/${currentVersion}`);
     if (!resp.ok) {
       console.error("Failed to load nuts partitions", resp.status, resp.statusText);
@@ -86,11 +76,7 @@ const loadNutsOrFiles = async () => {
     }
   } catch (e) {
     console.error("Failed to load data", e);
-    if (currentVersion === "v0.1") {
-      v01Files = [];
-    } else {
-      nutsPartitions = [];
-    }
+    nutsPartitions = [];
   }
 };
 
@@ -266,7 +252,7 @@ const renderNutsResults = () => {
       ${['.parquet', '.gpkg', '.zip'].map(ext => {
         const file = part.files.find(f => f.key.endsWith(ext));
         return file
-          ? `<td class="text-center"><a href="${file.presigned_url}" class="link link-primary no-underline hover:underline">${Math.round(file.size_bytes / 1e6)} MB</a></td>`
+          ? `<td class="text-center"><a href="${file.download_url}" class="link link-primary no-underline hover:underline">${Math.round(file.size_bytes / 1e6)} MB</a></td>`
           : `<td class="text-center opacity-20">—</td>`;
       }).join('')}
     </tr>
@@ -549,7 +535,7 @@ function alignDownloadsBottomBar() {
 const onVersionChange = () => {
   const newVersion = versionSelect.value;
   // Navigate to the new URL with the selected version
-  window.location.href = `/files/${newVersion}`;
+  window.location.href = `/data/download/${newVersion}`;
 };
 
 /* ---------- Bootstrap ---------- */
