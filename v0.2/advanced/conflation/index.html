@@ -891,8 +891,6 @@
       
         
       
-        
-      
     
     
     
@@ -1159,34 +1157,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../prediction.md" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Prediction Methodology
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -1561,33 +1531,33 @@
 <h2 id="3-merging">3. Merging</h2>
 <p>Once matches are identified, the geometries and attributes are integrated to produce the final building record.</p>
 <h3 id="attribute-merging">Attribute Merging</h3>
-<p>Attributes (Type, Height, Floors, Construction Year) are merged across matching blocks using logic designed to maximize spatial consistency. We define the optimal source set <span class="arithmatex">\(\mathcal{S}_a^*\)</span> for a target building <span class="arithmatex">\(a\)</span> as the subset of available buildings <span class="arithmatex">\(\mathcal{B}_a\)</span> that maximizes the Intersection over Union (IoU):</p>
+<p>For each target building <span class="arithmatex">\(a\)</span>, we combine the attributes (Type, Height, Floors, Construction Year) of the matching buildings that overlap it. Since several sources may overlap the same target — sometimes only partially — we first select the combination that best fits the target's footprint. This optimal source set <span class="arithmatex">\(\mathcal{S}_a^*\)</span> is the subset of the matching buildings <span class="arithmatex">\(\mathcal{B}_a\)</span> whose combined shape maximizes the Intersection over Union (IoU) with <span class="arithmatex">\(a\)</span>:</p>
 <div class="arithmatex">\[\mathcal{S}_a^* = \arg\max_{\mathcal{S} \subseteq \mathcal{B}_a} \text{IoU}(a, \mathcal{S})\]</div>
-<p><small>where <span class="arithmatex">\(\mathcal{B}_a\)</span> represents the set of all matching building footprints from various sources for the target building <span class="arithmatex">\(a\)</span>, and <span class="arithmatex">\(\mathcal{S}\)</span> is any possible combination of those footprints.</small></p>
+<p><small>where <span class="arithmatex">\(\mathcal{B}_a\)</span> is the set of all matching source footprints for the target building <span class="arithmatex">\(a\)</span>, <span class="arithmatex">\(b_i\)</span> denotes the footprint of source building <span class="arithmatex">\(i\)</span>, and <span class="arithmatex">\(\mathcal{S}\)</span> is any possible combination of those footprints.</small></p>
 <h4 id="numerical-attributes">Numerical Attributes</h4>
 <ul>
 <li>
-<p><strong>Merge Aggregation:</strong> Building height, floors, and construction year are merged using <strong>intersection-area–weighted averages</strong>.</p>
-<div class="arithmatex">\[V_{merged} = \frac{\sum_{i \in \mathcal{S}_a^*} (V_{source, i} \cdot w_i)}{\sum_{i \in \mathcal{S}_a^*} w_i}\]</div>
-<p><small>where <span class="arithmatex">\(V_{source, i}\)</span> is the numerical value from source footprint <span class="arithmatex">\(i\)</span>, and <span class="arithmatex">\(w_i\)</span> is the area of intersection between the target footprint <span class="arithmatex">\(B_{target}\)</span> and the <span class="arithmatex">\(i\)</span>-th matching source footprint <span class="arithmatex">\(B_{source, i}\)</span>.</small></p>
+<p><strong>Merge Aggregation:</strong> Building height, floors, and construction year are merged using <strong>intersection-area–weighted averages</strong>, so that larger overlaps contribute more.</p>
+<div class="arithmatex">\[v_a = \frac{\sum_{i \in \mathcal{S}_a^*} w_i \, v_i}{\sum_{i \in \mathcal{S}_a^*} w_i}\]</div>
+<p><small>where <span class="arithmatex">\(v_i\)</span> is the value from source footprint <span class="arithmatex">\(i\)</span>, and <span class="arithmatex">\(w_i = \text{Area}(a \cap b_i)\)</span> is its area of intersection with the target footprint <span class="arithmatex">\(a\)</span>.</small></p>
 </li>
 <li>
-<p><strong>Confidence Scores</strong>: To represent the reliability of numerical merges, we provide the range of contributing values:</p>
-<div class="arithmatex">\[\text{Range} = [ \min(V_{source, i}), \max(V_{source, i}) ] \quad \forall i \in \mathcal{S}_a^*\]</div>
-<p><small>where <span class="arithmatex">\(\min\)</span> and <span class="arithmatex">\(\max\)</span> denote the lowest and highest attribute values found among matching source footprints in the optimal source set.</small></p>
+<p><strong>Confidence Scores:</strong> For numerical merges, we report the spread of contributing values as a <strong>lower</strong> and <strong>upper</strong> confidence bound — the smallest and largest values among the merged sources:</p>
+<div class="arithmatex">\[\text{Confidence}_\text{lower} = \min(v_i), \qquad \text{Confidence}_\text{upper} = \max(v_i)\]</div>
+<p><small>taken over all source footprints <span class="arithmatex">\(i\)</span> in the optimal source set <span class="arithmatex">\(\mathcal{S}_a^*\)</span>.</small></p>
 </li>
 </ul>
 <h4 id="categorical-attributes">Categorical Attributes</h4>
 <ul>
 <li>
-<p><strong>Merge Aggregation:</strong> Building types are assigned based on the <strong>dominant category</strong> by cumulative intersecting area.</p>
-<div class="arithmatex">\[C_{merged} = \arg\max_{c \in \mathcal{C}} \sum_{i \in \mathcal{S}_{a, c}^*} \text{Area}(B_{target} \cap B_{source, i})\]</div>
-<p><small>where <span class="arithmatex">\(\mathcal{C}\)</span> is the set of possible building categories, and <span class="arithmatex">\(\mathcal{S}_{a, c}^*\)</span> is the subset of matching buildings in <span class="arithmatex">\(\mathcal{S}_a^*\)</span> that belong to category <span class="arithmatex">\(c\)</span>.</small></p>
+<p><strong>Merge Aggregation:</strong> Building types are assigned the <strong>dominant category</strong> <span class="arithmatex">\(c^\ast\)</span> — the category covering the largest cumulative intersecting area.</p>
+<div class="arithmatex">\[c^\ast = \arg\max_{c \in \mathcal{C}} \sum_{i:\, c_i = c} \text{Area}(a \cap b_i)\]</div>
+<p><small>where <span class="arithmatex">\(\mathcal{C}\)</span> is the set of possible building categories, <span class="arithmatex">\(c_i\)</span> is the category of source building <span class="arithmatex">\(i\)</span>, and the sum runs over the footprints in <span class="arithmatex">\(\mathcal{S}_a^*\)</span> whose category equals <span class="arithmatex">\(c\)</span>.</small></p>
 </li>
 <li>
-<p><strong>Confidence Scores</strong>: The confidence score represents the spatial agreement (Intersection over Area) of the source geometries relative to the target:</p>
-<div class="arithmatex">\[\text{Confidence} = \frac{\text{Area}(B_{target} \cap \bigcup_{i \in \mathcal{S}_a^* } B_{source, i})}{\text{Area}(B_{target})}\]</div>
-<p><small>where <span class="arithmatex">\(\bigcup B_{source, i}\)</span> represents the geometric union of all matching source footprints, and <span class="arithmatex">\(B_{target}\)</span> is the geometry of the target footprint.</small></p>
+<p><strong>Confidence Scores:</strong> The confidence score is the spatial agreement (Intersection over Area) between the target and the source footprints that <strong>share the dominant category</strong> <span class="arithmatex">\(c^\ast\)</span> — sources with a different category are excluded:</p>
+<div class="arithmatex">\[\text{Confidence} = \frac{\text{Area}\big(a \cap \bigcup_{i:\, c_i = c^\ast} b_i\big)}{\text{Area}(a)}\]</div>
+<p><small>where the union is taken over the source footprints sharing the dominant category <span class="arithmatex">\(c^\ast\)</span>.</small></p>
 </li>
 </ul>
 <hr />
