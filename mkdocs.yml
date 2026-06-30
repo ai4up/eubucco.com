@@ -29,7 +29,7 @@ nav:
   # - API: 'api.md'
   - Advanced:
     - Conflation Methodology: 'advanced/conflation.md'
-    - Prediction Methodology: 'advanced/prediction.md'
+    # - Prediction Methodology: 'advanced/prediction.md'
     - Prediction Evaluation: 'advanced/eval-metrics.md'
     # - Validation Methodology: 'advanced/validation.md'
   - Known Issues: 'known-issues.md'
