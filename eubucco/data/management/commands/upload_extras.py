@@ -33,7 +33,7 @@ class Command(BaseCommand):
             help="Root of the local data tree (mounted at /app/data in containers).",
         )
         parser.add_argument(
-            "--version",
+            "--data-version",
             default=None,
             help="Only upload this version (e.g. v0.1). Default: every version dir found.",
         )
@@ -50,7 +50,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         root = Path(options["source_root"])
-        only_version = options["version"]
+        only_version = options["data_version"]
         kinds = [k.strip() for k in options["kinds"].split(",") if k.strip()]
         reupload = options["reupload"]
         storage.ensure_bucket()

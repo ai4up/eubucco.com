@@ -287,7 +287,7 @@ on the server the data-bearing ones are also exposed as one-off compose services
 | Job | Command | When to run |
 |-----|---------|-------------|
 | Ingest buildings | `manage.py ingest_buildings --data-version v0.2 [--reupload]` | New/updated building parquet in `data/s3/<version>/`. Dispatches the upload→convert Celery chain (workers must be up). |
-| Upload extras | `manage.py upload_extras [--version v0.1] [--reupload]` (svc: `extras-uploader`) | New additional files / examples / v0.1 buildings under `data/{additional,examples,buildings}/`. Idempotent. |
+| Upload extras | `manage.py upload_extras [--data-version v0.1] [--reupload]` (svc: `extras-uploader`) | New additional files / examples / v0.1 buildings under `data/{additional,examples,buildings}/`. Idempotent. |
 | Building tiles | `manage.py generate_building_tiles --data-version v0.2` (svc: `tile-generator`) | After ingest, to (re)build `buildings.pmtiles`. Resumable; long-running. |
 | Coverage tiles | `manage.py generate_coverage_tiles --data-version v0.2` (svc: `coverage-generator`) | After `region-stats.parquet` changes, to rebuild the choropleth + summary. |
 
