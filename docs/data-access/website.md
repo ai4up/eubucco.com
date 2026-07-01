@@ -1,6 +1,6 @@
 # 🖱️ File Downloads via Website
 
-The [EUBUCCO Data Portal](https://eubucco.com/files/) is the most user-friendly way to browse and download data.
+The [EUBUCCO Data Portal](https://eubucco.com/data/download/) is the most user-friendly way to browse and download data.
 
 - **Formats:** Available as `.parquet`, `.gpkg`, and `.shp` files
 - **Partitioning:** The dataset is split into multiple files, each containing all buildings within a single [NUTS2 region](https://ec.europa.eu/eurostat/web/nuts/maps).
