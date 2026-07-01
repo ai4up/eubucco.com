@@ -24,8 +24,8 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--local-data-root",
-            default="data/s3",
-            help="Root holding {version}/*.parquet region files (preferred over MinIO).",
+            default="data",
+            help="Root holding {version}/buildings/*.parquet region files (preferred over MinIO).",
         )
         parser.add_argument(
             "--tmp-dir",

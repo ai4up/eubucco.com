@@ -208,11 +208,11 @@ def _run_tile_join_and_upload(version: str, pmtiles_paths: list, out_path: str):
 def _resolve_region_sources(version: str, local_data_root: str):
     """Resolve per-region parquet sources.
 
-    Prefers local files (``{local_data_root}/{version}/*.parquet``). Falls back to
-    MinIO Hive-partitioned parquet via DuckDB httpfs. Returns ``(sources, s3_cfg)``
-    where ``sources`` is a list of ``(region_id, source_path_or_glob, s3_cfg_or_None)``.
+    Prefers local files (``{local_data_root}/{version}/buildings/*.parquet``). Falls
+    back to MinIO Hive-partitioned parquet via DuckDB httpfs. Returns ``(sources,
+    s3_cfg)`` where ``sources`` is ``(region_id, source_path_or_glob, s3_cfg_or_None)``.
     """
-    local_root = Path(local_data_root) / version
+    local_root = Path(local_data_root) / version / "buildings"
     local_files = sorted(local_root.glob("*.parquet"))
     if local_files:
         return [(p.stem, str(p), None) for p in local_files], None
@@ -286,7 +286,7 @@ def run_tile_pipeline(
     min_zoom: int = 12,
     max_zoom: int = 14,
     executor: str = "local",
-    local_data_root: str = "data/s3",
+    local_data_root: str = "data",
     tmp_dir: str = "data/tile_tmp",
     workers: int = None,
     force: bool = False,

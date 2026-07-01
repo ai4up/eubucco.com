@@ -3,13 +3,12 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 
 from eubucco.data import storage
-from eubucco.data.constants import ADDITIONAL_PREFIX, DATASET_PREFIX, EXAMPLES_PREFIX
+from eubucco.data.constants import ADDITIONAL_PREFIX, DATASET_PREFIX
 
-# Local source dirs (under --source-root) mapped to their MinIO top-level prefix.
-# additional/examples are flat; buildings are country-level (format-partitioned).
+# Local source kinds (under {source-root}/{version}/) mapped to their MinIO prefix.
+# additional files are flat; buildings are country-level (format-partitioned zips).
 KINDS = {
     "additional": ADDITIONAL_PREFIX,
-    "examples": EXAMPLES_PREFIX,
     "buildings": DATASET_PREFIX,
 }
 _BUILDING_SUFFIXES = {".gpkg.zip": "gpkg", ".csv.zip": "csv"}
@@ -17,13 +16,14 @@ _BUILDING_SUFFIXES = {".gpkg.zip": "gpkg", ".csv.zip": "csv"}
 
 class Command(BaseCommand):
     help = (
-        "Upload the 'extras' (additional files, examples, and legacy v0.1 "
-        "country-level buildings) from the local data tree into MinIO so everything "
-        "is served from object storage. Idempotent: existing objects are skipped "
-        "unless --reupload. Layout expected under <source-root>:\n"
-        "  additional/<version>/*        -> <version>/additional/<file>\n"
-        "  examples/<version>/*          -> <version>/examples/<file>\n"
-        "  buildings/<version>/v0_1-<R>.{csv,gpkg}.zip -> <version>/buildings/{csv,gpkg}/<R>.{ext}"
+        "Upload the 'extras' (additional files and legacy v0.1 country-level "
+        "buildings) from the local data tree into MinIO so everything is served "
+        "from object storage. Idempotent: existing objects are skipped unless "
+        "--reupload. Version-first layout expected under <source-root>:\n"
+        "  <version>/additional/*                       -> <version>/additional/<file>\n"
+        "  <version>/buildings/<R>.{csv,gpkg}.zip        -> <version>/buildings/{csv,gpkg}/<R>.{ext}\n"
+        "(v0.2 <version>/buildings holds raw *.parquet, uploaded via ingest_buildings "
+        "instead — non-zip building files are ignored here.)"
     )
 
     def add_arguments(self, parser):
@@ -51,36 +51,26 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         root = Path(options["source_root"])
         only_version = options["data_version"]
-        kinds = [k.strip() for k in options["kinds"].split(",") if k.strip()]
+        kinds = [k.strip() for k in options["kinds"].split(",") if k.strip() in KINDS]
         reupload = options["reupload"]
         storage.ensure_bucket()
 
         uploaded = skipped = 0
-        for kind in kinds:
-            if kind not in KINDS:
-                self.stderr.write(
-                    self.style.WARNING(f"Unknown kind '{kind}', skipping")
-                )
+        for version_dir in sorted(p for p in root.iterdir() if self._is_version_dir(p)):
+            version = version_dir.name
+            if only_version and version != only_version:
                 continue
-            kind_dir = root / kind
-            if not kind_dir.is_dir():
-                self.stdout.write(f"  {kind}: no '{kind_dir}' dir, skipping")
-                continue
-
-            for version_dir in sorted(p for p in kind_dir.iterdir() if p.is_dir()):
-                version = version_dir.name
-                if only_version and version != only_version:
+            for kind in kinds:
+                kind_dir = version_dir / kind
+                if not kind_dir.is_dir():
                     continue
-                self.stdout.write(self.style.MIGRATE_HEADING(f"{kind} / {version}"))
-                for path in sorted(version_dir.glob("*")):
+                self.stdout.write(self.style.MIGRATE_HEADING(f"{version} / {kind}"))
+                for path in sorted(kind_dir.glob("*")):
                     if not path.is_file() or path.name.startswith("."):
                         continue
                     key = self._object_key(kind, version, path.name)
                     if key is None:
-                        self.stderr.write(
-                            self.style.WARNING(f"  skip (unrecognised): {path.name}")
-                        )
-                        continue
+                        continue  # e.g. raw parquet in a buildings dir — not our job
                     if storage.upload_if_missing(path, key, reupload=reupload):
                         uploaded += 1
                         self.stdout.write(f"  ✓ {path.name} -> {key}")
@@ -93,6 +83,10 @@ class Command(BaseCommand):
             )
         )
 
+    @staticmethod
+    def _is_version_dir(path: Path) -> bool:
+        return path.is_dir() and any((path / kind).is_dir() for kind in KINDS)
+
     def _object_key(self, kind, version, filename):
         if kind == "buildings":
             prefix = f"{version.replace('.', '_')}-"  # e.g. v0.1 -> "v0_1-"
@@ -102,6 +96,5 @@ class Command(BaseCommand):
                     return storage.legacy_buildings_key(
                         version, fmt, f"{region}{suffix}"
                     )
-            return None  # unknown buildings file
-        # additional / examples are flat under {version}/{kind}/
+            return None  # non-zip building file (e.g. raw parquet) — skip silently
         return f"{version}/{KINDS[kind]}/{filename}"

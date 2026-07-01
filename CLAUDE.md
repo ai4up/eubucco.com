@@ -98,7 +98,7 @@ them); the logic lives in `ingest.py`, `tiling.py`, `coverage.py`, with shared k
 helpers in `eubucco/data/storage.py`.
 
 ### Data lake (MinIO) conventions
-Prefixes in `eubucco/data/constants.py` (`DATASET_PREFIX="buildings"`, `EXAMPLES_PREFIX`,
+Prefixes in `eubucco/data/constants.py` (`DATASET_PREFIX="buildings"`,
 `ADDITIONAL_PREFIX`). **Everything** lives in MinIO. Object keys:
 ```
 {version}/buildings/parquet/nuts_id={id}/{file}.parquet       # raw (NUTS-partitioned, v0.2)
@@ -106,9 +106,12 @@ Prefixes in `eubucco/data/constants.py` (`DATASET_PREFIX="buildings"`, `EXAMPLES
 v0.1/buildings/{gpkg|csv}/{region}.{gpkg.zip|csv.zip}         # legacy country-level (v0.1)
 {version}/buildings/tiles/buildings.pmtiles                   # vector tiles
 {version}/coverage/coverage-stats.pmtiles (+ -summary.json)   # choropleth
-{version}/examples/{file}                                     # example datasets
 {version}/additional/{file}  (+ additional/metadata.json)     # additional files + descriptions
 ```
+The local source tree (`data/`, mounted at `/app/data`) mirrors this **version-first**:
+`data/{version}/buildings/*.parquet` (v0.2 raw NUTS) or `*.{gpkg,csv}.zip` (v0.1 country),
+and `data/{version}/additional/*`. `ingest_buildings`/tiling read the parquet; `upload_extras`
+uploads the additional files + v0.1 zips.
 The data bucket is **public-read + list**; downloads are direct public URLs (the MinIO webhook →
 Plausible tracks every GET). Build keys / URLs via `eubucco/data/storage.py` (`parquet_key`,
 `public_object_url`, `pmtiles_url`, `upload_if_missing`, …); the low-level client is
@@ -128,7 +131,7 @@ then `tile-join` merges all regions into one `buildings.pmtiles` and uploads to 
 ### Ingestion orchestration
 `ingest_all_by_version(version_tag=...)` (`eubucco/data/ingest.py`) chains the phases (upload →
 convert) as Celery chords; trigger it via `manage.py ingest_buildings`. The extras (additional
-files, examples, v0.1 country-level buildings) are pushed to MinIO by `manage.py upload_extras`
+files, v0.1 country-level buildings) are pushed to MinIO by `manage.py upload_extras`
 (compose service `extras-uploader`). See `create-release.md` for the full HPC→server→ingest release
 procedure and the README "Operations / Running Jobs" section for the job table.
 
@@ -161,7 +164,7 @@ ssh eubucco
 Key facts about the server:
 - Repo lives at **`/home/eubucco`** (on branch `main`, owned by root — editing files there needs
   `sudo`). Data lives at **`/home/eubucco-data`** (mounted into containers as `/app/data`); raw
-  release parquet is staged under `/home/eubucco-data/s3/v0.2/`.
+  release parquet is staged under `/home/eubucco-data/v0.2/buildings/`.
 - **`flo` is not in the docker group** — every `docker`/`docker compose` command needs `sudo`
   (sudo password is not stored in this repo; ask the maintainer).
 - Compose projects: dev = `-f dev.yml -p eubucco-dev`, prod = `-f production.yml -p eubucco`,
@@ -178,7 +181,7 @@ sudo docker compose -f dev.yml -p eubucco-dev --env-file ./.envs/.dev/.django ru
 # Trigger building ingestion (parquet upload + GPKG/SHP conversion via Celery)
 sudo docker compose -f dev.yml -p eubucco-dev --env-file ./.envs/.dev/.django \
   run --rm django python manage.py ingest_buildings --data-version v0.2 --reupload
-# Upload the extras (additional files, examples, v0.1 buildings) into MinIO
+# Upload the extras (additional files, v0.1 country buildings) into MinIO
 sudo docker compose -f dev.yml -p eubucco-dev --env-file ./.envs/.dev/.django run --rm extras-uploader
 
 # Logs / debugging

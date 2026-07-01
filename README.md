@@ -224,24 +224,9 @@ docker compose -f local.yml run --rm django coverage html
 docker compose -f local.yml run --rm django pytest
 ```
 
-**Run type checking**
-```bash
-docker compose -f local.yml run --rm django mypy eubucco
-```
-
 **Format code**
 ```bash
 docker compose -f local.yml run --rm django black .
-```
-
-**Create database migrations**
-```bash
-docker compose -f local.yml run --rm django python manage.py makemigrations
-```
-
-**Run database migrations**
-```bash
-docker compose -f local.yml run --rm django python manage.py migrate
 ```
 
 **Access Django shell**
@@ -286,8 +271,8 @@ on the server the data-bearing ones are also exposed as one-off compose services
 
 | Job | Command | When to run |
 |-----|---------|-------------|
-| Ingest buildings | `manage.py ingest_buildings --data-version v0.2 [--reupload]` | New/updated building parquet in `data/s3/<version>/`. Dispatches the upload→convert Celery chain (workers must be up). |
-| Upload extras | `manage.py upload_extras [--data-version v0.1] [--reupload]` (svc: `extras-uploader`) | New additional files / examples / v0.1 buildings under `data/{additional,examples,buildings}/`. Idempotent. |
+| Ingest buildings | `manage.py ingest_buildings --data-version v0.2 [--reupload]` | New/updated building parquet in `data/<version>/buildings/`. Dispatches the upload→convert Celery chain (workers must be up). |
+| Upload extras | `manage.py upload_extras [--data-version v0.1] [--reupload]` (svc: `extras-uploader`) | New additional files / v0.1 country buildings under `data/<version>/{additional,buildings}/`. Idempotent. |
 | Building tiles | `manage.py generate_building_tiles --data-version v0.2` (svc: `tile-generator`) | After ingest, to (re)build `buildings.pmtiles`. Resumable; long-running. |
 | Coverage tiles | `manage.py generate_coverage_tiles --data-version v0.2` (svc: `coverage-generator`) | After `region-stats.parquet` changes, to rebuild the choropleth + summary. |
 

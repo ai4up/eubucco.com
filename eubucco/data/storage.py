@@ -12,12 +12,7 @@ import os
 from pathlib import Path
 from typing import Callable, Optional
 
-from .constants import (
-    ADDITIONAL_METADATA_NAME,
-    ADDITIONAL_PREFIX,
-    DATASET_PREFIX,
-    EXAMPLES_PREFIX,
-)
+from .constants import ADDITIONAL_METADATA_NAME, ADDITIONAL_PREFIX, DATASET_PREFIX
 from .minio_client import build_client
 from .minio_client import ensure_bucket as _ensure_bucket
 from .minio_client import file_exists, list_objects, settings_from_django, upload_file
@@ -28,6 +23,18 @@ logger = logging.getLogger(__name__)
 def default_version() -> str:
     """The dataset version the public site defaults to (BUILDINGS_VERSION)."""
     return os.getenv("BUILDINGS_VERSION", "v0.2")
+
+
+# Local source tree mirrors the MinIO layout (version-first):
+#   {LOCAL_DATA_ROOT}/{version}/buildings/*   (raw NUTS parquet for v0.2; country zips for v0.1)
+#   {LOCAL_DATA_ROOT}/{version}/additional/*
+# Mounted at /app/data in containers.
+LOCAL_DATA_ROOT = "data"
+
+
+def local_source_dir(version: str, kind: str, root: str = LOCAL_DATA_ROOT) -> Path:
+    """Local source dir for a (version, kind), e.g. data/v0.2/buildings."""
+    return Path(root) / version / kind
 
 
 # --------------------------------------------------------------------------- #
@@ -57,14 +64,6 @@ def coverage_key(version: str) -> str:
 
 def coverage_summary_key(version: str) -> str:
     return f"{version}/coverage/coverage-summary.json"
-
-
-def examples_prefix(version: str) -> str:
-    return f"{version}/{EXAMPLES_PREFIX}/"
-
-
-def examples_key(version: str, filename: str) -> str:
-    return f"{version}/{EXAMPLES_PREFIX}/{filename}"
 
 
 def additional_prefix(version: str) -> str:

@@ -7,7 +7,7 @@ class Command(BaseCommand):
     help = (
         "Sequence the building-data ingestion pipeline for a dataset version: "
         "upload raw parquet to MinIO (io_tasks), then convert to GeoPackage/Shapefile "
-        "(heavy_tasks). Reads parquet from data/s3/<version>/. Requires the Celery "
+        "(heavy_tasks). Reads parquet from data/<version>/buildings/. Requires the Celery "
         "io/heavy workers to be running; this command only dispatches the chain."
     )
 

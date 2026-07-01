@@ -16,7 +16,6 @@ from config import celery_app
 from . import storage
 from .converters import GeoPackageConverter, ShapefileConverter
 
-RAW_FILES_DIR = Path("data/s3")
 SPATIAL_FORMATS = {
     "gpkg": (GeoPackageConverter(), ".gpkg"),
     "shp": (ShapefileConverter(), ".zip"),
@@ -85,8 +84,8 @@ def ingest_all_by_version(
     run_conversion: bool = True,
 ):
     """Chain the upload and conversion phases for every parquet under
-    ``data/s3/{version_tag}/``."""
-    base_path = Path(RAW_FILES_DIR) / version_tag
+    ``data/{version_tag}/buildings/``."""
+    base_path = storage.local_source_dir(version_tag, "buildings")
     parquet_files = [str(p) for p in base_path.rglob("*.parquet")]
     if not parquet_files:
         return "No files found."

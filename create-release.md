@@ -21,17 +21,20 @@ rsync -avP --inplace --no-whole-file --exclude "eubucco_lat_lon.parquet" \
 ```
 
 ### 2. Stage into the data tree (`/home/eubucco-data`, as root)
-The tree mirrors the MinIO layout; `upload_extras` reads `additional/`,`buildings/` and `ingest_buildings` reads `s3/`:
+The tree mirrors the MinIO layout, **version-first**: `<version>/buildings/` (raw NUTS
+parquet for v0.2, country-level zips for v0.1) and `<version>/additional/`.
+`ingest_buildings` reads `<version>/buildings/*.parquet`; `upload_extras` reads
+`<version>/{additional,buildings}/`:
 ```bash
-sudo mv /home/flo/eubucco-data/*            /home/eubucco-data/s3/v0.2/          # raw building parquet
-sudo mv /home/flo/eubucco_lat_lon.parquet   /home/eubucco-data/additional/v0.2/
-sudo rsync -av --inplace /home/flo/eubucco-additional-files/* /home/eubucco-data/additional/v0.2/
-# v0.1 country-level buildings + examples are already staged under
-#   /home/eubucco-data/buildings/v0.1/ and /home/eubucco-data/examples/v0.1/
+sudo mkdir -p /home/eubucco-data/v0.2/buildings /home/eubucco-data/v0.2/additional
+sudo mv /home/flo/eubucco-data/*            /home/eubucco-data/v0.2/buildings/     # raw building parquet
+sudo mv /home/flo/eubucco_lat_lon.parquet   /home/eubucco-data/v0.2/additional/
+sudo rsync -av --inplace /home/flo/eubucco-additional-files/* /home/eubucco-data/v0.2/additional/
+# v0.1 country-level buildings are already staged under /home/eubucco-data/v0.1/buildings/
 ```
 
 ### 3. (Optional) Update docs
-Update docs for new version. Commit, tag, and push changes. 
+Update docs for new version. Commit, tag, and push changes.
 ```bash
 git tag v0.2 HEAD
 git push --tags
@@ -59,7 +62,7 @@ sudo docker compose -f dev.yml -p eubucco-dev --env-file ./.envs/.dev/.django \
   run --rm django python manage.py ingest_buildings --data-version v0.2 --reupload
 ```
 
-### 6. Upload the extras (additional files, examples, v0.1 buildings) to MinIO
+### 6. Upload the extras (additional files, v0.1 country buildings) to MinIO
 One-off container; idempotent (skips objects already present, `--reupload` to overwrite):
 ```bash
 sudo docker compose -f dev.yml -p eubucco-dev --env-file ./.envs/.dev/.django \

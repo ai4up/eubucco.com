@@ -18,7 +18,7 @@ class Command(BaseCommand):
             "--input",
             default=None,
             help="NUTS3-level stats GeoParquet (EPSG:3035). Defaults to "
-            "$COVERAGE_STATS_PARQUET, else data/additional/<version>/region-stats.parquet.",
+            "$COVERAGE_STATS_PARQUET, else data/<version>/additional/region-stats.parquet.",
         )
         parser.add_argument("--data-version", default="v0.2")
         parser.add_argument("--min-zoom", type=int, default=3)
@@ -44,7 +44,7 @@ class Command(BaseCommand):
         input_path = (
             options["input"]
             or os.environ.get("COVERAGE_STATS_PARQUET")
-            or f"data/additional/{version}/region-stats.parquet"
+            or f"data/{version}/additional/region-stats.parquet"
         )
 
         if not options["force"] and not options["no_upload"]:

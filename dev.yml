@@ -298,8 +298,8 @@ services:
 
       # 2. Configure the Webhook Target (The Plausible Bridge)
       echo 'Configuring Plausible webhook...'
-      /usr/bin/mc admin config set localminio notify_webhook:plausible endpoint='http://django-webhook:5000/data/webhook/minio/' enable='on';
-      /usr/bin/mc admin config set localminio audit_webhook:plausible endpoint='http://django-webhook:5000/data/webhook/minio/' enable='on';
+      /usr/bin/mc admin config set localminio notify_webhook:plausible endpoint='http://django-webhook:5000/analytics/webhook/minio/' enable='on';
+      /usr/bin/mc admin config set localminio audit_webhook:plausible endpoint='http://django-webhook:5000/analytics/webhook/minio/' enable='on';
 
       # 3. Restart MinIO to register the new SQS ARN
       echo 'Restarting MinIO to apply webhook config...'
@@ -342,7 +342,7 @@ services:
     restart: "no"
     volumes:
       - /home/eubucco-data:/app/data
-    command: python manage.py generate_building_tiles --data-version v0.2 --min-zoom 12 --max-zoom 14 --executor local --local-data-root /app/data/s3 --tmp-dir /app/data/tile_tmp
+    command: python manage.py generate_building_tiles --data-version v0.2 --min-zoom 12 --max-zoom 14 --executor local --local-data-root /app/data --tmp-dir /app/data/tile_tmp
 
   coverage-generator:
     user: root
