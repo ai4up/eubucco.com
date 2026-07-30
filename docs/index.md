@@ -2,8 +2,6 @@
 
 **EUBUCCO** is a scientific database of individual building footprints for **322+ million buildings** across the 27 European Union countries, Norway, Switzerland, and the UK. It is composed of **55 open datasets**, including government registries (62.2%), OpenStreetMap (17.4%), and Microsoft building footprints (20.4%) that have been collected, harmonized, and validated.
 
-![EUBUCCO dataset composition by source type](figures/source-shares.png)
-
 ## Attribute Coverage
 
 The database provides high-granularity information for building type, height, floors, and construction year. To maximize utility, EUBUCCO distinguishes between *Ground Truth*, *Merged* (from other buildings footprint datasets), and *Estimated* (inferred with machine learning) attributes.
