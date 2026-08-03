@@ -4,11 +4,16 @@
 <li><a href="{% url 'explore:map' %}">Map</a></li>
 <li><a href="{% url 'explore:coverage' %}">Coverage</a></li>
 <li><a href="{% url 'explore:conflation' %}">Conflation Demo</a></li>
-<li><a href="{% url 'docs' %}">Docs</a></li>
-<li><a href="https://www.nature.com/articles/s41597-023-02040-2">Paper</a></li>
-<li><a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer">
+<li><a href="{% url 'docs' %}" class="flex items-center gap-1">Docs
+  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;flex:none"><path d="M7 17 17 7M8 7h9v9"/></svg>
+</a></li>
+<li><a href="https://www.nature.com/articles/s41597-023-02040-2" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1">Paper
+  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;flex:none"><path d="M7 17 17 7M8 7h9v9"/></svg>
+</a></li>
+<li><a href="https://github.com/ai4up/eubucco" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1">
   <div class="w-6 rounded hidden dark:block"><img src="{% static 'images/white_github.png' %}"/></div>
   <div class="w-6 rounded block dark:hidden"><img src="{% static 'images/dark_github.png' %}"/></div>
+  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5;flex:none"><path d="M7 17 17 7M8 7h9v9"/></svg>
 </a></li>
 <li>
   <button type="button" aria-label="Toggle color theme" class="btn btn-ghost w-full justify-start" data-theme-toggle>
