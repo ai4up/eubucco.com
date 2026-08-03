@@ -11,78 +11,91 @@
       window.getSelection().removeAllRanges();
     }
   </script>
-  <div class="hero min-h-screen relative" style="background-image: url({% static 'images/website_coolwarm.webp' %});">
-    <div class="hero-overlay bg-opacity-60"></div>
-    <div class="hero-content text-center text-neutral-content">
-      <div class="max-w-3xl md:max-w-4xl lg:max-w-5xl w-full">
-        <h1 class="mb-5 text-7xl font-bold">EUBUCCO</h1>
-        <p class="mb-20 max-w-3xl text-2xl">European building stock characteristics in a common and open database for 322+ million individual buildings.</p>
-        {% comment %} <a class="btn btn-primary" href="/data/download">Download the Data!</a> {% endcomment %}
-        <div class="alert alert-info shadow-lg max-w-4xl backdrop-blur-sm border-0 mx-auto relative overflow-hidden bg-base-300/50">
-          <div class="absolute inset-0 bg-gradient-to-r from-primary/70 via-secondary/70 to-accent/70"></div>
-          <div class="relative z-10">
-          <div class="flex-1 w-full">
-            <div class="flex flex-col items-center justify-center gap-3 w-full">
-              <div class="flex items-center justify-center gap-2">
-                <svg class="w-5 h-5 md:w-6 md:h-6 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                </svg>
-                <span class="text-lg md:text-xl font-bold text-white">EUBUCCO v0.2 Now Available!</span>
-              </div>
-              <div class="flex flex-wrap items-center justify-center gap-2 md:gap-3 w-full">
-                <div class="badge badge-success gap-1.5 text-xs md:text-sm whitespace-nowrap bg-success/80 text-success-content">
-                  <svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                  </svg>
-                  100% Attribute Completeness
-                </div>
-                <div class="badge badge-info gap-1.5 text-xs md:text-sm whitespace-nowrap bg-info/80 text-info-content">
-                  <svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"></path>
-                  </svg>
-                  >50% Footprint Coverage Improvement
-                </div>
-                <div class="badge badge-neutral gap-1.5 text-xs md:text-sm whitespace-nowrap bg-neutral/80 text-neutral-content">
-                  <svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
-                  </svg>
-                  Parquet Release (S3 Compatible)
-                </div>
-              </div>
-              <div class="flex flex-wrap items-center justify-center gap-2 md:gap-3 mt-1">
-                <a href="/data/download" class="btn btn-sm btn-ghost text-white border-white hover:bg-white hover:text-primary transition-all">
-                  Download v0.2 →
-                </a>
-                <a href="{% url 'explore:map' %}" class="btn btn-sm btn-ghost text-white border-white hover:bg-white hover:text-primary transition-all">
-                  Explore on map →
-                </a>
-                <a href="{% url 'docs' %}" class="btn btn-sm btn-ghost text-white border-white hover:bg-white hover:text-primary transition-all">
-                  Read new Docs →
-                </a>
-              </div>
-            </div>
-          </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
   {# ============================================================ Inside the dataset #}
   <section class="ds" id="ds">
     <div class="ds-inner">
-      <p class="ds-eyebrow">Dataset overview</p>
-      <h2 class="ds-title">One harmonized database, 55&nbsp;open sources</h2>
-      <p class="ds-lead">
-        EUBUCCO unifies governmental cadastres, OpenStreetMap, and Microsoft footprints into a single,
-        consistent, analysis-ready database &mdash; every building carries the same schema, with its
-        data source and attribute provenance recorded.
-      </p>
+      <div class="ds-hero">
+        <p class="ds-eyebrow">Dataset overview</p>
+        <h2 class="ds-title">EUBUCCO &#8212; A harmonized European building stock database</h2>
+        <p class="ds-lead">
+          Building footprints integrated from 55 governmental cadastres, OpenStreetMap, and Microsoft, enriched with harmonized building height, floor count, use type, subtype, and construction year attributes, with source provenance and uncertainty estimates.      </p>
 
-      <div class="ds-stats">
-        <div class="ds-stat"><span class="ds-stat-num">322M<span class="ds-plus">+</span></span><span class="ds-stat-lbl">individual buildings</span></div>
-        <div class="ds-stat"><span class="ds-stat-num">30</span><span class="ds-stat-lbl">countries · EU-27 + UK, NO, CH</span></div>
-        <div class="ds-stat"><span class="ds-stat-num">55</span><span class="ds-stat-lbl">open datasets harmonized</span></div>
-        <div class="ds-stat"><span class="ds-stat-num">5</span><span class="ds-stat-lbl">core attributes per building</span></div>
+        <div class="ds-stats">
+          <div class="ds-stat"><span class="ds-stat-num">322M<span class="ds-plus">+</span></span><span class="ds-stat-lbl">individual buildings</span></div>
+          <div class="ds-stat"><span class="ds-stat-num">100%</span><span class="ds-stat-lbl">coverage of 4 core attributes</span></div>
+          <div class="ds-stat"><span class="ds-stat-num">55</span><span class="ds-stat-lbl">authoritative datasets harmonized</span></div>
+          <div class="ds-stat"><span class="ds-stat-num">30</span><span class="ds-stat-lbl">countries · EU-27 + UK, NO, CH</span></div>
+        </div>
+
+        {# ---- 3D city: continent down to the building ---- #}
+        <figure class="ds-city" id="ds-city" data-embed="{% url 'tutorials:embed_city3d' %}">
+          <div class="ds-city-frame"><span class="ds-map-ph">Preparing 3D view&hellip;</span></div>
+          <figcaption class="ds-city-cap">
+            <div class="ds-cta">
+              <a class="ds-cta-btn" href="{% url 'data:download' %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg>
+                Download data
+              </a>
+              <a class="ds-cta-btn ds-cta-btn--ghost" href="{% url 'explore:map' %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2-6-2Zm0 0v14m6-12v14"/></svg>
+                Explore on map
+              </a>
+              <a class="ds-cta-btn ds-cta-btn--ghost" href="{% url 'docs' %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h6v18H6a2 2 0 0 0-2 2V5Zm16 0a2 2 0 0 0-2-2h-6v18h6a2 2 0 0 1 2 2V5Z"/></svg>
+                Read docs
+              </a>
+            </div>
+          </figcaption>
+        </figure>
+
+        {# ---- gentle scroll hint ---- #}
+        <a class="ds-scroll-hint" href="#learn-more"
+           aria-label="Scroll down to learn about the data schema, sources, and attribute coverage">
+          <span class="ds-scroll-txt">Schema&nbsp;· sources&nbsp;· attributes&nbsp;</span>
+          <svg class="ds-scroll-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </a>
+      </div>
+
+      {# ---- Schema: the building record ---- #}
+      <div class="ds-sec-head" id="learn-more">
+        <h3 class="ds-sec-title">Data schema</h3>
+        <p class="ds-sec-sub">The core fields of every building record. For schema details see the <a href="{{ docs_schema_url|default:'/docs' }}">docs &rarr;</a></p>
+      </div>
+      <section class="ds-schema">
+        <div class="ds-fields">
+          <div class="ds-fgroup">
+            <span class="ds-fgroup-label">Identifiers</span>
+            <div class="ds-field"><code>id</code><span>unique ID</span></div>
+            <div class="ds-field"><code>region_id</code><span>NUTS3 code</span></div>
+            <div class="ds-field"><code>city_id</code><span>LAU code</span></div>
+          </div>
+          <div class="ds-fgroup">
+            <span class="ds-fgroup-label">Attributes</span>
+            <div class="ds-field"><code>type</code><span>binary use type</span></div>
+            <div class="ds-field"><code>subtype</code><span>detailed use</span></div>
+            <div class="ds-field"><code>height</code><span>meters</span></div>
+            <div class="ds-field"><code>floors</code><span>count</span></div>
+            <div class="ds-field"><code>construction_year</code><span>year</span></div>
+          </div>
+          <div class="ds-fgroup">
+            <span class="ds-fgroup-label">Geometry</span>
+            <div class="ds-field"><code>geometry</code><span>WKB, EPSG:3035</span></div>
+          </div>
+          <div class="ds-fgroup">
+            <span class="ds-fgroup-label">Provenance</span>
+            <div class="ds-field"><code>geometry_source</code><span>origin dataset</span></div>
+            <div class="ds-field"><code>geometry_source_id</code><span>source record ID</span></div>
+            <div class="ds-field"><code>&lt;attr&gt;_source</code><span>origin dataset</span></div>
+            <div class="ds-field"><code>&lt;attr&gt;_source_ids</code><span>source record IDs</span></div>
+            <div class="ds-field"><code>&lt;attr&gt;_confidence</code><span>uncertainty</span></div>
+          </div>
+        </div>
+      </section>
+
+      {# ---- Sources ---- #}
+      <div class="ds-sec-head">
+        <h3 class="ds-sec-title">Source composition across Europe</h3>
+        <p class="ds-sec-sub">Per-region composition of governmental registries, Microsoft, and OpenStreetMap footprints across Europe.</p>
       </div>
 
       {# ---- Source composition bar ---- #}
@@ -134,50 +147,6 @@
           <p class="ds-cov-note">Ground truth from official registries; merged from other footprint datasets; the remainder inferred with machine&nbsp;learning.</p>
         </section>
       </div>
-
-      {# ---- Schema: the building record ---- #}
-      <section class="ds-schema">
-        <div class="ds-schema-head">
-          <h3 class="ds-panel-title">A building record</h3>
-          <p class="ds-panel-sub">See full data schema in <a href="{{ docs_schema_url|default:'/docs' }}">docs &rarr;</a></p>
-        </div>
-        <div class="ds-fields">
-          <div class="ds-fgroup">
-            <span class="ds-fgroup-label">Identifiers</span>
-            <div class="ds-field"><code>id</code><span>unique ID</span></div>
-            <div class="ds-field"><code>region_id</code><span>NUTS3 code</span></div>
-            <div class="ds-field"><code>city_id</code><span>LAU code</span></div>
-          </div>
-          <div class="ds-fgroup">
-            <span class="ds-fgroup-label">Attributes</span>
-            <div class="ds-field"><code>type</code><span>binary use type</span></div>
-            <div class="ds-field"><code>subtype</code><span>detailed use</span></div>
-            <div class="ds-field"><code>height</code><span>meters</span></div>
-            <div class="ds-field"><code>floors</code><span>count</span></div>
-            <div class="ds-field"><code>construction_year</code><span>year</span></div>
-          </div>
-          <div class="ds-fgroup">
-            <span class="ds-fgroup-label">Geometry</span>
-            <div class="ds-field"><code>geometry</code><span>WKB, EPSG:3035</span></div>
-          </div>
-          <div class="ds-fgroup">
-            <span class="ds-fgroup-label">Provenance</span>
-            <div class="ds-field"><code>&lt;attr&gt;_source</code><span>origin dataset</span></div>
-            <div class="ds-field"><code>&lt;attr&gt;_source_ids</code><span>source records</span></div>
-            <div class="ds-field"><code>&lt;attr&gt;_confidence</code><span>uncertainty</span></div>
-          </div>
-        </div>
-      </section>
-
-      {# ---- 3D city: continent down to the building ---- #}
-      <figure class="ds-city" id="ds-city" data-embed="{% url 'tutorials:embed_city3d' %}">
-        <div class="ds-city-head">
-          <h3 class="ds-panel-title">From the continent down to the building</h3>
-          <p class="ds-panel-sub">Every footprint carries its height and use type information. Here illustrated for Z&uuml;rich.
-            &nbsp;<a href="{% url 'explore:map' %}">Open the map explorer&nbsp;&rarr;</a></p>
-        </div>
-        <div class="ds-city-frame"><span class="ds-map-ph">Preparing 3D view&hellip;</span></div>
-      </figure>
     </div>
   </section>
 
@@ -188,7 +157,7 @@
         <h2>Built for urban-scale research</h2>
         <p>EUBUCCO gives researchers a centralized, harmonized basis for high-resolution urban sustainability
           studies across scales &mdash; from continental comparisons down to single neighborhoods. It underpins use
-          cases such as energy-system modelling, climate and natural-hazard risk assessment, and urban morphology.</p>
+          cases such as energy-system modeling, climate and natural-hazard risk assessment, and urban morphology analysis.</p>
 
         <div class="divider"></div>
         <h2>How it was made</h2>
@@ -222,7 +191,7 @@
 
         <div class="divider"></div>
 
-        <h2>People</h2>
+        <h2>Team</h2>
         <p>Hosted at the Potsdam Institute for Climate Impact Research (PIK) and the
           Technical University Berlin, in the research group headed by <a href="https://www.pik-potsdam.de/members/creutzig" target="_blank" rel="noopener noreferrer">Prof. Dr. Felix Creutzig</a>.
           Development since v0.2 is led by Florian Nachtigall, with Nikola Milojevic-Dupont and Felix Wagner
@@ -357,28 +326,91 @@
       radial-gradient(140% 80% at 50% -20%, hsl(var(--p) / 0.06), transparent 60%),
       hsl(var(--bc) / 0.015);
   }
-  .ds-inner { max-width: 72rem; margin: 0 auto; padding: clamp(2.75rem, 6vw, 4.5rem) 1.5rem clamp(2.5rem, 5vw, 4rem); }
+  .ds-inner { max-width: 72rem; margin: 0 auto; padding: 1.5rem 1.5rem clamp(2.5rem, 5vw, 4rem); }
   .ds-eyebrow { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: hsl(var(--p)); margin-bottom: 0.7rem; }
-  .ds-title { font-size: clamp(1.7rem, 4vw, 2.6rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.07; margin: 0 0 0.9rem; }
-  .ds-lead { font-size: clamp(1rem, 1.5vw, 1.15rem); line-height: 1.65; color: var(--ds-muted); max-width: 46rem; }
+  .ds-title { font-size: clamp(1.6rem, 3.4vw, 2.4rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 0.9rem; }
+  .ds-lead { font-size: clamp(0.95rem, 1.3vw, 1.08rem); line-height: 1.55; color: var(--ds-muted); max-width: 67rem; }
+
+  /* Hero = the first screen. It fills the viewport height (minus the sticky navbar).
+     Content sits below a generous top pad; the scroll hint is the last flex child and
+     `margin-top: auto` hands it ALL the leftover space, so it always lands at the bottom
+     of the first screen while opening the widest possible gap under the buttons — no
+     overflow, no scroll. The 3D map is capped so it never stretches into a slab.
+     svh is the stable unit under Safari's collapsing toolbar; vh is the fallback. */
+  .ds-hero {
+    position: relative;
+    display: flex; flex-direction: column;
+    min-height: calc(100vh - 6rem); min-height: calc(100svh - 6rem);
+    padding-top: clamp(1rem, 3.5vh, 2.5rem); padding-bottom: clamp(2.5rem, 4.5vh, 3.75rem);
+  }
+  /* An auto margin on the first child mirrors the hint's auto margin below, so leftover
+     vertical space is split evenly: extra room grows both above the title and in the
+     buttons↔hint gap (padding-top remains the floor on short screens). */
+  .ds-hero > .ds-eyebrow { margin-top: auto; }
+
+  /* gentle scroll hint — pushed to the bottom of the first screen by the auto margin */
+  #learn-more { scroll-margin-top: 5rem; }
+  .ds-scroll-hint {
+    margin-top: auto; align-self: center;
+    display: flex; flex-direction: column; align-items: center; gap: 0.28rem;
+    padding-top: clamp(1.5rem, 4vh, 3rem);
+    font-size: 0.68rem; letter-spacing: 0.09em; text-transform: uppercase; font-weight: 600;
+    color: var(--ds-muted); text-align: center; text-decoration: none; white-space: nowrap;
+    opacity: 0.7; transition: opacity 0.2s ease, color 0.2s ease;
+  }
+  .ds-scroll-hint:hover { opacity: 1; color: var(--ds-fg); }
+  .ds-scroll-chev { width: 1.05rem; height: 1.05rem; animation: ds-scroll-bob 2.4s ease-in-out infinite; }
+  @keyframes ds-scroll-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+  @media (prefers-reduced-motion: reduce) { .ds-scroll-chev { animation: none; } }
+  .ds-hero > .ds-city { flex: 0 1 auto; min-height: 0; margin-top: clamp(0.75rem, 1.6vh, 1.25rem); display: flex; flex-direction: column; }
+  .ds-hero > .ds-city .ds-city-frame { flex: none; height: clamp(320px, 44vh, 500px); }
+  .ds-hero > .ds-city .ds-city-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* call-to-action buttons below the map — keyed to the section's emerald accent
+     (--cov, the government-registries green shared by the map + coverage bars),
+     not the generic theme primary, so the hero reads as one system. */
+  .ds-cta {
+    display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center; gap: 0.7rem 0.85rem;
+    --cta: 165 51% 37%;        /* #2f8f78 as HSL parts */
+    --cta-bright: 165 46% 46%; /* readable emerald for ghost text/border in dark mode */
+  }
+  .ds-cta-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.7rem 1.35rem; border-radius: 0.7rem; font-weight: 700; font-size: 0.92rem;
+    color: #fff; background: hsl(var(--cta)); border: 1px solid hsl(var(--cta));
+    box-shadow: 0 1px 2px hsl(var(--bc) / 0.14); transition: filter 0.15s ease, transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .ds-cta-btn svg { width: 1.05rem; height: 1.05rem; flex: none; }
+  .ds-cta-btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+  .ds-cta-btn--ghost {
+    color: hsl(var(--cta-bright)); background: hsl(var(--cta) / 0.08); border-color: hsl(var(--cta) / 0.4);
+    box-shadow: none;
+  }
+  .ds-cta-btn--ghost:hover { filter: none; background: hsl(var(--cta) / 0.15); border-color: hsl(var(--cta) / 0.6); }
 
   /* stat strip */
   .ds-stats {
     display: grid; grid-template-columns: repeat(2, 1fr); gap: 0;
-    margin: 2.25rem 0 2.5rem; border: 1px solid var(--ds-line); border-radius: 1rem; overflow: hidden;
+    margin: 0.6rem 0; border: 1px solid var(--ds-line); border-radius: 0.85rem; overflow: hidden;
     background: var(--ds-card);
   }
   @media (min-width: 760px) { .ds-stats { grid-template-columns: repeat(4, 1fr); } }
-  .ds-stat { padding: 1.15rem 1.35rem; border-top: 1px solid var(--ds-line); border-left: 1px solid var(--ds-line); }
+  .ds-stat { padding: 0.7rem 1rem; border-top: 1px solid var(--ds-line); border-left: 1px solid var(--ds-line); }
   .ds-stat:nth-child(-n+2) { border-top: 0; }
   .ds-stat:nth-child(odd) { border-left: 0; }
   @media (min-width: 760px) { .ds-stat { border-top: 0; } .ds-stat:nth-child(odd) { border-left: 1px solid var(--ds-line); } .ds-stat:first-child { border-left: 0; } }
-  .ds-stat-num { display: block; font-size: clamp(1.8rem, 3.4vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ds-stat-num { display: block; font-size: clamp(1.4rem, 2.7vw, 1.95rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
   .ds-plus { color: hsl(var(--p)); }
-  .ds-stat-lbl { display: block; margin-top: 0.4rem; font-size: 0.82rem; color: var(--ds-muted); line-height: 1.3; }
+  .ds-stat-lbl { display: block; margin-top: 0.3rem; font-size: 0.76rem; color: var(--ds-muted); line-height: 1.3; }
+
+  /* section headers above visuals (3D city, source map) */
+  .ds-sec-head { margin: clamp(3rem, 6vw, 4.75rem) 0 0.9rem; max-width: 68rem; }
+  .ds-sec-title { font-size: clamp(1.2rem, 2.1vw, 1.5rem); font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; margin: 0; }
+  .ds-sec-sub { font-size: clamp(0.9rem, 1.2vw, 0.98rem); color: var(--ds-muted); line-height: 1.6; margin: 0.5rem 0 0; }
+  .ds-sec-sub a { color: hsl(var(--p)); font-weight: 600; white-space: nowrap; }
 
   /* source map */
-  .ds-map { margin: 0 0 2.5rem; }
+  .ds-map { margin: 0; }
   .ds-map-frame {
     position: relative; height: clamp(380px, 56vw, 560px); border-radius: 1rem; overflow: hidden;
     border: 1px solid var(--ds-line); background: var(--ds-card-2);
@@ -400,7 +432,7 @@
   .ds-srclegend .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; flex: none; }
 
   /* panels grid */
-  .ds-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+  .ds-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: clamp(2.75rem, 5.5vw, 4rem); }
   @media (min-width: 900px) { .ds-grid { grid-template-columns: 1.1fr 1fr; } }
   .ds-panel { border: 1px solid var(--ds-line); border-radius: 1rem; background: var(--ds-card); padding: 1.35rem 1.5rem 1.5rem; }
   .ds-panel-title { font-size: 1.05rem; font-weight: 700; margin: 0; }
@@ -430,16 +462,14 @@
   .ds-cov-note { font-size: 0.78rem; color: var(--ds-muted); line-height: 1.5; margin: 0; }
 
   /* source bar (now above the map) */
-  .ds-srcbar { margin: 2.25rem 0 1rem; }
+  .ds-srcbar { margin: 1.25rem 0 1.5rem; }
   .ds-srcbar-title { font-size: 0.95rem; color: var(--ds-fg); margin: 0 0 0.75rem; font-weight: 600; }
 
   /* schema: core data fields */
-  .ds-schema { margin-top: 1.25rem; border: 1px solid var(--ds-line); border-radius: 1rem; background: var(--ds-card); padding: 1.35rem 1.5rem 1.5rem; }
-  .ds-schema-head { margin-bottom: 1.15rem; }
-  .ds-schema-head a { color: hsl(var(--p)); font-weight: 600; }
+  .ds-schema { margin-top: 0; border: 1px solid var(--ds-line); border-radius: 1rem; background: var(--ds-card); padding: 0.9rem 1.5rem 1.5rem; }
   .ds-fields { display: grid; grid-template-columns: 1fr; gap: 1.4rem 2.25rem; }
   @media (min-width: 620px) { .ds-fields { grid-template-columns: 1fr 1fr; } }
-  @media (min-width: 1000px) { .ds-fields { grid-template-columns: repeat(4, 1fr); } }
+  @media (min-width: 1000px) { .ds-fields { grid-template-columns: 1fr 1fr 0.7fr 1.55fr; } }
   .ds-fgroup-label { display: block; font-size: 0.68rem; letter-spacing: 0.11em; text-transform: uppercase; font-weight: 700; color: hsl(var(--p)); margin-bottom: 0.55rem; }
   .ds-field { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.4rem 0.55rem; padding: 0.32rem 0; font-size: 0.82rem; border-top: 1px solid hsl(var(--bc) / 0.06); }
   .ds-fgroup .ds-field:first-of-type { border-top: 0; }
@@ -448,10 +478,10 @@
   .ds-field-meta > span { font-size: 0.74rem; font-style: italic; opacity: 0.85; }
 
   /* 3D city */
-  .ds-city { margin: 1.25rem 0 0; }
-  .ds-city-head { margin-bottom: 0.85rem; }
+  .ds-city { margin: 0; }
+  .ds-city-cap { margin-top: 1.05rem; font-size: 0.82rem; color: var(--ds-muted); line-height: 1.5; text-align: center; }
   .ds-city-frame {
-    position: relative; height: clamp(360px, 48vw, 480px); border-radius: 1rem; overflow: hidden;
+    position: relative; height: clamp(320px, 44vw, 480px); border-radius: 1rem; overflow: hidden;
     border: 1px solid var(--ds-line);
     background: radial-gradient(120% 120% at 50% 0%, hsl(var(--p) / 0.12), transparent 60%), var(--ds-card-2);
     display: flex; align-items: center; justify-content: center;
@@ -548,8 +578,8 @@
     var done = false;
     function loadMap() {
       if (done) return; done = true;
-      var theme = "dark";
-      try { if (localStorage.getItem("ui-theme") === "light") theme = "light"; } catch (e) {}
+      // Follow the theme base.html already resolved from the user's preference.
+      var theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
       var f = document.createElement("iframe");
       f.setAttribute("loading", "lazy");
       f.setAttribute("title", "EUBUCCO buildings across Europe");
@@ -572,8 +602,8 @@
     var cDone = false;
     function loadCity() {
       if (cDone) return; cDone = true;
-      var theme = "dark";
-      try { if (localStorage.getItem("ui-theme") === "light") theme = "light"; } catch (e) {}
+      // Follow the theme base.html already resolved from the user's preference.
+      var theme = document.documentElement.classList.contains("dark") ? "dark" : "light";
       var f = document.createElement("iframe");
       f.setAttribute("loading", "lazy");
       f.setAttribute("title", "EUBUCCO buildings in 3D");
